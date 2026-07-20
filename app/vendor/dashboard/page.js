@@ -1,0 +1,455 @@
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
+
+export default function VendorDashboard() {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [adjustments, setAdjustments] = useState({});
+  const [discountInputs, setDiscountInputs] = useState({});
+  const [shop, setShop] = useState(null);
+  const [mmNumber, setMmNumber] = useState("");
+  const [mmOperator, setMmOperator] = useState("orange_money");
+  const [mmSaved, setMmSaved] = useState(false);
+  const [mmError, setMmError] = useState("");
+
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    sku: "",
+    price: "",
+    compareAtPrice: "",
+    stockQuantity: "",
+    categoryId: "",
+  });
+  const [categories, setCategories] = useState([]);
+  const [selectedParentCat, setSelectedParentCat] = useState("");
+
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.categories || []));
+  }, []);
+
+  const subcategoriesForSelectedParent =
+    categories.find((c) => String(c.id) === selectedParentCat)?.children || [];
+
+  const loadStock = useCallback(async () => {
+    const res = await fetch("/api/vendor/stock");
+    if (res.status === 401) {
+      router.push("/login");
+      return;
+    }
+    const data = await res.json();
+    setProducts(data.products || []);
+    setLoading(false);
+  }, [router]);
+
+  useEffect(() => {
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((data) => {
+        if (!data.user || (data.user.role !== "vendor" && data.user.role !== "admin")) {
+          router.push("/login");
+          return;
+        }
+        setUser(data.user);
+        loadStock();
+
+        fetch("/api/vendor/shop")
+          .then((r) => r.json())
+          .then((d) => {
+            if (d.shop) {
+              setShop(d.shop);
+              setMmNumber(d.shop.mobile_money_number || "");
+              setMmOperator(d.shop.mobile_money_operator || "orange_money");
+            }
+          });
+      });
+  }, [loadStock, router]);
+
+  async function handleCreateProduct(e) {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    const res = await fetch("/api/vendor/stock", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: newProduct.name,
+        sku: newProduct.sku || undefined,
+        price: Number(newProduct.price),
+        compareAtPrice: newProduct.compareAtPrice ? Number(newProduct.compareAtPrice) : undefined,
+        stockQuantity: Number(newProduct.stockQuantity) || 0,
+        categoryId: newProduct.categoryId || undefined,
+      }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error || "Erreur lors de la création du produit.");
+      return;
+    }
+
+    setSuccess(`Produit "${data.product.name}" ajouté avec ${data.product.stock_quantity} en stock.`);
+    setNewProduct({ name: "", sku: "", price: "", compareAtPrice: "", stockQuantity: "", categoryId: "" });
+    setSelectedParentCat("");
+    setShowForm(false);
+    loadStock();
+  }
+
+  async function handleAdjust(productId, direction) {
+    const raw = adjustments[productId];
+    const amount = Number(raw);
+    if (!raw || isNaN(amount) || amount === 0) return;
+
+    const adjustment = direction === "add" ? Math.abs(amount) : -Math.abs(amount);
+    setError("");
+
+    const res = await fetch(`/api/vendor/stock/${productId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        adjustment,
+        reason: direction === "add" ? "Réapprovisionnement" : "Retrait manuel",
+      }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error || "Erreur lors de l'ajustement du stock.");
+      return;
+    }
+
+    setAdjustments((a) => ({ ...a, [productId]: "" }));
+    loadStock();
+  }
+
+  async function handleSaveCompareAtPrice(productId) {
+    const raw = discountInputs[productId];
+    setError("");
+
+    const res = await fetch(`/api/vendor/stock/${productId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        compareAtPrice: raw === "" || raw === undefined ? null : Number(raw),
+      }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error || "Erreur lors de la mise à jour du prix barré.");
+      return;
+    }
+
+    loadStock();
+  }
+
+  async function handleSaveMobileMoney(e) {
+    e.preventDefault();
+    setMmError("");
+    setMmSaved(false);
+
+    const res = await fetch("/api/vendor/shop", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mobileMoneyNumber: mmNumber, mobileMoneyOperator: mmOperator }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setMmError(data.error || "Erreur lors de l'enregistrement.");
+      return;
+    }
+
+    setShop(data.shop);
+    setMmSaved(true);
+    setTimeout(() => setMmSaved(false), 2500);
+  }
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+  }
+
+  const totalStock = products.reduce((sum, p) => sum + p.stock_quantity, 0);
+  const lowStockCount = products.filter((p) => p.stock_quantity <= p.low_stock_threshold).length;
+
+  return (
+    <div className="shell">
+      <div className="topbar">
+        <div className="brand">
+          🛒 FasoShop <span className="role-tag">Vendeur</span>
+        </div>
+        <div className="topbar-actions">
+          <a href="/vendor/orders" style={{ marginRight: 10, color: "var(--sand-50)", fontSize: "0.85rem" }}>
+            Commandes reçues
+          </a>
+          <button onClick={handleLogout}>Déconnexion</button>
+        </div>
+      </div>
+      <div className="woven-strip" />
+
+      <div className="content">
+        <div className="page-header">
+          <h1>Mon stock</h1>
+          <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
+        </div>
+
+        {error && <div className="error-box">{error}</div>}
+        {success && <div className="success-box">{success}</div>}
+
+        <div className="panel">
+          <h2>Reversements — Mobile Money</h2>
+          <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
+            Le numéro renseigné ici recevra automatiquement votre part des ventes payées en ligne, dès que le paiement en ligne sera activé.
+          </p>
+
+          {mmError && <div className="error-box">{mmError}</div>}
+          {mmSaved && <div className="success-box">Numéro Mobile Money enregistré.</div>}
+
+          <form onSubmit={handleSaveMobileMoney}>
+            <div className="form-row">
+              <div>
+                <label htmlFor="mm-operator">Opérateur</label>
+                <select
+                  id="mm-operator"
+                  value={mmOperator}
+                  onChange={(e) => setMmOperator(e.target.value)}
+                >
+                  <option value="orange_money">Orange Money</option>
+                  <option value="moov_money">Moov Money</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="mm-number">Numéro Mobile Money</label>
+                <input
+                  id="mm-number"
+                  required
+                  value={mmNumber}
+                  onChange={(e) => setMmNumber(e.target.value)}
+                  placeholder="Ex : 70 00 00 00"
+                />
+              </div>
+            </div>
+            <button type="submit" className="btn btn-primary">
+              {shop?.mobile_money_number ? "Mettre à jour" : "Enregistrer"}
+            </button>
+          </form>
+        </div>
+
+        <div className="stat-row">
+          <div className="stat-card">
+            <div className="label">Produits</div>
+            <div className="value">{products.length}</div>
+          </div>
+          <div className="stat-card">
+            <div className="label">Unités en stock</div>
+            <div className="value">{totalStock}</div>
+          </div>
+          <div className="stat-card">
+            <div className="label">Stock faible</div>
+            <div className="value" style={{ color: lowStockCount > 0 ? "var(--bissap-600)" : "inherit" }}>
+              {lowStockCount}
+            </div>
+          </div>
+        </div>
+
+        <div className="panel">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <h2 style={{ marginBottom: 0 }}>Produits</h2>
+            <button className="btn btn-primary" onClick={() => setShowForm((s) => !s)}>
+              {showForm ? "Annuler" : "+ Ajouter un produit"}
+            </button>
+          </div>
+
+          {showForm && (
+            <form onSubmit={handleCreateProduct} style={{ marginTop: 18 }}>
+              <div className="form-row">
+                <div>
+                  <label htmlFor="p-name">Nom du produit</label>
+                  <input
+                    id="p-name"
+                    required
+                    value={newProduct.name}
+                    onChange={(e) => setNewProduct({ ...newProduct, name: e.target.value })}
+                    placeholder="Ex : Sac à main artisanal"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="p-sku">Référence (SKU)</label>
+                  <input
+                    id="p-sku"
+                    value={newProduct.sku}
+                    onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
+                    placeholder="Optionnel"
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div>
+                  <label htmlFor="p-price">Prix (FCFA)</label>
+                  <input
+                    id="p-price"
+                    type="number"
+                    min="0"
+                    required
+                    value={newProduct.price}
+                    onChange={(e) => setNewProduct({ ...newProduct, price: e.target.value })}
+                    placeholder="15000"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="p-compare-price">Prix barré (FCFA) — optionnel</label>
+                  <input
+                    id="p-compare-price"
+                    type="number"
+                    min="0"
+                    value={newProduct.compareAtPrice}
+                    onChange={(e) => setNewProduct({ ...newProduct, compareAtPrice: e.target.value })}
+                    placeholder="Ex : 20000 (avant réduction)"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="p-stock">Stock initial</label>
+                  <input
+                    id="p-stock"
+                    type="number"
+                    min="0"
+                    value={newProduct.stockQuantity}
+                    onChange={(e) => setNewProduct({ ...newProduct, stockQuantity: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+              </div>
+              <div className="form-row">
+                <div>
+                  <label htmlFor="p-category">Catégorie</label>
+                  <select
+                    id="p-category"
+                    value={selectedParentCat}
+                    onChange={(e) => {
+                      setSelectedParentCat(e.target.value);
+                      setNewProduct({ ...newProduct, categoryId: "" });
+                    }}
+                  >
+                    <option value="">— Choisir une catégorie —</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="p-subcategory">Sous-catégorie</label>
+                  <select
+                    id="p-subcategory"
+                    value={newProduct.categoryId}
+                    onChange={(e) => setNewProduct({ ...newProduct, categoryId: e.target.value })}
+                    disabled={!selectedParentCat}
+                  >
+                    <option value="">— Choisir une sous-catégorie —</option>
+                    {subcategoriesForSelectedParent.map((sc) => (
+                      <option key={sc.id} value={sc.id}>{sc.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <button type="submit" className="btn btn-primary">Enregistrer le produit</button>
+            </form>
+          )}
+        </div>
+
+        <div className="panel">
+          {loading ? (
+            <p>Chargement...</p>
+          ) : products.length === 0 ? (
+            <div className="empty-state">
+              <div className="glyph">📦</div>
+              <p>Aucun produit pour l'instant. Ajoutez votre premier produit ci-dessus.</p>
+            </div>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>SKU</th>
+                  <th>Prix</th>
+                  <th>Prix barré</th>
+                  <th>Stock</th>
+                  <th>Ajuster</th>
+                </tr>
+              </thead>
+              <tbody>
+                {products.map((p) => {
+                  const isLow = p.stock_quantity <= p.low_stock_threshold;
+                  return (
+                    <tr key={p.id}>
+                      <td>{p.name}</td>
+                      <td className="sku">{p.sku || "—"}</td>
+                      <td>{Number(p.price).toLocaleString("fr-FR")} FCFA</td>
+                      <td>
+                        <div className="stock-adjust">
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="Aucun"
+                            value={
+                              discountInputs[p.id] !== undefined
+                                ? discountInputs[p.id]
+                                : p.compare_at_price || ""
+                            }
+                            onChange={(e) =>
+                              setDiscountInputs((d) => ({ ...d, [p.id]: e.target.value }))
+                            }
+                            style={{ width: 90 }}
+                          />
+                          <button
+                            className="btn btn-ghost"
+                            onClick={() => handleSaveCompareAtPrice(p.id)}
+                          >
+                            OK
+                          </button>
+                        </div>
+                      </td>
+                      <td>
+                        <span className={`badge ${isLow ? "badge-low" : "badge-ok"}`}>
+                          {p.stock_quantity} {isLow ? "· faible" : ""}
+                        </span>
+                      </td>
+                      <td>
+                        <div className="stock-adjust">
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="Qté"
+                            value={adjustments[p.id] || ""}
+                            onChange={(e) =>
+                              setAdjustments((a) => ({ ...a, [p.id]: e.target.value }))
+                            }
+                          />
+                          <button className="btn btn-primary" onClick={() => handleAdjust(p.id, "add")}>
+                            + Réappro
+                          </button>
+                          <button className="btn btn-ghost" onClick={() => handleAdjust(p.id, "remove")}>
+                            − Retirer
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

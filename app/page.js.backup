@@ -1,0 +1,22 @@
+import Link from "next/link";
+
+export default function HomePage() {
+  return (
+    <div className="auth-wrap">
+      <div className="auth-card" style={{ textAlign: "center" }}>
+        <h1>🛒 FasoShop</h1>
+        <p className="subtitle">Le marché en ligne du Burkina Faso.</p>
+        <Link href="/login">
+          <button className="btn btn-primary" style={{ width: "100%" }}>
+            Se connecter / S'inscrire
+          </button>
+        </Link>
+        <Link href="/shop">
+          <button className="btn btn-ghost" style={{ width: "100%", marginTop: 10 }}>
+            Voir le catalogue
+          </button>
+        </Link>
+      </div>
+    </div>
+  );
+}

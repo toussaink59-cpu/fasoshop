@@ -1,0 +1,79 @@
+.trust-strip {
+  display: flex;
+  justify-content: center;
+  gap: 36px;
+  flex-wrap: wrap;
+  padding: 20px 28px;
+  background: var(--sand-100);
+  border-bottom: 1px solid var(--border);
+}
+
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--ink-700);
+  font-weight: 500;
+}
+
+.trust-item .trust-icon {
+  font-size: 1.1rem;
+}
+
+.home-section {
+  max-width: 1080px;
+  margin: 0 auto 48px;
+  padding: 0 28px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 18px;
+}
+
+.section-head h2 {
+  font-size: 1.4rem;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 14px;
+}
+
+.category-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 12px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--ink-900);
+  text-align: center;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.category-tile:hover {
+  border-color: var(--millet-600);
+  transform: translateY(-2px);
+}
+
+.category-tile .tile-emoji {
+  font-size: 1.8rem;
+}
+
+.category-tile .tile-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .trust-strip { gap: 18px; padding: 16px; }
+  .home-section { padding: 0 16px; }
+}

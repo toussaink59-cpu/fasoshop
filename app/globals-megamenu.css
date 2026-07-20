@@ -1,0 +1,125 @@
+/* ============================================
+   Mega-menu de catégories (façon Jumia)
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.mega-menu-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.mega-menu-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 30px;
+  background: var(--gold-500);
+  color: var(--ink-900);
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mega-menu-icon {
+  font-size: 0.9rem;
+}
+
+.mega-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 50;
+  display: flex;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 30px rgba(36, 23, 18, 0.18);
+  overflow: hidden;
+  min-width: 560px;
+}
+
+.mega-menu-list {
+  width: 220px;
+  background: var(--sand-100);
+  border-right: 1px solid var(--border);
+  padding: 8px 0;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.mega-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--ink-900);
+  cursor: pointer;
+}
+
+.mega-menu-item.active,
+.mega-menu-item:hover {
+  background: white;
+  color: var(--gold-600);
+  font-weight: 600;
+}
+
+.mega-menu-arrow {
+  color: var(--ink-400);
+}
+
+.mega-menu-detail {
+  flex: 1;
+  padding: 20px 24px;
+}
+
+.mega-menu-detail h3 {
+  font-size: 1.05rem;
+  margin-bottom: 14px;
+}
+
+.mega-menu-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mega-menu-link {
+  padding: 6px 0;
+  font-size: 0.85rem;
+  color: var(--ink-700);
+  text-decoration: none;
+}
+
+.mega-menu-link:hover {
+  color: var(--gold-600);
+  text-decoration: underline;
+}
+
+.mega-menu-link-all {
+  font-weight: 700;
+  color: var(--bissap-600);
+  margin-bottom: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 640px) {
+  .mega-menu-panel {
+    position: fixed;
+    top: auto;
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    min-width: 0;
+    max-height: 70vh;
+  }
+  .mega-menu-list { width: 150px; }
+}

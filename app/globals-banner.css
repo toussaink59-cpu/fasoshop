@@ -1,0 +1,138 @@
+/* ============================================
+   Carrousel de bannières promotionnelles
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.banner-carousel {
+  position: relative;
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 40px 80px;
+}
+
+.banner-carousel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.12;
+  background: repeating-linear-gradient(
+    115deg,
+    #fff 0px, #fff 2px,
+    transparent 2px, transparent 22px
+  );
+  pointer-events: none;
+}
+
+.slide-gold {
+  background: linear-gradient(135deg, var(--ink-900) 0%, var(--gold-600) 130%);
+}
+
+.slide-bissap {
+  background: linear-gradient(135deg, var(--ink-900) 0%, var(--bissap-600) 130%);
+}
+
+.slide-millet {
+  background: linear-gradient(135deg, var(--ink-900) 0%, var(--millet-600) 130%);
+}
+
+.banner-slide {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 560px;
+  color: var(--sand-50);
+}
+
+.banner-tag {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 20px;
+  background: rgba(252, 250, 246, 0.15);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+
+.banner-title {
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 12px;
+  color: var(--sand-50);
+}
+
+.banner-subtitle {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin-bottom: 26px;
+}
+
+.banner-carousel .btn-hero {
+  background: var(--sand-50);
+  color: var(--ink-900);
+}
+
+.banner-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(252, 250, 246, 0.15);
+  color: var(--sand-50);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.banner-arrow:hover {
+  background: rgba(252, 250, 246, 0.3);
+}
+
+.banner-arrow-left { left: 20px; }
+.banner-arrow-right { right: 20px; }
+
+.banner-dots {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+
+.banner-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(252, 250, 246, 0.35);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.banner-dot.active {
+  background: var(--sand-50);
+  transform: scale(1.3);
+}
+
+@media (max-width: 640px) {
+  .banner-carousel { padding: 32px 50px; min-height: 260px; }
+  .banner-title { font-size: 1.5rem; }
+  .banner-subtitle { font-size: 0.88rem; }
+  .banner-arrow { width: 32px; height: 32px; font-size: 1.3rem; }
+  .banner-arrow-left { left: 8px; }
+  .banner-arrow-right { right: 8px; }
+}

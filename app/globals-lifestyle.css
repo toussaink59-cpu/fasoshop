@@ -1,0 +1,83 @@
+/* ============================================
+   Slides photo du carrousel + section "Pourquoi FasoShop"
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.slide-photo-base {
+  background-size: cover;
+  background-position: center;
+  position: relative;
+}
+
+.banner-photo-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    rgba(36, 23, 18, 0.88) 0%,
+    rgba(36, 23, 18, 0.55) 45%,
+    rgba(36, 23, 18, 0.25) 100%
+  );
+  z-index: 0;
+}
+
+.banner-carousel.slide-photo-base .banner-slide,
+.banner-carousel.slide-photo-base .banner-arrow,
+.banner-carousel.slide-photo-base .banner-dots {
+  position: relative;
+  z-index: 1;
+}
+
+/* Section Pourquoi FasoShop */
+.why-section {
+  padding: 44px 0 8px;
+}
+
+.why-grid {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 28px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+}
+
+.why-card {
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.why-card-image-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  background: var(--sand-100);
+}
+
+.why-card-image {
+  object-fit: cover;
+}
+
+.why-card-body {
+  padding: 16px 18px 20px;
+}
+
+.why-card-body h3 {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  margin-bottom: 6px;
+}
+
+.why-card-body p {
+  font-size: 0.85rem;
+  color: var(--ink-400);
+  line-height: 1.5;
+  margin: 0;
+}
+
+@media (max-width: 640px) {
+  .why-section { padding: 32px 0 4px; }
+  .why-grid { padding: 0 16px; }
+}
