@@ -54,7 +54,7 @@ a {
   );
 }
 
-/* ============ Layout général ============ */
+/* Layout général */
 .shell {
   min-height: 100vh;
   display: flex;
@@ -107,583 +107,6 @@ a {
   border-color: var(--sand-50);
 }
 
-/* ============ Header page d'accueil (recherche + catégories) ============ */
-.home-topbar {
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-.search-bar {
-  flex: 1;
-  min-width: 200px;
-  max-width: 480px;
-}
-
-.search-bar input {
-  width: 100%;
-  padding: 10px 16px;
-  border-radius: 30px;
-  border: 1px solid rgba(252, 250, 246, 0.25);
-  background: rgba(252, 250, 246, 0.08);
-  color: var(--sand-50);
-  font-size: 0.88rem;
-}
-
-.search-bar input::placeholder {
-  color: rgba(252, 250, 246, 0.55);
-}
-
-.search-bar input:focus {
-  outline: none;
-  border-color: var(--gold-500);
-  background: rgba(252, 250, 246, 0.12);
-}
-
-.category-bar {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  background: var(--ink-700);
-  padding-left: 16px;
-}
-
-.category-bar .category-nav {
-  padding-left: 6px;
-}
-
-.category-bar .mega-menu-wrap {
-  margin: 12px 0;
-}
-
-.category-nav {
-  display: flex;
-  gap: 10px;
-  padding: 12px 28px;
-  overflow-x: auto;
-  background: var(--ink-700);
-  scrollbar-width: thin;
-}
-
-.category-pill {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-shrink: 0;
-  padding: 6px 14px;
-  border-radius: 30px;
-  background: rgba(252, 250, 246, 0.1);
-  color: var(--sand-50);
-  font-size: 0.82rem;
-  font-weight: 500;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background 0.15s ease;
-}
-
-.category-pill:hover {
-  background: var(--gold-500);
-  color: var(--ink-900);
-}
-
-.category-emoji {
-  font-size: 1rem;
-}
-
-/* ============ Mega-menu de catégories (façon Jumia) ============ */
-.mega-menu-wrap {
-  position: relative;
-  flex-shrink: 0;
-}
-
-.mega-menu-trigger {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 14px;
-  border-radius: 30px;
-  background: var(--gold-500);
-  color: var(--ink-900);
-  border: none;
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
-.mega-menu-icon {
-  font-size: 0.9rem;
-}
-
-.mega-menu-panel {
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  z-index: 50;
-  display: flex;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: 0 12px 30px rgba(36, 23, 18, 0.18);
-  overflow: hidden;
-  min-width: 560px;
-}
-
-.mega-menu-list {
-  width: 220px;
-  background: var(--sand-100);
-  border-right: 1px solid var(--border);
-  padding: 8px 0;
-  max-height: 380px;
-  overflow-y: auto;
-}
-
-.mega-menu-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  padding: 10px 16px;
-  background: none;
-  border: none;
-  text-align: left;
-  font-size: 0.85rem;
-  color: var(--ink-900);
-  cursor: pointer;
-}
-
-.mega-menu-item.active,
-.mega-menu-item:hover {
-  background: white;
-  color: var(--gold-600);
-  font-weight: 600;
-}
-
-.mega-menu-arrow {
-  color: var(--ink-400);
-}
-
-.mega-menu-detail {
-  flex: 1;
-  padding: 20px 24px;
-}
-
-.mega-menu-detail h3 {
-  font-size: 1.05rem;
-  margin-bottom: 14px;
-}
-
-.mega-menu-columns {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.mega-menu-link {
-  padding: 6px 0;
-  font-size: 0.85rem;
-  color: var(--ink-700);
-  text-decoration: none;
-}
-
-.mega-menu-link:hover {
-  color: var(--gold-600);
-  text-decoration: underline;
-}
-
-.mega-menu-link-all {
-  font-weight: 700;
-  color: var(--bissap-600);
-  margin-bottom: 6px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border);
-}
-
-/* ============ Bannière héro simple (pages hors accueil, si utilisée) ============ */
-.hero {
-  text-align: center;
-  padding: 56px 28px;
-  background: var(--sand-100);
-}
-
-.hero h1 {
-  font-size: 2.2rem;
-  margin-bottom: 12px;
-}
-
-.hero p {
-  color: var(--ink-400);
-  font-size: 1rem;
-  max-width: 480px;
-  margin: 0 auto 24px;
-}
-
-.btn-hero {
-  display: inline-block;
-  padding: 13px 34px;
-  font-size: 1rem;
-  text-decoration: none;
-}
-
-/* ============ Carrousel de bannières promotionnelles ============ */
-.banner-carousel {
-  position: relative;
-  min-height: 320px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  padding: 40px 80px;
-}
-
-.banner-carousel::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  opacity: 0.12;
-  background: repeating-linear-gradient(
-    115deg,
-    #fff 0px, #fff 2px,
-    transparent 2px, transparent 22px
-  );
-  pointer-events: none;
-}
-
-.slide-gold {
-  background: linear-gradient(135deg, var(--ink-900) 0%, var(--gold-600) 130%);
-}
-
-.slide-bissap {
-  background: linear-gradient(135deg, var(--ink-900) 0%, var(--bissap-600) 130%);
-}
-
-.slide-millet {
-  background: linear-gradient(135deg, var(--ink-900) 0%, var(--millet-600) 130%);
-}
-
-.slide-ink {
-  background: linear-gradient(135deg, var(--ink-900) 0%, var(--ink-700) 60%, var(--gold-600) 140%);
-}
-
-/* Slide à fond photo réelle — utilisée par BannerCarousel.js quand slide.image est défini */
-.slide-photo {
-  background-size: cover;
-  background-position: center;
-  position: relative;
-}
-
-.slide-photo::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    100deg,
-    rgba(36, 23, 18, 0.88) 0%,
-    rgba(36, 23, 18, 0.55) 45%,
-    rgba(36, 23, 18, 0.25) 100%
-  );
-  pointer-events: none;
-}
-
-.slide-photo .banner-slide {
-  text-align: left;
-  align-items: flex-start;
-  max-width: 480px;
-  margin-right: auto;
-  margin-left: 20px;
-}
-
-.banner-slide {
-  position: relative;
-  z-index: 1;
-  text-align: center;
-  max-width: 560px;
-  color: var(--sand-50);
-}
-
-.banner-founder {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.founder-photo-wrap {
-  width: 108px;
-  height: 108px;
-  border-radius: 50%;
-  overflow: hidden;
-  border: 3px solid var(--gold-500);
-  margin-bottom: 14px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
-}
-
-.founder-photo {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.founder-quote {
-  font-family: var(--font-display);
-  font-size: 1.25rem;
-  font-style: italic;
-  line-height: 1.5;
-  color: var(--sand-50);
-  max-width: 520px;
-  margin: 12px 0 18px;
-}
-
-.founder-attribution {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.founder-name {
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--gold-500);
-}
-
-.founder-role {
-  font-size: 0.78rem;
-  color: rgba(252, 250, 246, 0.7);
-}
-
-.banner-tag {
-  display: inline-block;
-  padding: 4px 14px;
-  border-radius: 20px;
-  background: rgba(252, 250, 246, 0.15);
-  font-family: var(--font-mono);
-  font-size: 0.72rem;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 16px;
-}
-
-.banner-title {
-  font-family: var(--font-display);
-  font-size: 2.1rem;
-  font-weight: 700;
-  line-height: 1.2;
-  margin-bottom: 12px;
-  color: var(--sand-50);
-}
-
-.banner-subtitle {
-  font-size: 1rem;
-  opacity: 0.9;
-  margin-bottom: 26px;
-}
-
-.banner-carousel .btn-hero {
-  background: var(--sand-50);
-  color: var(--ink-900);
-}
-
-.banner-arrow {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 2;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(252, 250, 246, 0.15);
-  color: var(--sand-50);
-  font-size: 1.6rem;
-  line-height: 1;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-.banner-arrow:hover {
-  background: rgba(252, 250, 246, 0.3);
-}
-
-.banner-arrow-left { left: 20px; }
-.banner-arrow-right { right: 20px; }
-
-.banner-dots {
-  position: absolute;
-  bottom: 18px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  gap: 8px;
-  z-index: 2;
-}
-
-.banner-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  border: none;
-  background: rgba(252, 250, 246, 0.35);
-  cursor: pointer;
-  padding: 0;
-  transition: background 0.15s ease, transform 0.15s ease;
-}
-
-.banner-dot.active {
-  background: var(--sand-50);
-  transform: scale(1.3);
-}
-
-/* ============ Bandeau de confiance ============ */
-.trust-strip {
-  display: flex;
-  justify-content: center;
-  gap: 36px;
-  flex-wrap: wrap;
-  padding: 20px 28px;
-  background: var(--sand-100);
-  border-bottom: 1px solid var(--border);
-}
-
-.trust-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.85rem;
-  color: var(--ink-700);
-  font-weight: 500;
-}
-
-.trust-item .trust-icon {
-  font-size: 1.1rem;
-}
-
-/* ============ Section "Pourquoi FasoShop" (3 photos + légende) ============ */
-.why-section {
-  padding: 44px 0 12px;
-}
-
-.why-grid {
-  max-width: 1080px;
-  margin: 0 auto;
-  padding: 0 28px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 20px;
-}
-
-.why-card {
-  position: relative;
-  border-radius: var(--radius);
-  overflow: hidden;
-  aspect-ratio: 4 / 5;
-  box-shadow: 0 6px 18px rgba(36, 23, 18, 0.14);
-}
-
-.why-card img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.why-caption {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 18px 16px 16px;
-  background: linear-gradient(to top, rgba(36, 23, 18, 0.92) 0%, rgba(36, 23, 18, 0) 100%);
-  color: var(--sand-50);
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.why-caption strong {
-  font-family: var(--font-display);
-  font-size: 1rem;
-}
-
-.why-caption span {
-  font-size: 0.78rem;
-  opacity: 0.85;
-}
-
-/* ============ Sections génériques de la page d'accueil ============ */
-.home-section {
-  max-width: 1080px;
-  margin: 0 auto 48px;
-  padding: 0 28px;
-}
-
-.section-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-  margin-bottom: 18px;
-}
-
-.section-head h2 {
-  font-size: 1.4rem;
-}
-
-.view-all {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--gold-600);
-  text-decoration: none;
-}
-
-.view-all:hover {
-  text-decoration: underline;
-}
-
-.category-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
-  gap: 14px;
-}
-
-.category-tile {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
-  padding: 22px 12px;
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  text-decoration: none;
-  color: var(--ink-900);
-  text-align: center;
-  transition: border-color 0.15s ease, transform 0.15s ease;
-}
-
-.category-tile:hover {
-  border-color: var(--millet-600);
-  transform: translateY(-2px);
-}
-
-.category-tile .tile-emoji {
-  font-size: 1.8rem;
-}
-
-.category-tile .tile-label {
-  font-size: 0.85rem;
-  font-weight: 600;
-}
-
-/* Priorité garantie sur la grille de catégories (corrige un affichage en colonne) */
-.home-section .category-grid {
-  display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
-  gap: 14px !important;
-  width: 100% !important;
-}
-
-.home-section .category-tile {
-  width: auto !important;
-}
-
-/* ============ Contenu générique (pages internes) ============ */
 .content {
   flex: 1;
   max-width: 1080px;
@@ -1082,8 +505,6 @@ tbody tr:hover {
 .status-paid { background: var(--millet-100); color: var(--millet-600); }
 .status-shipped { background: #e2ecf5; color: #2b587e; }
 .status-delivered { background: var(--millet-100); color: var(--millet-600); }
-.status-cancelled { background: var(--bissap-100); color: var(--bissap-600); }
-
 .payment-options {
   display: flex;
   flex-direction: column;
@@ -1127,28 +548,512 @@ tbody tr:hover {
   margin-top: 2px;
 }
 
-/* ============ Responsive ============ */
+.status-cancelled { background: var(--bissap-100); color: var(--bissap-600); }
+
 @media (max-width: 640px) {
   .content { padding: 24px 16px 40px; }
   .topbar { padding: 14px 16px; }
+}
+.trust-strip {
+  display: flex;
+  justify-content: center;
+  gap: 36px;
+  flex-wrap: wrap;
+  padding: 20px 28px;
+  background: var(--sand-100);
+  border-bottom: 1px solid var(--border);
+}
+
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--ink-700);
+  font-weight: 500;
+}
+
+.trust-item .trust-icon {
+  font-size: 1.1rem;
+}
+
+.home-section {
+  max-width: 1080px;
+  margin: 0 auto 48px;
+  padding: 0 28px;
+}
+
+.section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 18px;
+}
+
+.section-head h2 {
+  font-size: 1.4rem;
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 14px;
+}
+
+.category-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 22px 12px;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--ink-900);
+  text-align: center;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.category-tile:hover {
+  border-color: var(--millet-600);
+  transform: translateY(-2px);
+}
+
+.category-tile .tile-emoji {
+  font-size: 1.8rem;
+}
+
+.category-tile .tile-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .trust-strip { gap: 18px; padding: 16px; }
+  .home-section { padding: 0 16px; }
+}
+/* ============================================
+   Ajouts pour la nouvelle page d'accueil
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.home-topbar {
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.search-bar {
+  flex: 1;
+  min-width: 200px;
+  max-width: 480px;
+}
+
+.search-bar input {
+  width: 100%;
+  padding: 10px 16px;
+  border-radius: 30px;
+  border: 1px solid rgba(252, 250, 246, 0.25);
+  background: rgba(252, 250, 246, 0.08);
+  color: var(--sand-50);
+  font-size: 0.88rem;
+}
+
+.search-bar input::placeholder {
+  color: rgba(252, 250, 246, 0.55);
+}
+
+.search-bar input:focus {
+  outline: none;
+  border-color: var(--gold-500);
+  background: rgba(252, 250, 246, 0.12);
+}
+
+.category-nav {
+  display: flex;
+  gap: 10px;
+  padding: 12px 28px;
+  overflow-x: auto;
+  background: var(--ink-700);
+  scrollbar-width: thin;
+}
+
+.category-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border-radius: 30px;
+  background: rgba(252, 250, 246, 0.1);
+  color: var(--sand-50);
+  font-size: 0.82rem;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+.category-pill:hover {
+  background: var(--gold-500);
+  color: var(--ink-900);
+}
+
+.category-emoji {
+  font-size: 1rem;
+}
+
+.hero {
+  text-align: center;
+  padding: 56px 28px;
+  background: var(--sand-100);
+}
+
+.hero h1 {
+  font-size: 2.2rem;
+  margin-bottom: 12px;
+}
+
+.hero p {
+  color: var(--ink-400);
+  font-size: 1rem;
+  max-width: 480px;
+  margin: 0 auto 24px;
+}
+
+.btn-hero {
+  display: inline-block;
+  padding: 13px 34px;
+  font-size: 1rem;
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
   .search-bar { order: 3; max-width: none; flex-basis: 100%; }
   .hero { padding: 40px 20px; }
   .hero h1 { font-size: 1.7rem; }
+}
+
+/* Correctif : --blue-600 n'existe pas dans la palette FasoShop.
+   On réutilise le gold pour rester cohérent avec l'identité visuelle. */
+.view-all {
+  color: var(--gold-600);
+}
+
+/* ============================================
+   Carrousel de bannières promotionnelles
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.banner-carousel {
+  position: relative;
+  min-height: 320px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  padding: 40px 80px;
+}
+
+.banner-carousel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0.12;
+  background: repeating-linear-gradient(
+    115deg,
+    #fff 0px, #fff 2px,
+    transparent 2px, transparent 22px
+  );
+  pointer-events: none;
+}
+
+.slide-gold {
+  background: linear-gradient(135deg, var(--ink-900) 0%, var(--gold-600) 130%);
+}
+
+.slide-bissap {
+  background: linear-gradient(135deg, var(--ink-900) 0%, var(--bissap-600) 130%);
+}
+
+.slide-millet {
+  background: linear-gradient(135deg, var(--ink-900) 0%, var(--millet-600) 130%);
+}
+
+.banner-slide {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  max-width: 560px;
+  color: var(--sand-50);
+}
+
+.banner-tag {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 20px;
+  background: rgba(252, 250, 246, 0.15);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+}
+
+.banner-title {
+  font-family: var(--font-display);
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 12px;
+  color: var(--sand-50);
+}
+
+.banner-subtitle {
+  font-size: 1rem;
+  opacity: 0.9;
+  margin-bottom: 26px;
+}
+
+.banner-carousel .btn-hero {
+  background: var(--sand-50);
+  color: var(--ink-900);
+}
+
+.banner-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(252, 250, 246, 0.15);
+  color: var(--sand-50);
+  font-size: 1.6rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.banner-arrow:hover {
+  background: rgba(252, 250, 246, 0.3);
+}
+
+.banner-arrow-left { left: 20px; }
+.banner-arrow-right { right: 20px; }
+
+.banner-dots {
+  position: absolute;
+  bottom: 18px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  z-index: 2;
+}
+
+.banner-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(252, 250, 246, 0.35);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+.banner-dot.active {
+  background: var(--sand-50);
+  transform: scale(1.3);
+}
+
+@media (max-width: 640px) {
   .banner-carousel { padding: 32px 50px; min-height: 260px; }
   .banner-title { font-size: 1.5rem; }
   .banner-subtitle { font-size: 0.88rem; }
   .banner-arrow { width: 32px; height: 32px; font-size: 1.3rem; }
   .banner-arrow-left { left: 8px; }
   .banner-arrow-right { right: 8px; }
+}
+/* ============================================
+   Slide "fondateur" du carrousel
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.slide-ink {
+  background: linear-gradient(135deg, var(--ink-900) 0%, var(--ink-700) 60%, var(--gold-600) 140%);
+}
+
+.banner-founder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.founder-photo-wrap {
+  width: 108px;
+  height: 108px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 3px solid var(--gold-500);
+  margin-bottom: 14px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+}
+
+.founder-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.founder-quote {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-style: italic;
+  line-height: 1.5;
+  color: var(--sand-50);
+  max-width: 520px;
+  margin: 12px 0 18px;
+}
+
+.founder-attribution {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.founder-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--gold-500);
+}
+
+.founder-role {
+  font-size: 0.78rem;
+  color: rgba(252, 250, 246, 0.7);
+}
+
+@media (max-width: 640px) {
   .founder-photo-wrap { width: 84px; height: 84px; }
   .founder-quote { font-size: 1.02rem; }
-  .slide-photo .banner-slide {
-    text-align: center;
-    align-items: center;
-    margin: 0 auto;
-  }
-  .trust-strip { gap: 18px; padding: 16px; }
-  .home-section { padding: 0 16px; }
+}
+/* ============================================
+   Mega-menu de catégories (façon Jumia)
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.mega-menu-wrap {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.mega-menu-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 30px;
+  background: var(--gold-500);
+  color: var(--ink-900);
+  border: none;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.mega-menu-icon {
+  font-size: 0.9rem;
+}
+
+.mega-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 50;
+  display: flex;
+  background: white;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 12px 30px rgba(36, 23, 18, 0.18);
+  overflow: hidden;
+  min-width: 560px;
+}
+
+.mega-menu-list {
+  width: 220px;
+  background: var(--sand-100);
+  border-right: 1px solid var(--border);
+  padding: 8px 0;
+  max-height: 380px;
+  overflow-y: auto;
+}
+
+.mega-menu-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 0.85rem;
+  color: var(--ink-900);
+  cursor: pointer;
+}
+
+.mega-menu-item.active,
+.mega-menu-item:hover {
+  background: white;
+  color: var(--gold-600);
+  font-weight: 600;
+}
+
+.mega-menu-arrow {
+  color: var(--ink-400);
+}
+
+.mega-menu-detail {
+  flex: 1;
+  padding: 20px 24px;
+}
+
+.mega-menu-detail h3 {
+  font-size: 1.05rem;
+  margin-bottom: 14px;
+}
+
+.mega-menu-columns {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.mega-menu-link {
+  padding: 6px 0;
+  font-size: 0.85rem;
+  color: var(--ink-700);
+  text-decoration: none;
+}
+
+.mega-menu-link:hover {
+  color: var(--gold-600);
+  text-decoration: underline;
+}
+
+.mega-menu-link-all {
+  font-weight: 700;
+  color: var(--bissap-600);
+  margin-bottom: 6px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+@media (max-width: 640px) {
   .mega-menu-panel {
     position: fixed;
     top: auto;
@@ -1159,56 +1064,83 @@ tbody tr:hover {
     max-height: 70vh;
   }
   .mega-menu-list { width: 150px; }
-  .why-grid {
-    grid-template-columns: 1fr;
-  }
-  .why-card {
-    aspect-ratio: 16 / 10;
-  }
 }
 /* ============================================
-   Badge de réduction + prix barré
+   Correctif : le mega-menu était coupé par le
+   overflow-x: auto de .category-nav.
    À coller à la fin de app/globals.css
    ============================================ */
 
-.product-card {
+.category-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ink-700);
+  padding-left: 16px;
+}
+
+.category-bar .category-nav {
+  padding-left: 6px;
+}
+
+.category-bar .mega-menu-wrap {
+  margin: 12px 0;
+}
+/* ============================================
+   Correctif : la grille de catégories s'affichait
+   en colonne verticale au lieu d'une grille.
+   Règle prioritaire ajoutée en dernier dans le fichier
+   pour garantir qu'elle l'emporte sur les doublons.
+   ============================================ */
+
+.home-section .category-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) !important;
+  gap: 14px !important;
+  width: 100% !important;
+}
+
+.home-section .category-tile {
+  width: auto !important;
+}
+/* ============================================
+   Slides "photo" du carrousel (fond image réelle)
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.slide-photo {
+  background-size: cover;
+  background-position: center;
   position: relative;
 }
 
-.badge-discount {
+.slide-photo::before {
+  content: "";
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background: var(--bissap-600);
-  color: white;
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.75rem;
-  padding: 3px 9px;
-  border-radius: 20px;
-  z-index: 1;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    rgba(36, 23, 18, 0.88) 0%,
+    rgba(36, 23, 18, 0.55) 45%,
+    rgba(36, 23, 18, 0.25) 100%
+  );
+  pointer-events: none;
 }
 
-.price-display {
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: auto;
+.slide-photo .banner-slide {
+  text-align: left;
+  align-items: flex-start;
+  max-width: 480px;
+  margin-right: auto;
+  margin-left: 20px;
 }
 
-.price-old {
-  font-family: var(--font-mono);
-  font-size: 0.82rem;
-  color: var(--ink-400);
-  text-decoration: line-through;
-}
-
-.price-current {
-  font-family: var(--font-mono);
-  font-size: 1.1rem;
-  color: var(--gold-600);
-  font-weight: 600;
+@media (max-width: 640px) {
+  .slide-photo .banner-slide {
+    text-align: center;
+    align-items: center;
+    margin: 0 auto;
+  }
 }
 /* ============================================
    Slides photo du carrousel + section "Pourquoi FasoShop"
@@ -1292,4 +1224,48 @@ tbody tr:hover {
 @media (max-width: 640px) {
   .why-section { padding: 32px 0 4px; }
   .why-grid { padding: 0 16px; }
+}
+/* ============================================
+   Badge de réduction + prix barré
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.product-card {
+  position: relative;
+}
+
+.badge-discount {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--bissap-600);
+  color: white;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 3px 9px;
+  border-radius: 20px;
+  z-index: 1;
+}
+
+.price-display {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: auto;
+}
+
+.price-old {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--ink-400);
+  text-decoration: line-through;
+}
+
+.price-current {
+  font-family: var(--font-mono);
+  font-size: 1.1rem;
+  color: var(--gold-600);
+  font-weight: 600;
 }
