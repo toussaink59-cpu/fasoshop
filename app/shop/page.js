@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { addToCart, getCart, cartCount } from "@/lib/cart";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
 
-export default function ShopPage() {
+function ShopContent() {
   const searchParams = useSearchParams();
   const categorySlug = searchParams.get("category");
 
@@ -84,7 +84,9 @@ export default function ShopPage() {
                 {hasDiscount(p) && (
                   <span className="badge-discount">-{discountPercent(p)}%</span>
                 )}
-                <div className="name">{p.name}</div>
+                <Link href={`/shop/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                  <div className="name">{p.name}</div>
+                </Link>
                 <div className="shop">{p.shop_name}</div>
                 <PriceDisplay product={p} />
                 <button
@@ -110,5 +112,13 @@ export default function ShopPage() {
         </Link>
       )}
     </div>
+  );
+}
+
+export default function ShopPage() {
+  return (
+    <Suspense fallback={<div className="shell"><div className="content"><p>Chargement...</p></div></div>}>
+      <ShopContent />
+    </Suspense>
   );
 }

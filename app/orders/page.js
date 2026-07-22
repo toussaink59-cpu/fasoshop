@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -12,7 +12,7 @@ const STATUS_LABELS = {
   cancelled: "Annulée",
 };
 
-export default function OrdersPage() {
+function OrdersContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const confirmedId = searchParams.get("confirmed");
@@ -40,12 +40,10 @@ export default function OrdersPage() {
         </Link>
       </div>
       <div className="woven-strip" />
-
       <div className="content">
         <div className="page-header">
           <h1>Mes commandes</h1>
         </div>
-
         {confirmedId && (
           <div className="success-box">
             ✅ Commande #{confirmedId} confirmée !{" "}
@@ -54,7 +52,6 @@ export default function OrdersPage() {
               : "Paiement à la livraison — vous serez contacté au numéro fourni."}
           </div>
         )}
-
         {loading ? (
           <p>Chargement...</p>
         ) : orders.length === 0 ? (
@@ -90,5 +87,13 @@ export default function OrdersPage() {
         )}
       </div>
     </div>
+  );
+}
+
+export default function OrdersPage() {
+  return (
+    <Suspense fallback={<div className="shell"><div className="content"><p>Chargement...</p></div></div>}>
+      <OrdersContent />
+    </Suspense>
   );
 }
