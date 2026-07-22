@@ -1,23 +1,25 @@
 import sql from "@/lib/db";
 
 // PATCH /api/vendor/stock/:productId
-// Met à jour le stock et/ou le prix barré d'un produit — vérifie que ce produit
-// appartient bien au vendeur connecté avant toute modification.
-// body: { adjustment?, reason?, compareAtPrice? }
+// Met à jour le stock, le prix barré et/ou la vente flash d'un produit —
+// vérifie que ce produit appartient bien au vendeur connecté.
+// body: { adjustment?, reason?, compareAtPrice?, flashSaleEndsAt? }
 // - adjustment : positif (réappro) ou négatif (retrait) sur le stock
 // - compareAtPrice : nouveau prix barré (envoyer null pour le retirer)
+// - flashSaleEndsAt : date ISO de fin de vente flash (envoyer null pour désactiver)
 export async function PATCH(request, { params }) {
   const userId = request.headers.get("x-user-id");
   const { productId } = await params;
 
   try {
     const body = await request.json();
-    const { adjustment, reason, compareAtPrice } = body;
+    const { adjustment, reason, compareAtPrice, flashSaleEndsAt } = body;
 
     const hasStockChange = adjustment !== undefined && Number(adjustment) !== 0;
     const hasPriceChange = Object.prototype.hasOwnProperty.call(body, "compareAtPrice");
+    const hasFlashSaleChange = Object.prototype.hasOwnProperty.call(body, "flashSaleEndsAt");
 
-    if (!hasStockChange && !hasPriceChange) {
+    if (!hasStockChange && !hasPriceChange && !hasFlashSaleChange) {
       return Response.json(
         { error: "Aucune modification fournie." },
         { status: 400 }
@@ -49,6 +51,16 @@ export async function PATCH(request, { params }) {
       );
     }
 
+    if (hasFlashSaleChange && flashSaleEndsAt !== null) {
+      const endsAt = new Date(flashSaleEndsAt);
+      if (isNaN(endsAt.getTime()) || endsAt <= new Date()) {
+        return Response.json(
+          { error: "La date de fin de vente flash doit être dans le futur." },
+          { status: 400 }
+        );
+      }
+    }
+
     let newQuantity = product.stock_quantity;
     if (hasStockChange) {
       newQuantity = product.stock_quantity + Number(adjustment);
@@ -61,15 +73,23 @@ export async function PATCH(request, { params }) {
     }
 
     const newCompareAtPrice = hasPriceChange ? compareAtPrice : undefined;
+    // À l'activation d'une vente flash, on capture le stock actuel comme référence
+    // pour la barre "X articles restants". À la désactivation, on l'efface aussi.
+    const newFlashSaleEndsAt = hasFlashSaleChange ? flashSaleEndsAt : undefined;
+    const newFlashSaleSnapshot = hasFlashSaleChange
+      ? (flashSaleEndsAt === null ? null : newQuantity)
+      : undefined;
 
     const [updated] = await sql`
       UPDATE products
       SET
         stock_quantity = ${newQuantity},
         compare_at_price = ${hasPriceChange ? newCompareAtPrice : sql`compare_at_price`},
+        flash_sale_ends_at = ${hasFlashSaleChange ? newFlashSaleEndsAt : sql`flash_sale_ends_at`},
+        flash_sale_stock_snapshot = ${hasFlashSaleChange ? newFlashSaleSnapshot : sql`flash_sale_stock_snapshot`},
         updated_at = NOW()
       WHERE id = ${productId}
-      RETURNING id, name, stock_quantity, price, compare_at_price
+      RETURNING id, name, stock_quantity, price, compare_at_price, flash_sale_ends_at, flash_sale_stock_snapshot
     `;
 
     if (hasStockChange) {

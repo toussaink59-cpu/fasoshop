@@ -13,6 +13,7 @@ export default function VendorDashboard() {
   const [showForm, setShowForm] = useState(false);
   const [adjustments, setAdjustments] = useState({});
   const [discountInputs, setDiscountInputs] = useState({});
+  const [flashSaleInputs, setFlashSaleInputs] = useState({});
   const [shop, setShop] = useState(null);
   const [mmNumber, setMmNumber] = useState("");
   const [mmOperator, setMmOperator] = useState("orange_money");
@@ -149,6 +150,48 @@ export default function VendorDashboard() {
       return;
     }
 
+    loadStock();
+  }
+
+  async function handleActivateFlashSale(productId) {
+    const raw = flashSaleInputs[productId];
+    setError("");
+
+    if (!raw) {
+      setError("Choisis une date et heure de fin pour la vente flash.");
+      return;
+    }
+
+    const res = await fetch(`/api/vendor/stock/${productId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ flashSaleEndsAt: new Date(raw).toISOString() }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error || "Erreur lors de l'activation de la vente flash.");
+      return;
+    }
+
+    loadStock();
+  }
+
+  async function handleDeactivateFlashSale(productId) {
+    setError("");
+    const res = await fetch(`/api/vendor/stock/${productId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ flashSaleEndsAt: null }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error || "Erreur lors de la désactivation de la vente flash.");
+      return;
+    }
+
+    setFlashSaleInputs((f) => ({ ...f, [productId]: "" }));
     loadStock();
   }
 
@@ -382,6 +425,7 @@ export default function VendorDashboard() {
                   <th>SKU</th>
                   <th>Prix</th>
                   <th>Prix barré</th>
+                  <th>Vente Flash</th>
                   <th>Stock</th>
                   <th>Ajuster</th>
                 </tr>
@@ -389,6 +433,7 @@ export default function VendorDashboard() {
               <tbody>
                 {products.map((p) => {
                   const isLow = p.stock_quantity <= p.low_stock_threshold;
+                  const isFlashActive = p.flash_sale_ends_at && new Date(p.flash_sale_ends_at) > new Date();
                   return (
                     <tr key={p.id}>
                       <td>{p.name}</td>
@@ -417,6 +462,32 @@ export default function VendorDashboard() {
                             OK
                           </button>
                         </div>
+                      </td>
+                      <td>
+                        {isFlashActive ? (
+                          <div className="stock-adjust">
+                            <span className="badge badge-low">
+                              Jusqu'au {new Date(p.flash_sale_ends_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                            <button className="btn btn-ghost" onClick={() => handleDeactivateFlashSale(p.id)}>
+                              Arrêter
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="stock-adjust">
+                            <input
+                              type="datetime-local"
+                              value={flashSaleInputs[p.id] || ""}
+                              onChange={(e) =>
+                                setFlashSaleInputs((f) => ({ ...f, [p.id]: e.target.value }))
+                              }
+                              style={{ width: 160 }}
+                            />
+                            <button className="btn btn-primary" onClick={() => handleActivateFlashSale(p.id)}>
+                              Activer
+                            </button>
+                          </div>
+                        )}
                       </td>
                       <td>
                         <span className={`badge ${isLow ? "badge-low" : "badge-ok"}`}>

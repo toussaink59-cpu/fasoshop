@@ -7,6 +7,7 @@ import BannerCarousel from "@/app/components/BannerCarousel";
 import CategoryMegaMenu from "@/app/components/CategoryMegaMenu";
 import WhyFasoShop from "@/app/components/WhyFasoShop";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
+import FlashSaleSection from "@/app/components/FlashSaleSection";
 
 export default function HomePage() {
   const [count, setCount] = useState(0);
@@ -67,21 +68,9 @@ export default function HomePage() {
         <div className="trust-item"><span className="trust-icon">↩️</span> Support client réactif</div>
       </div>
 
-      <WhyFasoShop />
+      <FlashSaleSection />
 
-      <div className="home-section" style={{ marginTop: 40 }}>
-        <div className="section-head">
-          <h2>Catégories</h2>
-        </div>
-        <div className="category-grid">
-          {categories.map((c) => (
-            <Link key={c.slug} href={`/shop?category=${c.slug}`} className="category-tile">
-              <span className="tile-emoji">{c.emoji}</span>
-              <span className="tile-label">{c.name}</span>
-            </Link>
-          ))}
-        </div>
-      </div>
+      <WhyFasoShop />
 
       <div className="home-section">
         <div className="section-head">

@@ -1269,3 +1269,205 @@ tbody tr:hover {
   color: var(--gold-600);
   font-weight: 600;
 }
+/* ============================================
+   Section Ventes Flash (compte à rebours + barre de stock)
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.flash-section {
+  max-width: 1080px;
+  margin: 0 auto 48px;
+  padding: 0 28px;
+}
+
+.flash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--bissap-600) 0%, var(--ink-900) 100%);
+  padding: 14px 22px;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.flash-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flash-title h2 {
+  color: var(--sand-50);
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.flash-lightning {
+  font-size: 1.3rem;
+}
+
+.flash-timer {
+  color: var(--sand-50);
+  font-size: 0.85rem;
+}
+
+.flash-timer strong {
+  font-family: var(--font-mono);
+  background: rgba(252, 250, 246, 0.15);
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-left: 6px;
+}
+
+.flash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  overflow: hidden;
+}
+
+.flash-card {
+  position: relative;
+  background: white;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ink-900);
+}
+
+.flash-stock-bar {
+  margin-top: 6px;
+}
+
+.flash-stock-track {
+  height: 6px;
+  border-radius: 4px;
+  background: var(--sand-100);
+  overflow: hidden;
+}
+
+.flash-stock-fill {
+  height: 100%;
+  background: var(--bissap-600);
+  border-radius: 4px;
+}
+
+.flash-stock-label {
+  font-size: 0.72rem;
+  color: var(--ink-400);
+  margin-top: 3px;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .flash-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+/* ============================================
+   Section Ventes Flash (compte à rebours + barre de stock)
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.flash-section {
+  max-width: 1080px;
+  margin: 0 auto 48px;
+  padding: 0 28px;
+}
+
+.flash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  background: linear-gradient(135deg, var(--bissap-600) 0%, var(--ink-900) 100%);
+  padding: 14px 22px;
+  border-radius: var(--radius) var(--radius) 0 0;
+}
+
+.flash-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flash-title h2 {
+  color: var(--sand-50);
+  font-size: 1.2rem;
+  margin: 0;
+}
+
+.flash-lightning {
+  font-size: 1.3rem;
+}
+
+.flash-timer {
+  color: var(--sand-50);
+  font-size: 0.85rem;
+}
+
+.flash-timer strong {
+  font-family: var(--font-mono);
+  background: rgba(252, 250, 246, 0.15);
+  padding: 4px 10px;
+  border-radius: 6px;
+  margin-left: 6px;
+}
+
+.flash-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  overflow: hidden;
+}
+
+.flash-card {
+  position: relative;
+  background: white;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--ink-900);
+}
+
+.flash-stock-bar {
+  margin-top: 6px;
+}
+
+.flash-stock-track {
+  height: 6px;
+  border-radius: 4px;
+  background: var(--sand-100);
+  overflow: hidden;
+}
+
+.flash-stock-fill {
+  height: 100%;
+  background: var(--bissap-600);
+  border-radius: 4px;
+}
+
+.flash-stock-label {
+  font-size: 0.72rem;
+  color: var(--ink-400);
+  margin-top: 3px;
+  display: block;
+}
+
+@media (max-width: 640px) {
+  .flash-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

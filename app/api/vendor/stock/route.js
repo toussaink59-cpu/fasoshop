@@ -5,7 +5,8 @@ export async function GET(request) {
   const userId = request.headers.get("x-user-id");
 
   const products = await sql`
-    SELECT p.id, p.name, p.sku, p.price, p.stock_quantity, p.low_stock_threshold,
+    SELECT p.id, p.name, p.sku, p.price, p.compare_at_price, p.stock_quantity, p.low_stock_threshold,
+           p.flash_sale_ends_at, p.flash_sale_stock_snapshot,
            p.status, p.updated_at, s.name AS shop_name,
            c.name AS category_name, c.id AS category_id
     FROM products p
@@ -19,17 +20,24 @@ export async function GET(request) {
 }
 
 // POST /api/vendor/stock
-// body: { name, description?, price, sku?, stockQuantity, lowStockThreshold?, categoryId? }
+// body: { name, description?, price, compareAtPrice?, sku?, stockQuantity, lowStockThreshold?, categoryId? }
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
 
   try {
     const body = await request.json();
-    const { name, description, price, sku, stockQuantity, lowStockThreshold, categoryId } = body;
+    const { name, description, price, compareAtPrice, sku, stockQuantity, lowStockThreshold, categoryId } = body;
 
     if (!name || price === undefined) {
       return Response.json(
         { error: "Le nom et le prix du produit sont requis." },
+        { status: 400 }
+      );
+    }
+
+    if (compareAtPrice && Number(compareAtPrice) <= Number(price)) {
+      return Response.json(
+        { error: "Le prix barré doit être supérieur au prix de vente." },
         { status: 400 }
       );
     }
@@ -47,9 +55,9 @@ export async function POST(request) {
     const initialStock = Number(stockQuantity) || 0;
 
     const [product] = await sql`
-      INSERT INTO products (shop_id, name, description, price, sku, stock_quantity, low_stock_threshold, category_id)
-      VALUES (${shop.id}, ${name}, ${description || null}, ${price}, ${sku || null}, ${initialStock}, ${lowStockThreshold || 5}, ${categoryId || null})
-      RETURNING id, name, price, stock_quantity
+      INSERT INTO products (shop_id, name, description, price, compare_at_price, sku, stock_quantity, low_stock_threshold, category_id)
+      VALUES (${shop.id}, ${name}, ${description || null}, ${price}, ${compareAtPrice || null}, ${sku || null}, ${initialStock}, ${lowStockThreshold || 5}, ${categoryId || null})
+      RETURNING id, name, price, compare_at_price, stock_quantity
     `;
 
     if (initialStock > 0) {
