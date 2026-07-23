@@ -13,7 +13,7 @@ export async function GET(request) {
     // Si c'est une catégorie parente, on inclut aussi ses sous-catégories.
     // Si c'est déjà une sous-catégorie, on ne prend que celle-ci.
     products = await sql`
-      SELECT p.id, p.name, p.description, p.price, p.compare_at_price, p.stock_quantity, s.name AS shop_name,
+      SELECT p.id, p.name, p.description, p.price, p.compare_at_price, p.stock_quantity, p.images, s.name AS shop_name,
              c.name AS category_name, c.slug AS category_slug
       FROM products p
       JOIN shops s ON s.id = p.shop_id
@@ -28,8 +28,8 @@ export async function GET(request) {
     `;
   } else {
     products = await sql`
-      SELECT p.id, p.name, p.description, p.price, p.compare_at_price, p.stock_quantity, s.name AS shop_name,
-             c.name AS category_name, c.slug AS category_slug
+      SELECT p.id, p.name, p.description, p.price, p.compare_at_price, p.stock_quantity, p.images, s.name AS shop_name,
+                   c.name AS category_name, c.slug AS category_slug
       FROM products p
       JOIN shops s ON s.id = p.shop_id
       LEFT JOIN categories c ON c.id = p.category_id
@@ -37,6 +37,9 @@ export async function GET(request) {
       ORDER BY p.created_at DESC
     `;
   }
-
+products = products.map((p) => ({
+    ...p,
+    images: typeof p.images === "string" ? JSON.parse(p.images) : p.images,
+  }));
   return Response.json({ products });
 }

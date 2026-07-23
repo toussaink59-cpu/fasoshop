@@ -26,8 +26,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { name, description, price, compareAtPrice, sku, stockQuantity, lowStockThreshold, categoryId } = body;
-
+    const { name, description, price, compareAtPrice, sku, stockQuantity, lowStockThreshold, categoryId, images } = body;
     if (!name || price === undefined) {
       return Response.json(
         { error: "Le nom et le prix du produit sont requis." },
@@ -55,9 +54,9 @@ export async function POST(request) {
     const initialStock = Number(stockQuantity) || 0;
 
     const [product] = await sql`
-      INSERT INTO products (shop_id, name, description, price, compare_at_price, sku, stock_quantity, low_stock_threshold, category_id)
-      VALUES (${shop.id}, ${name}, ${description || null}, ${price}, ${compareAtPrice || null}, ${sku || null}, ${initialStock}, ${lowStockThreshold || 5}, ${categoryId || null})
-      RETURNING id, name, price, compare_at_price, stock_quantity
+      INSERT INTO products (shop_id, name, description, price, compare_at_price, sku, stock_quantity, low_stock_threshold, category_id, images)
+      VALUES (${shop.id}, ${name}, ${description || null}, ${price}, ${compareAtPrice || null}, ${sku || null}, ${initialStock}, ${lowStockThreshold || 5}, ${categoryId || null}, ${JSON.stringify(images || [])})
+      RETURNING id, name, price, stock_quantity, images
     `;
 
     if (initialStock > 0) {

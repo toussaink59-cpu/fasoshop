@@ -30,6 +30,9 @@ export default function VendorDashboard() {
   });
   const [categories, setCategories] = useState([]);
   const [selectedParentCat, setSelectedParentCat] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [previewUrls, setPreviewUrls] = useState([]);
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -74,10 +77,50 @@ export default function VendorDashboard() {
       });
   }, [loadStock, router]);
 
+  function handleFileSelect(e) {
+    const files = Array.from(e.target.files).slice(0, 5); // 5 photos max, comme Jumia
+    setSelectedFiles(files);
+    setPreviewUrls(files.map((f) => URL.createObjectURL(f)));
+  }
+
+  async function uploadImages() {
+    const urls = [];
+    for (const file of selectedFiles) {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/vendor/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Erreur lors de l'envoi d'une image.");
+      }
+      urls.push(data.url);
+    }
+    return urls;
+  }
+
   async function handleCreateProduct(e) {
     e.preventDefault();
     setError("");
     setSuccess("");
+
+    if (selectedFiles.length === 0) {
+      setError("Ajoutez au moins une photo du produit.");
+      return;
+    }
+
+    setUploading(true);
+    let imageUrls = [];
+    try {
+      imageUrls = await uploadImages();
+    } catch (err) {
+      setError(err.message || "Erreur lors de l'envoi des photos.");
+      setUploading(false);
+      return;
+    }
+    setUploading(false);
 
     const res = await fetch("/api/vendor/stock", {
       method: "POST",
@@ -89,6 +132,7 @@ export default function VendorDashboard() {
         compareAtPrice: newProduct.compareAtPrice ? Number(newProduct.compareAtPrice) : undefined,
         stockQuantity: Number(newProduct.stockQuantity) || 0,
         categoryId: newProduct.categoryId || undefined,
+        images: imageUrls,
       }),
     });
     const data = await res.json();
@@ -101,6 +145,8 @@ export default function VendorDashboard() {
     setSuccess(`Produit "${data.product.name}" ajouté avec ${data.product.stock_quantity} en stock.`);
     setNewProduct({ name: "", sku: "", price: "", compareAtPrice: "", stockQuantity: "", categoryId: "" });
     setSelectedParentCat("");
+    setSelectedFiles([]);
+    setPreviewUrls([]);
     setShowForm(false);
     loadStock();
   }
@@ -404,7 +450,35 @@ export default function VendorDashboard() {
                   </select>
                 </div>
               </div>
-              <button type="submit" className="btn btn-primary">Enregistrer le produit</button>
+
+              <div className="form-row">
+                <div>
+                  <label htmlFor="p-images">Photos du produit (jusqu'à 5)</label>
+                  <input
+                    id="p-images"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    multiple
+                    onChange={handleFileSelect}
+                  />
+                  {previewUrls.length > 0 && (
+                    <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                      {previewUrls.map((url, idx) => (
+                        <img
+                          key={idx}
+                          src={url}
+                          alt={`Aperçu ${idx + 1}`}
+                          style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 6, border: "1px solid var(--sand-200)" }}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <button type="submit" className="btn btn-primary" disabled={uploading}>
+                {uploading ? "Envoi des photos..." : "Enregistrer le produit"}
+              </button>
             </form>
           )}
         </div>

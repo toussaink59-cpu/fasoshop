@@ -85,6 +85,17 @@ function ShopContent() {
                   <span className="badge-discount">-{discountPercent(p)}%</span>
                 )}
                 <Link href={`/shop/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+                  {p.images && p.images.length > 0 ? (
+                    <img
+                      src={p.images[0]}
+                      alt={p.name}
+                      style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", borderRadius: 6, marginBottom: 8 }}
+                    />
+                  ) : (
+                    <div style={{ width: "100%", aspectRatio: "1 / 1", background: "var(--sand-100)", borderRadius: 6, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>
+                      🛍️
+                    </div>
+                  )}
                   <div className="name">{p.name}</div>
                 </Link>
                 <div className="shop">{p.shop_name}</div>
