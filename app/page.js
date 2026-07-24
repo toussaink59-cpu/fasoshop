@@ -88,9 +88,20 @@ export default function HomePage() {
         ) : (
           <div className="product-grid">
             {featured.map((p) => (
-              <Link href="/shop" key={p.id} className="product-card" style={{ textDecoration: "none" }}>
+              <Link href={`/shop/${p.id}`} key={p.id} className="product-card" style={{ textDecoration: "none" }}>
                 {hasDiscount(p) && (
                   <span className="badge-discount">-{discountPercent(p)}%</span>
+                )}
+                {p.images && p.images.length > 0 ? (
+                  <img
+                    src={p.images[0]}
+                    alt={p.name}
+                    style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", borderRadius: 6, marginBottom: 8 }}
+                  />
+                ) : (
+                  <div style={{ width: "100%", aspectRatio: "1 / 1", background: "var(--sand-100)", borderRadius: 6, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>
+                    🛍️
+                  </div>
                 )}
                 <div className="name">{p.name}</div>
                 <div className="shop">{p.shop_name}</div>
