@@ -1,28 +1,44 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { addToCart, getCart, cartCount } from "@/lib/cart";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
 
 function ShopContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const categorySlug = searchParams.get("category");
 
   const [products, setProducts] = useState([]);
+  const [shops, setShops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [count, setCount] = useState(0);
   const [justAdded, setJustAdded] = useState(null);
   const [categoryLabel, setCategoryLabel] = useState(null);
 
+  const [searchInput, setSearchInput] = useState(searchParams.get("q") || "");
+  const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
+  const [maxPrice, setMaxPrice] = useState(searchParams.get("maxPrice") || "");
+  const [shopId, setShopId] = useState(searchParams.get("shopId") || "");
+
+  useEffect(() => {
+    fetch("/api/shops")
+      .then((r) => r.json())
+      .then((d) => setShops(d.shops || []));
+  }, []);
+
   useEffect(() => {
     setLoading(true);
-    const url = categorySlug
-      ? `/api/products?category=${encodeURIComponent(categorySlug)}`
-      : "/api/products";
+    const params = new URLSearchParams();
+    if (categorySlug) params.set("category", categorySlug);
+    if (searchParams.get("q")) params.set("q", searchParams.get("q"));
+    if (searchParams.get("minPrice")) params.set("minPrice", searchParams.get("minPrice"));
+    if (searchParams.get("maxPrice")) params.set("maxPrice", searchParams.get("maxPrice"));
+    if (searchParams.get("shopId")) params.set("shopId", searchParams.get("shopId"));
 
-    fetch(url)
+    fetch(`/api/products?${params.toString()}`)
       .then((r) => r.json())
       .then((data) => {
         setProducts(data.products || []);
@@ -34,7 +50,29 @@ function ShopContent() {
         }
       });
     setCount(cartCount(getCart()));
-  }, [categorySlug]);
+  }, [searchParams, categorySlug]);
+
+  function applyFilters(overrides = {}) {
+    const params = new URLSearchParams();
+    if (categorySlug) params.set("category", categorySlug);
+
+    const q = overrides.q !== undefined ? overrides.q : searchInput;
+    const min = overrides.minPrice !== undefined ? overrides.minPrice : minPrice;
+    const max = overrides.maxPrice !== undefined ? overrides.maxPrice : maxPrice;
+    const sid = overrides.shopId !== undefined ? overrides.shopId : shopId;
+
+    if (q) params.set("q", q);
+    if (min) params.set("minPrice", min);
+    if (max) params.set("maxPrice", max);
+    if (sid) params.set("shopId", sid);
+
+    router.push(`/shop?${params.toString()}`);
+  }
+
+  function handleSearchSubmit(e) {
+    e.preventDefault();
+    applyFilters({ q: searchInput });
+  }
 
   function handleAdd(product) {
     addToCart(product);
@@ -70,12 +108,71 @@ function ShopContent() {
           )}
         </div>
 
+        <div className="panel">
+          <form onSubmit={handleSearchSubmit} className="form-row" style={{ alignItems: "flex-end" }}>
+            <div style={{ flex: 2 }}>
+              <label htmlFor="search-q">Rechercher</label>
+              <input
+                id="search-q"
+                type="text"
+                placeholder="Nom du produit..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="min-price">Prix min (FCFA)</label>
+              <input
+                id="min-price"
+                type="number"
+                min="0"
+                placeholder="0"
+                value={minPrice}
+                onChange={(e) => setMinPrice(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="max-price">Prix max (FCFA)</label>
+              <input
+                id="max-price"
+                type="number"
+                min="0"
+                placeholder="Aucun"
+                value={maxPrice}
+                onChange={(e) => setMaxPrice(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="shop-filter">Boutique</label>
+              <select
+                id="shop-filter"
+                value={shopId}
+                onChange={(e) => setShopId(e.target.value)}
+              >
+                <option value="">Toutes les boutiques</option>
+                {shops.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <button
+                type="submit"
+                className="btn btn-primary"
+                onClick={() => applyFilters({ q: searchInput, minPrice, maxPrice, shopId })}
+              >
+                Filtrer
+              </button>
+            </div>
+          </form>
+        </div>
+
         {loading ? (
           <p>Chargement...</p>
         ) : products.length === 0 ? (
           <div className="empty-state">
             <div className="glyph">🛍️</div>
-            <p>Aucun produit disponible dans cette catégorie pour l'instant.</p>
+            <p>Aucun produit ne correspond à votre recherche.</p>
           </div>
         ) : (
           <div className="product-grid">

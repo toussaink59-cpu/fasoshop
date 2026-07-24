@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getCart, cartCount } from "@/lib/cart";
 import BannerCarousel from "@/app/components/BannerCarousel";
@@ -10,6 +11,7 @@ import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/Pri
 import FlashSaleSection from "@/app/components/FlashSaleSection";
 
 export default function HomePage() {
+  const router = useRouter();
   const [count, setCount] = useState(0);
   const [featured, setFeatured] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -35,9 +37,16 @@ export default function HomePage() {
           🛒 FasoShop
         </Link>
 
-        <div className="search-bar">
-          <input type="text" placeholder="Rechercher un produit, une boutique..." />
-        </div>
+        <form
+          className="search-bar"
+          onSubmit={(e) => {
+            e.preventDefault();
+            const q = e.target.elements.q.value;
+            router.push(q ? `/shop?q=${encodeURIComponent(q)}` : "/shop");
+          }}
+        >
+          <input type="text" name="q" placeholder="Rechercher un produit, une boutique..." />
+        </form>
 
         <div className="topbar-actions">
           <Link href="/login"><button>Compte</button></Link>
