@@ -1,8 +1,11 @@
 import sql from "@/lib/db";
 
+const COMMISSION_RATE = 0.10; // 10 %, comme fixé dans le cahier des charges
+
 // POST /api/orders
 // Crée une commande + décrémente le stock de chaque produit, dans une transaction
 // pour éviter la survente si deux acheteurs commandent en même temps.
+// Enregistre aussi la commission due par boutique dans shop_commission_ledger.
 // body: { items: [{ productId, quantity }], shippingAddress, phone }
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
@@ -39,7 +42,7 @@ export async function POST(request) {
         // FOR UPDATE verrouille la ligne le temps de la transaction,
         // empêchant deux commandes simultanées de survendre le même produit.
         const [product] = await tx`
-          SELECT id, name, price, stock_quantity
+          SELECT id, name, price, stock_quantity, shop_id
           FROM products
           WHERE id = ${item.productId}
           FOR UPDATE
@@ -64,6 +67,9 @@ export async function POST(request) {
         RETURNING id, status, total, payment_method, created_at
       `;
 
+      // Sous-total par boutique, pour calculer la commission de chacune
+      const subtotalsByShop = {};
+
       for (const { product, quantity } of resolvedItems) {
         await tx`
           INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase)
@@ -79,6 +85,18 @@ export async function POST(request) {
         await tx`
           INSERT INTO stock_movements (product_id, type, quantity, reason, created_by)
           VALUES (${product.id}, 'sale', ${-quantity}, ${"Vente - commande #" + newOrder.id}, ${userId})
+        `;
+
+        const lineTotal = Number(product.price) * quantity;
+        subtotalsByShop[product.shop_id] = (subtotalsByShop[product.shop_id] || 0) + lineTotal;
+      }
+
+      // Une ligne de commission par boutique impliquée dans la commande
+      for (const [shopId, subtotal] of Object.entries(subtotalsByShop)) {
+        const commissionAmount = Math.round(subtotal * COMMISSION_RATE);
+        await tx`
+          INSERT INTO shop_commission_ledger (shop_id, order_id, commission_amount, gross_amount, status)
+          VALUES (${shopId}, ${newOrder.id}, ${commissionAmount}, ${subtotal}, 'due')
         `;
       }
 

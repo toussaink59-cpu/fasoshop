@@ -19,6 +19,7 @@ export default function VendorDashboard() {
   const [mmOperator, setMmOperator] = useState("orange_money");
   const [mmSaved, setMmSaved] = useState(false);
   const [mmError, setMmError] = useState("");
+  const [revenue, setRevenue] = useState(null);
 
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -54,6 +55,14 @@ export default function VendorDashboard() {
     setLoading(false);
   }, [router]);
 
+  const loadRevenue = useCallback(async () => {
+    const res = await fetch("/api/vendor/revenue");
+    if (res.ok) {
+      const data = await res.json();
+      setRevenue(data.revenue || null);
+    }
+  }, []);
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
@@ -64,6 +73,7 @@ export default function VendorDashboard() {
         }
         setUser(data.user);
         loadStock();
+        loadRevenue();
 
         fetch("/api/vendor/shop")
           .then((r) => r.json())
@@ -75,7 +85,7 @@ export default function VendorDashboard() {
             }
           });
       });
-  }, [loadStock, router]);
+  }, [loadStock, loadRevenue, router]);
 
   function handleFileSelect(e) {
     const files = Array.from(e.target.files).slice(0, 5); // 5 photos max, comme Jumia
@@ -294,6 +304,38 @@ export default function VendorDashboard() {
 
         {error && <div className="error-box">{error}</div>}
         {success && <div className="success-box">{success}</div>}
+
+        <div className="panel">
+          <h2>Revenus</h2>
+          <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
+            Une commission de 10% est prélevée par FasoShop sur chaque vente confirmée.
+          </p>
+
+          {!revenue ? (
+            <p>Chargement...</p>
+          ) : (
+            <div className="stat-row">
+              <div className="stat-card">
+                <div className="label">Ventes brutes</div>
+                <div className="value">{Number(revenue.grossSales).toLocaleString("fr-FR")} FCFA</div>
+              </div>
+              <div className="stat-card">
+                <div className="label">Commission FasoShop</div>
+                <div className="value">{Number(revenue.totalCommission).toLocaleString("fr-FR")} FCFA</div>
+              </div>
+              <div className="stat-card">
+                <div className="label">Solde à recevoir</div>
+                <div className="value" style={{ color: "var(--bissap-600)" }}>
+                  {Number(revenue.netAmountDue).toLocaleString("fr-FR")} FCFA
+                </div>
+              </div>
+              <div className="stat-card">
+                <div className="label">Déjà versé</div>
+                <div className="value">{Number(revenue.netAmountSettled).toLocaleString("fr-FR")} FCFA</div>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="panel">
           <h2>Reversements — Mobile Money</h2>
