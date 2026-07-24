@@ -11,6 +11,8 @@ export default function AdminDashboard() {
   const [selectedShop, setSelectedShop] = useState("");
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [updatingShopId, setUpdatingShopId] = useState(null);
 
   const loadData = useCallback(async (shopId, lowOnly) => {
     const params = new URLSearchParams();
@@ -54,6 +56,27 @@ export default function AdminDashboard() {
     loadData(shopId, lowOnly);
   }
 
+  async function handleShopStatusChange(shopId, newStatus) {
+    setError("");
+    setUpdatingShopId(shopId);
+
+    const res = await fetch(`/api/admin/shops/${shopId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: newStatus }),
+    });
+    const data = await res.json();
+
+    setUpdatingShopId(null);
+
+    if (!res.ok) {
+      setError(data.error || "Erreur lors de la mise à jour du statut.");
+      return;
+    }
+
+    loadData(selectedShop, lowStockOnly);
+  }
+
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -79,6 +102,8 @@ export default function AdminDashboard() {
           <h1>Stock — toutes les boutiques</h1>
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
+
+        {error && <div className="error-box">{error}</div>}
 
         <div className="stat-row">
           <div className="stat-card">
@@ -111,6 +136,7 @@ export default function AdminDashboard() {
                 <th>Produits</th>
                 <th>Stock total</th>
                 <th>Statut</th>
+                <th>Action</th>
               </tr>
             </thead>
             <tbody>
@@ -126,8 +152,30 @@ export default function AdminDashboard() {
                   <td>{s.total_stock}</td>
                   <td>
                     <span className={`badge ${s.status === "active" ? "badge-ok" : "badge-low"}`}>
-                      {s.status}
+                      {s.status === "active" ? "Active" : s.status === "pending" ? "En attente" : "Suspendue"}
                     </span>
+                  </td>
+                  <td>
+                    <div className="stock-adjust">
+                      {s.status !== "active" && (
+                        <button
+                          className="btn btn-primary"
+                          disabled={updatingShopId === s.id}
+                          onClick={() => handleShopStatusChange(s.id, "active")}
+                        >
+                          {updatingShopId === s.id ? "..." : "Valider"}
+                        </button>
+                      )}
+                      {s.status !== "suspended" && (
+                        <button
+                          className="btn btn-ghost"
+                          disabled={updatingShopId === s.id}
+                          onClick={() => handleShopStatusChange(s.id, "suspended")}
+                        >
+                          {updatingShopId === s.id ? "..." : "Suspendre"}
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
