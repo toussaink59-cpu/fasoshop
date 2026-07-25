@@ -1,24 +1,29 @@
 // Middleware Edge — protège les routes /api/vendor/* et /api/admin/*
 // Vérifie le token JWT présent dans le cookie httpOnly et injecte
 // l'utilisateur (id, role) dans les headers pour les API routes.
-
+// /api/products/* est public (catalogue) mais reçoit quand même les infos
+// utilisateur si connecté (nécessaire pour laisser un avis, par exemple).
 import { NextResponse } from "next/server";
 import { verifyToken, AUTH_COOKIE_NAME } from "./lib/auth";
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
-
   const isVendorRoute = pathname.startsWith("/api/vendor");
   const isAdminRoute = pathname.startsWith("/api/admin");
   const isOrdersRoute = pathname.startsWith("/api/orders");
+  const isProductsRoute = pathname.startsWith("/api/products");
 
-  if (!isVendorRoute && !isAdminRoute && !isOrdersRoute) {
+  if (!isVendorRoute && !isAdminRoute && !isOrdersRoute && !isProductsRoute) {
     return NextResponse.next();
   }
 
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
   if (!token) {
+    if (isProductsRoute) {
+      // Catalogue public : on laisse passer sans utilisateur attaché
+      return NextResponse.next();
+    }
     return NextResponse.json(
       { error: "Non authentifié. Veuillez vous connecter." },
       { status: 401 }
@@ -28,6 +33,9 @@ export async function middleware(request) {
   const payload = await verifyToken(token);
 
   if (!payload) {
+    if (isProductsRoute) {
+      return NextResponse.next();
+    }
     return NextResponse.json(
       { error: "Session invalide ou expirée." },
       { status: 401 }
@@ -49,8 +57,7 @@ export async function middleware(request) {
   }
 
   // isOrdersRoute : tout utilisateur connecté peut passer commande (buyer, vendor, admin)
-
-  // On transmet l'utilisateur authentifié aux API routes via un header
+  // isProductsRoute : public, mais on attache quand même l'utilisateur s'il est connecté
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-user-id", String(payload.userId));
   requestHeaders.set("x-user-role", String(payload.role));
@@ -61,5 +68,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/api/vendor/:path*", "/api/admin/:path*", "/api/orders/:path*"],
+  matcher: ["/api/vendor/:path*", "/api/admin/:path*", "/api/orders/:path*", "/api/products/:path*"],
 };

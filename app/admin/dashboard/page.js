@@ -8,11 +8,13 @@ export default function AdminDashboard() {
   const [user, setUser] = useState(null);
   const [shops, setShops] = useState([]);
   const [products, setProducts] = useState([]);
+  const [reviews, setReviews] = useState([]);
   const [selectedShop, setSelectedShop] = useState("");
   const [lowStockOnly, setLowStockOnly] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [updatingShopId, setUpdatingShopId] = useState(null);
+  const [deletingReviewId, setDeletingReviewId] = useState(null);
 
   const loadData = useCallback(async (shopId, lowOnly) => {
     const params = new URLSearchParams();
@@ -36,6 +38,14 @@ export default function AdminDashboard() {
     setLoading(false);
   }, [router]);
 
+  const loadReviews = useCallback(async () => {
+    const res = await fetch("/api/admin/reviews");
+    if (res.ok) {
+      const data = await res.json();
+      setReviews(data.reviews || []);
+    }
+  }, []);
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
@@ -46,8 +56,9 @@ export default function AdminDashboard() {
         }
         setUser(data.user);
         loadData("", false);
+        loadReviews();
       });
-  }, [loadData, router]);
+  }, [loadData, loadReviews, router]);
 
   function applyFilters(shopId, lowOnly) {
     setSelectedShop(shopId);
@@ -75,6 +86,27 @@ export default function AdminDashboard() {
     }
 
     loadData(selectedShop, lowStockOnly);
+  }
+
+  async function handleDeleteReview(reviewId) {
+    if (!window.confirm("Supprimer définitivement cet avis ?")) return;
+
+    setError("");
+    setDeletingReviewId(reviewId);
+
+    const res = await fetch(`/api/admin/reviews/${reviewId}`, {
+      method: "DELETE",
+    });
+
+    setDeletingReviewId(null);
+
+    if (!res.ok) {
+      const data = await res.json();
+      setError(data.error || "Erreur lors de la suppression de l'avis.");
+      return;
+    }
+
+    setReviews((r) => r.filter((rev) => rev.id !== reviewId));
   }
 
   async function handleLogout() {
@@ -181,6 +213,52 @@ export default function AdminDashboard() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="panel">
+          <h2>Avis clients</h2>
+          <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
+            Modérez les avis abusifs, faux ou inappropriés.
+          </p>
+
+          {reviews.length === 0 ? (
+            <p style={{ color: "var(--ink-400)" }}>Aucun avis pour l'instant.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>Boutique</th>
+                  <th>Auteur</th>
+                  <th>Note</th>
+                  <th>Commentaire</th>
+                  <th>Date</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {reviews.map((r) => (
+                  <tr key={r.id}>
+                    <td>{r.product_name}</td>
+                    <td>{r.shop_name}</td>
+                    <td>{r.buyer_name}</td>
+                    <td>{"⭐".repeat(r.rating)}</td>
+                    <td style={{ maxWidth: 260 }}>{r.comment || "—"}</td>
+                    <td>{new Date(r.created_at).toLocaleDateString("fr-FR")}</td>
+                    <td>
+                      <button
+                        className="btn btn-danger"
+                        disabled={deletingReviewId === r.id}
+                        onClick={() => handleDeleteReview(r.id)}
+                      >
+                        {deletingReviewId === r.id ? "..." : "Supprimer"}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <div className="panel">
