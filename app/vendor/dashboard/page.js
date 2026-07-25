@@ -20,6 +20,7 @@ export default function VendorDashboard() {
   const [mmSaved, setMmSaved] = useState(false);
   const [mmError, setMmError] = useState("");
   const [revenue, setRevenue] = useState(null);
+  const [lowStockAlertDismissed, setLowStockAlertDismissed] = useState(false);
 
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -279,7 +280,8 @@ export default function VendorDashboard() {
   }
 
   const totalStock = products.reduce((sum, p) => sum + p.stock_quantity, 0);
-  const lowStockCount = products.filter((p) => p.stock_quantity <= p.low_stock_threshold).length;
+  const lowStockProducts = products.filter((p) => p.stock_quantity <= p.low_stock_threshold);
+  const lowStockCount = lowStockProducts.length;
 
   return (
     <div className="shell">
@@ -301,6 +303,22 @@ export default function VendorDashboard() {
           <h1>Mon stock</h1>
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
+
+        {!loading && lowStockCount > 0 && !lowStockAlertDismissed && (
+          <div className="error-box" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+            <div>
+              <strong>⚠️ Stock faible sur {lowStockCount} produit{lowStockCount > 1 ? "s" : ""} :</strong>
+              <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+                {lowStockProducts.map((p) => (
+                  <li key={p.id}>{p.name} — {p.stock_quantity} restant{p.stock_quantity > 1 ? "s" : ""}</li>
+                ))}
+              </ul>
+            </div>
+            <button className="btn btn-ghost" onClick={() => setLowStockAlertDismissed(true)}>
+              Fermer
+            </button>
+          </div>
+        )}
 
         {error && <div className="error-box">{error}</div>}
         {success && <div className="success-box">{success}</div>}
