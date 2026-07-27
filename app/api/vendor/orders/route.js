@@ -2,18 +2,20 @@ import sql from "@/lib/db";
 
 // GET /api/vendor/orders
 // Liste les lignes de commande concernant les produits du vendeur connecté,
-// avec les infos de livraison pour qu'il puisse préparer l'envoi.
+// avec les infos de livraison de SA sous-commande (indépendante des autres boutiques).
 export async function GET(request) {
   const userId = request.headers.get("x-user-id");
 
   const items = await sql`
     SELECT oi.id AS item_id, oi.quantity, oi.price_at_purchase,
            p.name AS product_name,
-           o.id AS order_id, o.status, o.shipping_address, o.phone, o.payment_method, o.created_at
+           o.id AS order_id, o.shipping_address, o.phone, o.payment_method, o.created_at,
+           COALESCE(l.delivery_status, 'preparation') AS delivery_status
     FROM order_items oi
     JOIN products p ON p.id = oi.product_id
     JOIN shops s ON s.id = p.shop_id
     JOIN orders o ON o.id = oi.order_id
+    LEFT JOIN shop_commission_ledger l ON l.order_id = o.id AND l.shop_id = s.id
     WHERE s.vendor_id = ${userId}
     ORDER BY o.created_at DESC
   `;

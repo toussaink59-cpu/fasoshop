@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 
 const STATUS_LABELS = {
-  pending: "En attente",
-  paid: "Payée",
+  preparation: "En préparation",
   shipped: "Expédiée",
   delivered: "Livrée",
   cancelled: "Annulée",
@@ -59,7 +58,7 @@ export default function VendorOrdersPage() {
       <div className="content">
         <div className="page-header">
           <h1>Commandes reçues</h1>
-          <p>Les commandes contenant vos produits, toutes boutiques confondues étant exclues.</p>
+          <p>Les commandes contenant vos produits. Le statut affiché concerne uniquement votre boutique — les autres vendeurs éventuellement présents dans la même commande gèrent leur propre statut indépendamment.</p>
         </div>
 
         {error && <div className="error-box">{error}</div>}
@@ -81,7 +80,7 @@ export default function VendorOrdersPage() {
                   <th>Qté</th>
                   <th>Livraison</th>
                   <th>Paiement</th>
-                  <th>Statut</th>
+                  <th>Statut (votre boutique)</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -97,17 +96,17 @@ export default function VendorOrdersPage() {
                     </td>
                     <td>{it.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 À la livraison"}</td>
                     <td>
-                      <span className={`status-pill status-${it.status}`}>
-                        {STATUS_LABELS[it.status] || it.status}
+                      <span className={`status-pill status-${it.delivery_status}`}>
+                        {STATUS_LABELS[it.delivery_status] || it.delivery_status}
                       </span>
                     </td>
                     <td>
-                      {it.status === "pending" && (
+                      {it.delivery_status === "preparation" && (
                         <button className="btn btn-primary" onClick={() => updateStatus(it.order_id, "shipped")}>
                           Marquer expédiée
                         </button>
                       )}
-                      {it.status === "shipped" && (
+                      {it.delivery_status === "shipped" && (
                         <button className="btn btn-primary" onClick={() => updateStatus(it.order_id, "delivered")}>
                           Marquer livrée
                         </button>
