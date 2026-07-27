@@ -1,6 +1,6 @@
-// Middleware Edge — protège les routes /api/vendor/* et /api/admin/*
-// Vérifie le token JWT présent dans le cookie httpOnly et injecte
-// l'utilisateur (id, role) dans les headers pour les API routes.
+// Middleware Edge — protège les routes /api/vendor/*, /api/admin/*, /api/orders/*
+// et /api/addresses/*. Vérifie le token JWT présent dans le cookie httpOnly et
+// injecte l'utilisateur (id, role) dans les headers pour les API routes.
 // /api/products/* est public (catalogue) mais reçoit quand même les infos
 // utilisateur si connecté (nécessaire pour laisser un avis, par exemple).
 import { NextResponse } from "next/server";
@@ -12,8 +12,9 @@ export async function middleware(request) {
   const isAdminRoute = pathname.startsWith("/api/admin");
   const isOrdersRoute = pathname.startsWith("/api/orders");
   const isProductsRoute = pathname.startsWith("/api/products");
+  const isAddressesRoute = pathname.startsWith("/api/addresses");
 
-  if (!isVendorRoute && !isAdminRoute && !isOrdersRoute && !isProductsRoute) {
+  if (!isVendorRoute && !isAdminRoute && !isOrdersRoute && !isProductsRoute && !isAddressesRoute) {
     return NextResponse.next();
   }
 
@@ -56,7 +57,7 @@ export async function middleware(request) {
     );
   }
 
-  // isOrdersRoute : tout utilisateur connecté peut passer commande (buyer, vendor, admin)
+  // isOrdersRoute, isAddressesRoute : tout utilisateur connecté peut y accéder
   // isProductsRoute : public, mais on attache quand même l'utilisateur s'il est connecté
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-user-id", String(payload.userId));
@@ -68,5 +69,11 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ["/api/vendor/:path*", "/api/admin/:path*", "/api/orders/:path*", "/api/products/:path*"],
+  matcher: [
+    "/api/vendor/:path*",
+    "/api/admin/:path*",
+    "/api/orders/:path*",
+    "/api/products/:path*",
+    "/api/addresses/:path*",
+  ],
 };
