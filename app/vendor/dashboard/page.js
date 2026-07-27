@@ -21,6 +21,8 @@ export default function VendorDashboard() {
   const [mmError, setMmError] = useState("");
   const [revenue, setRevenue] = useState(null);
   const [lowStockAlertDismissed, setLowStockAlertDismissed] = useState(false);
+  const [newOrdersCount, setNewOrdersCount] = useState(0);
+  const [newOrdersAlertDismissed, setNewOrdersAlertDismissed] = useState(false);
 
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -64,6 +66,18 @@ export default function VendorDashboard() {
     }
   }, []);
 
+  const loadNewOrdersCount = useCallback(async () => {
+    const res = await fetch("/api/vendor/orders");
+    if (res.ok) {
+      const data = await res.json();
+      const items = data.items || [];
+      const pendingOrderIds = new Set(
+        items.filter((it) => it.delivery_status === "preparation").map((it) => it.order_id)
+      );
+      setNewOrdersCount(pendingOrderIds.size);
+    }
+  }, []);
+
   useEffect(() => {
     fetch("/api/auth/me")
       .then((r) => r.json())
@@ -75,6 +89,7 @@ export default function VendorDashboard() {
         setUser(data.user);
         loadStock();
         loadRevenue();
+        loadNewOrdersCount();
 
         fetch("/api/vendor/shop")
           .then((r) => r.json())
@@ -86,7 +101,7 @@ export default function VendorDashboard() {
             }
           });
       });
-  }, [loadStock, loadRevenue, router]);
+  }, [loadStock, loadRevenue, loadNewOrdersCount, router]);
 
   function handleFileSelect(e) {
     const files = Array.from(e.target.files).slice(0, 5); // 5 photos max, comme Jumia
@@ -290,8 +305,26 @@ export default function VendorDashboard() {
           🛒 FasoShop <span className="role-tag">Vendeur</span>
         </div>
         <div className="topbar-actions">
-          <a href="/vendor/orders" style={{ marginRight: 10, color: "var(--sand-50)", fontSize: "0.85rem" }}>
+          <a
+            href="/vendor/orders"
+            style={{ marginRight: 10, color: "var(--sand-50)", fontSize: "0.85rem", position: "relative" }}
+          >
             Commandes reçues
+            {newOrdersCount > 0 && (
+              <span
+                style={{
+                  marginLeft: 6,
+                  background: "var(--bissap-600)",
+                  color: "white",
+                  borderRadius: 999,
+                  padding: "1px 7px",
+                  fontSize: "0.75rem",
+                  fontWeight: 700,
+                }}
+              >
+                {newOrdersCount}
+              </span>
+            )}
           </a>
           <button onClick={handleLogout}>Déconnexion</button>
         </div>
@@ -303,6 +336,18 @@ export default function VendorDashboard() {
           <h1>Mon stock</h1>
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
+
+        {!loading && newOrdersCount > 0 && !newOrdersAlertDismissed && (
+          <div className="success-box" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
+            <div>
+              🛍️ <strong>{newOrdersCount} nouvelle{newOrdersCount > 1 ? "s" : ""} commande{newOrdersCount > 1 ? "s" : ""}</strong> en attente de préparation.{" "}
+              <a href="/vendor/orders" style={{ fontWeight: 600 }}>Voir les commandes reçues →</a>
+            </div>
+            <button className="btn btn-ghost" onClick={() => setNewOrdersAlertDismissed(true)}>
+              Fermer
+            </button>
+          </div>
+        )}
 
         {!loading && lowStockCount > 0 && !lowStockAlertDismissed && (
           <div className="error-box" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
