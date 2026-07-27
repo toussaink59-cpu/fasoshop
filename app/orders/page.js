@@ -5,8 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 const STATUS_LABELS = {
-  pending: "En attente",
-  paid: "Payée",
+  preparation: "En préparation",
   shipped: "Expédiée",
   delivered: "Livrée",
   cancelled: "Annulée",
@@ -65,20 +64,41 @@ function OrdersContent() {
             <div className="order-card" key={order.id}>
               <div className="order-head">
                 <strong>Commande #{order.id}</strong>
-                <span className={`status-pill status-${order.status}`}>
-                  {STATUS_LABELS[order.status] || order.status}
+                <span style={{ fontSize: "0.85rem", color: "var(--ink-400)" }}>
+                  {new Date(order.created_at).toLocaleDateString("fr-FR")}
                 </span>
               </div>
-              <div style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginBottom: 8 }}>
-                {new Date(order.created_at).toLocaleDateString("fr-FR")} · Livraison : {order.shipping_address}
+              <div style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginBottom: 12 }}>
+                Livraison : {order.shipping_address}
                 {" · "}{order.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 À la livraison"}
               </div>
-              {order.items.map((item, idx) => (
-                <div key={idx} style={{ fontSize: "0.9rem", display: "flex", justifyContent: "space-between" }}>
-                  <span>{item.quantity} × {item.product_name}</span>
-                  <span>{Number(item.price_at_purchase * item.quantity).toLocaleString("fr-FR")} FCFA</span>
+
+              {/* Une sous-commande par boutique, chacune avec son propre statut de livraison */}
+              {order.subOrders.map((sub) => (
+                <div
+                  key={sub.shopId}
+                  style={{
+                    border: "1px solid var(--sand-200)",
+                    borderRadius: 8,
+                    padding: 12,
+                    marginBottom: 10,
+                  }}
+                >
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                    <strong style={{ fontSize: "0.9rem" }}>{sub.shopName}</strong>
+                    <span className={`status-pill status-${sub.deliveryStatus}`}>
+                      {STATUS_LABELS[sub.deliveryStatus] || sub.deliveryStatus}
+                    </span>
+                  </div>
+                  {sub.items.map((item, idx) => (
+                    <div key={idx} style={{ fontSize: "0.9rem", display: "flex", justifyContent: "space-between" }}>
+                      <span>{item.quantity} × {item.productName}</span>
+                      <span>{Number(item.priceAtPurchase * item.quantity).toLocaleString("fr-FR")} FCFA</span>
+                    </div>
+                  ))}
                 </div>
               ))}
+
               <div style={{ textAlign: "right", fontWeight: 700, marginTop: 8 }}>
                 Total : {Number(order.total).toLocaleString("fr-FR")} FCFA
               </div>

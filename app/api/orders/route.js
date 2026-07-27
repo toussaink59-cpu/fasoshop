@@ -39,8 +39,6 @@ export async function POST(request) {
           throw new Error("Article de commande invalide.");
         }
 
-        // FOR UPDATE verrouille la ligne le temps de la transaction,
-        // empêchant deux commandes simultanées de survendre le même produit.
         const [product] = await tx`
           SELECT id, name, price, stock_quantity, shop_id
           FROM products
@@ -67,7 +65,6 @@ export async function POST(request) {
         RETURNING id, status, total, payment_method, created_at
       `;
 
-      // Sous-total par boutique, pour calculer la commission de chacune
       const subtotalsByShop = {};
 
       for (const { product, quantity } of resolvedItems) {
@@ -91,7 +88,6 @@ export async function POST(request) {
         subtotalsByShop[product.shop_id] = (subtotalsByShop[product.shop_id] || 0) + lineTotal;
       }
 
-      // Une ligne de commission par boutique impliquée dans la commande
       for (const [shopId, subtotal] of Object.entries(subtotalsByShop)) {
         const commissionAmount = Math.round(subtotal * COMMISSION_RATE);
         await tx`
@@ -114,7 +110,8 @@ export async function POST(request) {
 }
 
 // GET /api/orders
-// Historique des commandes de l'acheteur connecté
+// Historique des commandes de l'acheteur connecté, avec le détail par boutique
+// (chaque boutique gère sa propre sous-commande et son propre statut de livraison).
 export async function GET(request) {
   const userId = request.headers.get("x-user-id");
 
@@ -125,14 +122,37 @@ export async function GET(request) {
     ORDER BY created_at DESC
   `;
 
-  // On attache le détail des articles pour chaque commande
   for (const order of orders) {
-    order.items = await sql`
-      SELECT oi.quantity, oi.price_at_purchase, p.name AS product_name
+    const items = await sql`
+      SELECT oi.quantity, oi.price_at_purchase, p.name AS product_name,
+             s.id AS shop_id, s.name AS shop_name,
+             COALESCE(l.delivery_status, 'preparation') AS delivery_status
       FROM order_items oi
       JOIN products p ON p.id = oi.product_id
+      JOIN shops s ON s.id = p.shop_id
+      LEFT JOIN shop_commission_ledger l ON l.order_id = oi.order_id AND l.shop_id = s.id
       WHERE oi.order_id = ${order.id}
     `;
+
+    // Regroupe les articles par boutique, pour afficher une sous-commande par vendeur
+    const shopsMap = {};
+    for (const item of items) {
+      if (!shopsMap[item.shop_id]) {
+        shopsMap[item.shop_id] = {
+          shopId: item.shop_id,
+          shopName: item.shop_name,
+          deliveryStatus: item.delivery_status,
+          items: [],
+        };
+      }
+      shopsMap[item.shop_id].items.push({
+        productName: item.product_name,
+        quantity: item.quantity,
+        priceAtPurchase: item.price_at_purchase,
+      });
+    }
+
+    order.subOrders = Object.values(shopsMap);
   }
 
   return Response.json({ orders });

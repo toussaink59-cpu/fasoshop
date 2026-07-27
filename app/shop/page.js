@@ -88,6 +88,7 @@ function ShopContent() {
           🛒 FasoShop
         </Link>
         <div className="topbar-actions">
+          <Link href="/orders"><button>Mes commandes</button></Link>
           <Link href="/login"><button>Se connecter</button></Link>
         </div>
       </div>
