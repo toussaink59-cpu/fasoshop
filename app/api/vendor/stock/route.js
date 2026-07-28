@@ -21,6 +21,7 @@ export async function GET(request) {
 
 // POST /api/vendor/stock
 // body: { name, description?, price, compareAtPrice?, sku?, stockQuantity, lowStockThreshold?, categoryId? }
+// La boutique doit être vérifiée (status = 'active') pour pouvoir publier des produits.
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
 
@@ -42,12 +43,24 @@ export async function POST(request) {
     }
 
     const [shop] = await sql`
-      SELECT id FROM shops WHERE vendor_id = ${userId} LIMIT 1
+      SELECT id, status FROM shops WHERE vendor_id = ${userId} LIMIT 1
     `;
     if (!shop) {
       return Response.json(
         { error: "Aucune boutique associée à ce compte vendeur." },
         { status: 404 }
+      );
+    }
+
+    if (shop.status !== "active") {
+      const messages = {
+        pending: "Votre boutique est en attente de vérification par notre équipe. Vous pourrez publier des produits une fois validée.",
+        rejected: "Votre demande de compte vendeur n'a pas été validée. Corrigez vos informations depuis votre tableau de bord.",
+        suspended: "Votre boutique est actuellement suspendue. Contactez le support pour plus d'informations.",
+      };
+      return Response.json(
+        { error: messages[shop.status] || "Votre boutique n'est pas encore active." },
+        { status: 403 }
       );
     }
 

@@ -3,6 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
+const DOC_LABELS = { cni: "CNI", passeport: "Passeport", permis: "Permis" };
+const STATUS_LABELS = { active: "Active", pending: "En attente", suspended: "Suspendue", rejected: "Rejetée" };
+
 export default function AdminDashboard() {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -15,6 +18,8 @@ export default function AdminDashboard() {
   const [error, setError] = useState("");
   const [updatingShopId, setUpdatingShopId] = useState(null);
   const [deletingReviewId, setDeletingReviewId] = useState(null);
+  const [rejectingShopId, setRejectingShopId] = useState(null);
+  const [rejectReason, setRejectReason] = useState("");
 
   const loadData = useCallback(async (shopId, lowOnly) => {
     const params = new URLSearchParams();
@@ -67,14 +72,14 @@ export default function AdminDashboard() {
     loadData(shopId, lowOnly);
   }
 
-  async function handleShopStatusChange(shopId, newStatus) {
+  async function handleShopStatusChange(shopId, newStatus, rejectionReason) {
     setError("");
     setUpdatingShopId(shopId);
 
     const res = await fetch(`/api/admin/shops/${shopId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status: newStatus }),
+      body: JSON.stringify({ status: newStatus, rejectionReason }),
     });
     const data = await res.json();
 
@@ -85,7 +90,22 @@ export default function AdminDashboard() {
       return;
     }
 
+    setRejectingShopId(null);
+    setRejectReason("");
     loadData(selectedShop, lowStockOnly);
+  }
+
+  function handleStartReject(shopId) {
+    setRejectingShopId(shopId);
+    setRejectReason("");
+  }
+
+  function handleConfirmReject(shopId) {
+    if (!rejectReason.trim()) {
+      setError("Merci de préciser un motif de rejet.");
+      return;
+    }
+    handleShopStatusChange(shopId, "rejected", rejectReason);
   }
 
   async function handleDeleteReview(reviewId) {
@@ -116,6 +136,7 @@ export default function AdminDashboard() {
 
   const totalStock = products.reduce((sum, p) => sum + p.stock_quantity, 0);
   const lowStockCount = products.filter((p) => p.stock_quantity <= p.low_stock_threshold).length;
+  const pendingShopsCount = shops.filter((s) => s.status === "pending").length;
 
   return (
     <div className="shell">
@@ -143,8 +164,10 @@ export default function AdminDashboard() {
             <div className="value">{shops.length}</div>
           </div>
           <div className="stat-card">
-            <div className="label">Produits affichés</div>
-            <div className="value">{products.length}</div>
+            <div className="label">En attente de vérification</div>
+            <div className="value" style={{ color: pendingShopsCount > 0 ? "var(--gold-600)" : "inherit" }}>
+              {pendingShopsCount}
+            </div>
           </div>
           <div className="stat-card">
             <div className="label">Unités en stock</div>
@@ -160,13 +183,16 @@ export default function AdminDashboard() {
 
         <div className="panel">
           <h2>Boutiques</h2>
+          <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
+            Vérifiez le type et le numéro de pièce d'identité renseignés avant de valider une boutique.
+          </p>
           <table>
             <thead>
               <tr>
                 <th>Boutique</th>
                 <th>Vendeur</th>
+                <th>Pièce d'identité</th>
                 <th>Produits</th>
-                <th>Stock total</th>
                 <th>Statut</th>
                 <th>Action</th>
               </tr>
@@ -179,35 +205,78 @@ export default function AdminDashboard() {
                       {s.name}
                     </a>
                   </td>
-                  <td>{s.vendor_name}</td>
+                  <td>
+                    <div>{s.vendor_name}</div>
+                    <div className="sku">{s.vendor_email}</div>
+                  </td>
+                  <td>
+                    {s.id_document_type ? (
+                      <div>{DOC_LABELS[s.id_document_type] || s.id_document_type} n° {s.id_document_number}</div>
+                    ) : (
+                      <span style={{ color: "var(--ink-400)" }}>—</span>
+                    )}
+                    {s.status === "rejected" && s.rejection_reason && (
+                      <div className="sku" style={{ color: "var(--bissap-600)" }}>Motif : {s.rejection_reason}</div>
+                    )}
+                  </td>
                   <td>{s.product_count}</td>
-                  <td>{s.total_stock}</td>
                   <td>
                     <span className={`badge ${s.status === "active" ? "badge-ok" : "badge-low"}`}>
-                      {s.status === "active" ? "Active" : s.status === "pending" ? "En attente" : "Suspendue"}
+                      {STATUS_LABELS[s.status] || s.status}
                     </span>
                   </td>
                   <td>
-                    <div className="stock-adjust">
-                      {s.status !== "active" && (
+                    {rejectingShopId === s.id ? (
+                      <div className="stock-adjust">
+                        <input
+                          type="text"
+                          placeholder="Motif du rejet"
+                          value={rejectReason}
+                          onChange={(e) => setRejectReason(e.target.value)}
+                          style={{ width: 160 }}
+                        />
                         <button
-                          className="btn btn-primary"
+                          className="btn btn-danger"
                           disabled={updatingShopId === s.id}
-                          onClick={() => handleShopStatusChange(s.id, "active")}
+                          onClick={() => handleConfirmReject(s.id)}
                         >
-                          {updatingShopId === s.id ? "..." : "Valider"}
+                          {updatingShopId === s.id ? "..." : "Confirmer"}
                         </button>
-                      )}
-                      {s.status !== "suspended" && (
-                        <button
-                          className="btn btn-ghost"
-                          disabled={updatingShopId === s.id}
-                          onClick={() => handleShopStatusChange(s.id, "suspended")}
-                        >
-                          {updatingShopId === s.id ? "..." : "Suspendre"}
+                        <button className="btn btn-ghost" onClick={() => setRejectingShopId(null)}>
+                          Annuler
                         </button>
-                      )}
-                    </div>
+                      </div>
+                    ) : (
+                      <div className="stock-adjust">
+                        {s.status !== "active" && (
+                          <button
+                            className="btn btn-primary"
+                            disabled={updatingShopId === s.id}
+                            onClick={() => handleShopStatusChange(s.id, "active")}
+                          >
+                            {updatingShopId === s.id ? "..." : "Valider"}
+                          </button>
+                        )}
+                        {s.status !== "rejected" && s.status !== "active" && (
+                          <button
+                            className="btn btn-danger"
+                            disabled={updatingShopId === s.id}
+                            onClick={() => handleStartReject(s.id)}
+                          >
+                            Rejeter
+                          </button>
+                        )}
+                        {s.status !== "suspended" && (
+                          <button
+                            className="btn btn-ghost"
+                            disabled={updatingShopId === s.id}
+                            onClick={() => handleShopStatusChange(s.id, "suspended")}
+                          >
+                            {updatingShopId === s.id ? "..." : "Suspendre"}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

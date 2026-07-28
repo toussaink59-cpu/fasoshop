@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
+const DOC_LABELS = { cni: "CNI", passeport: "Passeport", permis: "Permis de conduire" };
+
 export default function VendorDashboard() {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -23,6 +25,12 @@ export default function VendorDashboard() {
   const [lowStockAlertDismissed, setLowStockAlertDismissed] = useState(false);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [newOrdersAlertDismissed, setNewOrdersAlertDismissed] = useState(false);
+
+  // Resoumission de la pièce d'identité après un rejet
+  const [resubmitDocType, setResubmitDocType] = useState("cni");
+  const [resubmitDocNumber, setResubmitDocNumber] = useState("");
+  const [resubmitError, setResubmitError] = useState("");
+  const [resubmitting, setResubmitting] = useState(false);
 
   const [newProduct, setNewProduct] = useState({
     name: "",
@@ -98,6 +106,8 @@ export default function VendorDashboard() {
               setShop(d.shop);
               setMmNumber(d.shop.mobile_money_number || "");
               setMmOperator(d.shop.mobile_money_operator || "orange_money");
+              setResubmitDocType(d.shop.id_document_type || "cni");
+              setResubmitDocNumber(d.shop.id_document_number || "");
             }
           });
       });
@@ -289,6 +299,27 @@ export default function VendorDashboard() {
     setTimeout(() => setMmSaved(false), 2500);
   }
 
+  async function handleResubmitDocuments(e) {
+    e.preventDefault();
+    setResubmitError("");
+    setResubmitting(true);
+
+    const res = await fetch("/api/vendor/shop", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ idDocumentType: resubmitDocType, idDocumentNumber: resubmitDocNumber }),
+    });
+    const data = await res.json();
+    setResubmitting(false);
+
+    if (!res.ok) {
+      setResubmitError(data.error || "Erreur lors de la resoumission.");
+      return;
+    }
+
+    setShop(data.shop);
+  }
+
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -297,6 +328,7 @@ export default function VendorDashboard() {
   const totalStock = products.reduce((sum, p) => sum + p.stock_quantity, 0);
   const lowStockProducts = products.filter((p) => p.stock_quantity <= p.low_stock_threshold);
   const lowStockCount = lowStockProducts.length;
+  const isActive = shop?.status === "active";
 
   return (
     <div className="shell">
@@ -336,6 +368,65 @@ export default function VendorDashboard() {
           <h1>Mon stock</h1>
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
+
+        {shop && shop.status === "pending" && (
+          <div className="panel" style={{ borderLeft: "4px solid var(--gold-600)" }}>
+            <strong>⏳ Boutique en attente de vérification</strong>
+            <p style={{ fontSize: "0.9rem", color: "var(--ink-400)", marginTop: 6, marginBottom: 0 }}>
+              Notre équipe vérifie les informations de votre pièce d'identité ({DOC_LABELS[shop.id_document_type] || shop.id_document_type} n° {shop.id_document_number}).
+              Vous pourrez publier des produits dès que votre boutique sera validée.
+            </p>
+          </div>
+        )}
+
+        {shop && shop.status === "suspended" && (
+          <div className="error-box">
+            <strong>🚫 Boutique suspendue.</strong> Contactez le support FasoShop pour plus d'informations.
+          </div>
+        )}
+
+        {shop && shop.status === "rejected" && (
+          <div className="panel" style={{ borderLeft: "4px solid var(--bissap-600)" }}>
+            <strong style={{ color: "var(--bissap-600)" }}>❌ Demande de compte vendeur non validée</strong>
+            <p style={{ fontSize: "0.9rem", marginTop: 6 }}>
+              Motif : {shop.rejection_reason || "Non précisé."}
+            </p>
+            <p style={{ fontSize: "0.9rem", color: "var(--ink-400)" }}>
+              Corrigez les informations de votre pièce d'identité ci-dessous pour une nouvelle vérification.
+            </p>
+
+            {resubmitError && <div className="error-box">{resubmitError}</div>}
+
+            <form onSubmit={handleResubmitDocuments}>
+              <div className="form-row">
+                <div>
+                  <label htmlFor="resubmit-doc-type">Type de pièce</label>
+                  <select
+                    id="resubmit-doc-type"
+                    value={resubmitDocType}
+                    onChange={(e) => setResubmitDocType(e.target.value)}
+                  >
+                    <option value="cni">Carte Nationale d'Identité (CNI)</option>
+                    <option value="passeport">Passeport</option>
+                    <option value="permis">Permis de conduire</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="resubmit-doc-number">Numéro de la pièce</label>
+                  <input
+                    id="resubmit-doc-number"
+                    required
+                    value={resubmitDocNumber}
+                    onChange={(e) => setResubmitDocNumber(e.target.value)}
+                  />
+                </div>
+              </div>
+              <button type="submit" className="btn btn-primary" disabled={resubmitting}>
+                {resubmitting ? "Envoi..." : "Resoumettre pour vérification"}
+              </button>
+            </form>
+          </div>
+        )}
 
         {!loading && newOrdersCount > 0 && !newOrdersAlertDismissed && (
           <div className="success-box" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
@@ -459,12 +550,23 @@ export default function VendorDashboard() {
         <div className="panel">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <h2 style={{ marginBottom: 0 }}>Produits</h2>
-            <button className="btn btn-primary" onClick={() => setShowForm((s) => !s)}>
+            <button
+              className="btn btn-primary"
+              onClick={() => setShowForm((s) => !s)}
+              disabled={!isActive}
+              title={!isActive ? "Boutique non encore validée" : undefined}
+            >
               {showForm ? "Annuler" : "+ Ajouter un produit"}
             </button>
           </div>
 
-          {showForm && (
+          {!isActive && (
+            <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: 10 }}>
+              Vous pourrez ajouter des produits dès que votre boutique sera validée par notre équipe.
+            </p>
+          )}
+
+          {showForm && isActive && (
             <form onSubmit={handleCreateProduct} style={{ marginTop: 18 }}>
               <div className="form-row">
                 <div>
