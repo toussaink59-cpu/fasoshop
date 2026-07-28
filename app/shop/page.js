@@ -17,6 +17,8 @@ function ShopContent() {
   const [count, setCount] = useState(0);
   const [justAdded, setJustAdded] = useState(null);
   const [categoryLabel, setCategoryLabel] = useState(null);
+  const [user, setUser] = useState(null);
+  const [userChecked, setUserChecked] = useState(false);
 
   const [searchInput, setSearchInput] = useState(searchParams.get("q") || "");
   const [minPrice, setMinPrice] = useState(searchParams.get("minPrice") || "");
@@ -27,6 +29,12 @@ function ShopContent() {
     fetch("/api/shops")
       .then((r) => r.json())
       .then((d) => setShops(d.shops || []));
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        setUser(d.user || null);
+        setUserChecked(true);
+      });
   }, []);
 
   useEffect(() => {
@@ -81,6 +89,19 @@ function ShopContent() {
     setTimeout(() => setJustAdded(null), 1200);
   }
 
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
+    router.push("/");
+  }
+
+  function accountLink() {
+    if (!user) return "/login";
+    if (user.role === "vendor") return "/vendor/dashboard";
+    if (user.role === "admin") return "/admin/dashboard";
+    return "/orders";
+  }
+
   return (
     <div className="shell">
       <div className="topbar">
@@ -88,8 +109,14 @@ function ShopContent() {
           🛒 FasoShop
         </Link>
         <div className="topbar-actions">
-          <Link href="/orders"><button>Mes commandes</button></Link>
-          <Link href="/login"><button>Se connecter</button></Link>
+          {userChecked && user ? (
+            <>
+              <Link href={accountLink()}><button>Bonjour, {user.full_name?.split(" ")[0]}</button></Link>
+              <button onClick={handleLogout}>Déconnexion</button>
+            </>
+          ) : (
+            <Link href="/login"><button>Se connecter</button></Link>
+          )}
         </div>
       </div>
       <div className="woven-strip" />

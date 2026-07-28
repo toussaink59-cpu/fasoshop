@@ -227,18 +227,7 @@ export default function AddressesPage() {
           ) : (
             <div style={{ marginTop: 16 }}>
               {addresses.map((a) => (
-                <div
-                  key={a.id}
-                  style={{
-                    border: "1px solid var(--sand-200)",
-                    borderRadius: 8,
-                    padding: 14,
-                    marginBottom: 10,
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "flex-start",
-                  }}
-                >
+                <div key={a.id} className="address-card">
                   <div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                       <strong>{a.libelle}</strong>

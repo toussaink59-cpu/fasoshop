@@ -1,7 +1,6 @@
 import sql from "@/lib/db";
 
 // GET /api/addresses
-// Liste les adresses de l'acheteur connecté.
 export async function GET(request) {
   const userId = request.headers.get("x-user-id");
 
@@ -10,7 +9,7 @@ export async function GET(request) {
   }
 
   const addresses = await sql`
-    SELECT id, libelle, adresse_texte, phone, par_defaut
+    SELECT id, libelle, adresse_texte, phone, par_defaut, latitude, longitude
     FROM addresses
     WHERE user_id = ${userId}
     ORDER BY par_defaut DESC, created_at DESC
@@ -20,7 +19,7 @@ export async function GET(request) {
 }
 
 // POST /api/addresses
-// body: { libelle, adresseTexte, phone?, parDefaut? }
+// body: { libelle, adresseTexte, phone?, parDefaut?, latitude?, longitude? }
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
 
@@ -29,7 +28,7 @@ export async function POST(request) {
   }
 
   try {
-    const { libelle, adresseTexte, phone, parDefaut } = await request.json();
+    const { libelle, adresseTexte, phone, parDefaut, latitude, longitude } = await request.json();
 
     if (!libelle || !adresseTexte) {
       return Response.json(
@@ -38,7 +37,6 @@ export async function POST(request) {
       );
     }
 
-    // Si c'est la première adresse, ou si demandé explicitement, on la met par défaut
     const [existingCount] = await sql`
       SELECT COUNT(*)::int AS count FROM addresses WHERE user_id = ${userId}
     `;
@@ -49,9 +47,9 @@ export async function POST(request) {
     }
 
     const [address] = await sql`
-      INSERT INTO addresses (user_id, libelle, adresse_texte, phone, par_defaut)
-      VALUES (${userId}, ${libelle}, ${adresseTexte}, ${phone || null}, ${shouldBeDefault})
-      RETURNING id, libelle, adresse_texte, phone, par_defaut
+      INSERT INTO addresses (user_id, libelle, adresse_texte, phone, par_defaut, latitude, longitude)
+      VALUES (${userId}, ${libelle}, ${adresseTexte}, ${phone || null}, ${shouldBeDefault}, ${latitude || null}, ${longitude || null})
+      RETURNING id, libelle, adresse_texte, phone, par_defaut, latitude, longitude
     `;
 
     return Response.json({ address }, { status: 201 });

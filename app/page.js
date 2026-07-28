@@ -16,6 +16,8 @@ export default function HomePage() {
   const [featured, setFeatured] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState(null);
+  const [userChecked, setUserChecked] = useState(false);
 
   useEffect(() => {
     setCount(cartCount(getCart()));
@@ -28,7 +30,26 @@ export default function HomePage() {
     fetch("/api/categories")
       .then((r) => r.json())
       .then((d) => setCategories(d.categories || []));
+    fetch("/api/auth/me")
+      .then((r) => r.json())
+      .then((d) => {
+        setUser(d.user || null);
+        setUserChecked(true);
+      });
   }, []);
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setUser(null);
+    router.push("/");
+  }
+
+  function accountLink() {
+    if (!user) return "/login";
+    if (user.role === "vendor") return "/vendor/dashboard";
+    if (user.role === "admin") return "/admin/dashboard";
+    return "/orders";
+  }
 
   return (
     <div className="shell">
@@ -49,7 +70,14 @@ export default function HomePage() {
         </form>
 
         <div className="topbar-actions">
-          <Link href="/login"><button>Compte</button></Link>
+          {userChecked && user ? (
+            <>
+              <Link href={accountLink()}><button>Bonjour, {user.full_name?.split(" ")[0]}</button></Link>
+              <button onClick={handleLogout}>Déconnexion</button>
+            </>
+          ) : (
+            <Link href="/login"><button>Compte</button></Link>
+          )}
           <Link href="/cart"><button>Panier {count > 0 ? `(${count})` : ""}</button></Link>
         </div>
       </div>
