@@ -8,6 +8,8 @@ import { getCart, updateQuantity, clearCart, cartTotal } from "@/lib/cart";
 export default function CartPage() {
   const router = useRouter();
   const [cart, setCart] = useState([]);
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [selectedAddressId, setSelectedAddressId] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
   const [phone, setPhone] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cod");
@@ -16,11 +18,38 @@ export default function CartPage() {
 
   useEffect(() => {
     setCart(getCart());
+
+    fetch("/api/addresses").then(async (res) => {
+      if (!res.ok) return; // pas connecté, ou pas d'adresse — on laisse le champ libre
+      const data = await res.json();
+      const addresses = data.addresses || [];
+      setSavedAddresses(addresses);
+
+      const defaultAddress = addresses.find((a) => a.par_defaut) || addresses[0];
+      if (defaultAddress) {
+        setSelectedAddressId(String(defaultAddress.id));
+        setShippingAddress(defaultAddress.adresse_texte);
+        if (defaultAddress.phone) setPhone(defaultAddress.phone);
+      }
+    });
   }, []);
 
   function changeQty(productId, qty) {
     updateQuantity(productId, qty);
     setCart(getCart());
+  }
+
+  function handleAddressSelect(value) {
+    setSelectedAddressId(value);
+    if (value === "custom") {
+      setShippingAddress("");
+      return;
+    }
+    const addr = savedAddresses.find((a) => String(a.id) === value);
+    if (addr) {
+      setShippingAddress(addr.adresse_texte);
+      if (addr.phone) setPhone(addr.phone);
+    }
   }
 
   async function handleCheckout(e) {
@@ -108,6 +137,25 @@ export default function CartPage() {
             <div className="panel">
               <h2>Livraison</h2>
               <form onSubmit={handleCheckout}>
+                {savedAddresses.length > 0 && (
+                  <>
+                    <label htmlFor="saved-address">Adresse enregistrée</label>
+                    <select
+                      id="saved-address"
+                      value={selectedAddressId}
+                      onChange={(e) => handleAddressSelect(e.target.value)}
+                    >
+                      {savedAddresses.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.libelle}{a.par_defaut ? " (par défaut)" : ""}
+                        </option>
+                      ))}
+                      <option value="custom">Autre adresse...</option>
+                    </select>
+                    <br /><br />
+                  </>
+                )}
+
                 <label htmlFor="address">Adresse de livraison</label>
                 <input
                   id="address"
