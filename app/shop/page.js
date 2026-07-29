@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { addToCart, getCart, cartCount } from "@/lib/cart";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
+import Footer from "@/app/components/Footer";
 
 function ShopContent() {
   const searchParams = useSearchParams();
@@ -109,6 +110,7 @@ function ShopContent() {
           🛒 FasoShop
         </Link>
         <div className="topbar-actions">
+          <Link href="/devenir-vendeur"><button>Devenir vendeur</button></Link>
           {userChecked && user ? (
             <>
               <Link href={accountLink()}><button>Bonjour, {user.full_name?.split(" ")[0]}</button></Link>
@@ -247,6 +249,8 @@ function ShopContent() {
           🛒 Panier ({count})
         </Link>
       )}
+
+      <Footer />
     </div>
   );
 }

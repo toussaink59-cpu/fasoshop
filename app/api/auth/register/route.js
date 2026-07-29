@@ -13,7 +13,7 @@ const ALLOWED_DOCUMENT_TYPES = ["cni", "passeport", "permis"];
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { email, password, fullName, phone, role, idDocumentType, idDocumentNumber } = body;
+    const { email, password, fullName, phone, role, idDocumentType, idDocumentNumber, shopName } = body;
 
     if (!email || !password || !fullName) {
       return Response.json(
@@ -26,6 +26,12 @@ export async function POST(request) {
     const finalRole = role === "vendor" ? "vendor" : "buyer";
 
     if (finalRole === "vendor") {
+      if (!shopName || !shopName.trim()) {
+        return Response.json(
+          { error: "Le nom de la boutique est requis." },
+          { status: 400 }
+        );
+      }
       if (!idDocumentType || !ALLOWED_DOCUMENT_TYPES.includes(idDocumentType)) {
         return Response.json(
           { error: "Type de pièce d'identité invalide. Choisissez CNI, Passeport ou Permis de conduire." },
@@ -63,7 +69,7 @@ export async function POST(request) {
     if (finalRole === "vendor") {
       await sql`
         INSERT INTO shops (vendor_id, name, status, id_document_type, id_document_number)
-        VALUES (${user.id}, ${fullName + " Shop"}, 'pending', ${idDocumentType}, ${idDocumentNumber.trim()})
+        VALUES (${user.id}, ${shopName.trim()}, 'pending', ${idDocumentType}, ${idDocumentNumber.trim()})
       `;
     }
 
