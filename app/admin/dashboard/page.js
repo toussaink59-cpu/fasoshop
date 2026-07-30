@@ -21,6 +21,18 @@ export default function AdminDashboard() {
   const [rejectingShopId, setRejectingShopId] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
 
+  const [orders, setOrders] = useState([]);
+  const [orderStats, setOrderStats] = useState(null);
+
+  const loadOrders = useCallback(async () => {
+    const res = await fetch("/api/admin/orders");
+    if (res.ok) {
+      const data = await res.json();
+      setOrders(data.orders || []);
+      setOrderStats(data.stats || null);
+    }
+  }, []);
+
   const loadData = useCallback(async (shopId, lowOnly) => {
     const params = new URLSearchParams();
     if (shopId) params.set("shopId", shopId);
@@ -62,8 +74,9 @@ export default function AdminDashboard() {
         setUser(data.user);
         loadData("", false);
         loadReviews();
+        loadOrders();
       });
-  }, [loadData, loadReviews, router]);
+  }, [loadData, loadReviews, loadOrders, router]);
 
   function applyFilters(shopId, lowOnly) {
     setSelectedShop(shopId);
@@ -152,11 +165,71 @@ export default function AdminDashboard() {
 
       <div className="content">
         <div className="page-header">
-          <h1>Stock — toutes les boutiques</h1>
+          <h1>Tableau de bord</h1>
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
 
         {error && <div className="error-box">{error}</div>}
+
+        <div className="stat-row">
+          <div className="stat-card">
+            <div className="label">Commandes aujourd'hui</div>
+            <div className="value">{orderStats ? orderStats.orders_today : "—"}</div>
+          </div>
+          <div className="stat-card">
+            <div className="label">CA aujourd'hui</div>
+            <div className="value">
+              {orderStats ? `${Number(orderStats.revenue_today).toLocaleString("fr-FR")} FCFA` : "—"}
+            </div>
+          </div>
+          <div className="stat-card">
+            <div className="label">Commandes totales</div>
+            <div className="value">{orderStats ? orderStats.orders_total : "—"}</div>
+          </div>
+          <div className="stat-card">
+            <div className="label">En attente de préparation</div>
+            <div className="value" style={{ color: orderStats?.orders_awaiting > 0 ? "var(--gold-600)" : "inherit" }}>
+              {orderStats ? orderStats.orders_awaiting : "—"}
+            </div>
+          </div>
+        </div>
+
+        <div className="panel">
+          <h2>Ventes récentes</h2>
+          {orders.length === 0 ? (
+            <p style={{ color: "var(--ink-400)" }}>Aucune commande pour l'instant.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>N°</th>
+                  <th>Client</th>
+                  <th>Boutiques</th>
+                  <th>Montant</th>
+                  <th>Statut</th>
+                  <th>Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.map((o) => (
+                  <tr key={o.id}>
+                    <td>#{o.id}</td>
+                    <td>
+                      <div>{o.buyer_name}</div>
+                      <div className="sku">{o.buyer_email}</div>
+                    </td>
+                    <td>{o.shop_count}</td>
+                    <td>{Number(o.total_amount).toLocaleString("fr-FR")} FCFA</td>
+                    <td>
+                      <span className="badge badge-ok">{o.status}</span>
+                    </td>
+                    <td>{new Date(o.created_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
 
         <div className="stat-row">
           <div className="stat-card">
