@@ -342,6 +342,25 @@ export default function VendorDashboard() {
     setShop(data.shop);
   }
 
+  async function handleDeleteProduct(productId, productName) {
+    if (!window.confirm(`Supprimer définitivement "${productName}" ? Cette action est irréversible.`)) {
+      return;
+    }
+    setError("");
+    setSuccess("");
+
+    const res = await fetch(`/api/vendor/stock/${productId}`, { method: "DELETE" });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.error || "Erreur lors de la suppression du produit.");
+      return;
+    }
+
+    setSuccess(`Produit "${data.name}" supprimé.`);
+    loadStock();
+  }
+
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -782,6 +801,7 @@ export default function VendorDashboard() {
                   <th>Vente Flash</th>
                   <th>Stock</th>
                   <th>Ajuster</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -871,6 +891,11 @@ export default function VendorDashboard() {
                             − Retirer
                           </button>
                         </div>
+                      </td>
+                      <td>
+                        <button className="btn btn-danger" onClick={() => handleDeleteProduct(p.id, p.name)}>
+                          Supprimer
+                        </button>
                       </td>
                     </tr>
                   );

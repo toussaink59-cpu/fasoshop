@@ -108,3 +108,57 @@ export async function PATCH(request, { params }) {
     );
   }
 }
+
+// DELETE /api/vendor/stock/:productId
+// Supprime définitivement un produit du vendeur connecté. Refusé si le
+// produit a déjà été commandé au moins une fois (pour ne pas corrompre
+// l'historique des commandes) — dans ce cas, on suggère de le désactiver.
+export async function DELETE(request, { params }) {
+  const userId = request.headers.get("x-user-id");
+  const { productId } = await params;
+
+  try {
+    const [product] = await sql`
+      SELECT p.id, p.name, s.vendor_id
+      FROM products p
+      JOIN shops s ON s.id = p.shop_id
+      WHERE p.id = ${productId}
+    `;
+
+    if (!product) {
+      return Response.json({ error: "Produit introuvable." }, { status: 404 });
+    }
+    if (String(product.vendor_id) !== String(userId)) {
+      return Response.json(
+        { error: "Ce produit n'appartient pas à votre boutique." },
+        { status: 403 }
+      );
+    }
+
+    const [{ count: orderCount }] = await sql`
+      SELECT COUNT(*)::int AS count FROM order_items WHERE product_id = ${productId}
+    `;
+
+    if (orderCount > 0) {
+      return Response.json(
+        {
+          error: "Ce produit a déjà été commandé au moins une fois et ne peut pas être supprimé définitivement, pour préserver l'historique des commandes. Vous pouvez en revanche mettre son stock à 0 pour qu'il ne soit plus disponible à l'achat.",
+        },
+        { status: 409 }
+      );
+    }
+
+    // Aucun historique de commande : suppression définitive possible.
+    await sql`DELETE FROM stock_movements WHERE product_id = ${productId}`;
+    await sql`DELETE FROM reviews WHERE product_id = ${productId}`;
+    await sql`DELETE FROM products WHERE id = ${productId}`;
+
+    return Response.json({ success: true, deletedId: Number(productId), name: product.name });
+  } catch (err) {
+    console.error("Erreur suppression produit:", err);
+    return Response.json(
+      { error: "Erreur serveur lors de la suppression du produit." },
+      { status: 500 }
+    );
+  }
+}
