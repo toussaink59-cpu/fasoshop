@@ -12,7 +12,8 @@ export async function GET(request) {
   const shopId = searchParams.get("shopId");
 
   let products = await sql`
-    SELECT p.id, p.name, p.description, p.price, p.compare_at_price, p.stock_quantity, p.images, s.id AS shop_id, s.name AS shop_name,
+    SELECT p.id, p.name, p.description, p.price, p.compare_at_price, p.stock_quantity, p.images, p.condition,
+           s.id AS shop_id, s.name AS shop_name,
            c.name AS category_name, c.slug AS category_slug
     FROM products p
     JOIN shops s ON s.id = p.shop_id

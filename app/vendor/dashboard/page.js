@@ -39,12 +39,15 @@ export default function VendorDashboard() {
     compareAtPrice: "",
     stockQuantity: "",
     categoryId: "",
+    condition: "neuf",
   });
   const [categories, setCategories] = useState([]);
   const [selectedParentCat, setSelectedParentCat] = useState("");
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
   const [uploading, setUploading] = useState(false);
+  const [imageUrlInput, setImageUrlInput] = useState("");
+  const [manualImageUrls, setManualImageUrls] = useState([]);
 
   useEffect(() => {
     fetch("/api/categories")
@@ -119,6 +122,21 @@ export default function VendorDashboard() {
     setPreviewUrls(files.map((f) => URL.createObjectURL(f)));
   }
 
+  function handleAddImageUrl() {
+    const url = imageUrlInput.trim();
+    if (!url) return;
+    if (!/^https?:\/\//i.test(url)) {
+      setError("L'URL de l'image doit commencer par http:// ou https://");
+      return;
+    }
+    setManualImageUrls((urls) => [...urls, url]);
+    setImageUrlInput("");
+  }
+
+  function handleRemoveImageUrl(idx) {
+    setManualImageUrls((urls) => urls.filter((_, i) => i !== idx));
+  }
+
   async function uploadImages() {
     const urls = [];
     for (const file of selectedFiles) {
@@ -142,15 +160,16 @@ export default function VendorDashboard() {
     setError("");
     setSuccess("");
 
-    if (selectedFiles.length === 0) {
-      setError("Ajoutez au moins une photo du produit.");
+    if (selectedFiles.length === 0 && manualImageUrls.length === 0) {
+      setError("Ajoutez au moins une photo (upload ou URL) du produit.");
       return;
     }
 
     setUploading(true);
-    let imageUrls = [];
+    let imageUrls = [...manualImageUrls];
     try {
-      imageUrls = await uploadImages();
+      const uploaded = await uploadImages();
+      imageUrls = [...imageUrls, ...uploaded];
     } catch (err) {
       setError(err.message || "Erreur lors de l'envoi des photos.");
       setUploading(false);
@@ -169,6 +188,7 @@ export default function VendorDashboard() {
         stockQuantity: Number(newProduct.stockQuantity) || 0,
         categoryId: newProduct.categoryId || undefined,
         images: imageUrls,
+        condition: newProduct.condition,
       }),
     });
     const data = await res.json();
@@ -179,10 +199,12 @@ export default function VendorDashboard() {
     }
 
     setSuccess(`Produit "${data.product.name}" ajouté avec ${data.product.stock_quantity} en stock.`);
-    setNewProduct({ name: "", sku: "", price: "", compareAtPrice: "", stockQuantity: "", categoryId: "" });
+    setNewProduct({ name: "", sku: "", price: "", compareAtPrice: "", stockQuantity: "", categoryId: "", condition: "neuf" });
     setSelectedParentCat("");
     setSelectedFiles([]);
     setPreviewUrls([]);
+    setManualImageUrls([]);
+    setImageUrlInput("");
     setShowForm(false);
     loadStock();
   }
@@ -656,6 +678,18 @@ export default function VendorDashboard() {
                     ))}
                   </select>
                 </div>
+                <div>
+                  <label htmlFor="p-condition">État du produit</label>
+                  <select
+                    id="p-condition"
+                    value={newProduct.condition}
+                    onChange={(e) => setNewProduct({ ...newProduct, condition: e.target.value })}
+                  >
+                    <option value="neuf">Neuf</option>
+                    <option value="quasi_neuf">Quasi neuf</option>
+                    <option value="occasion">Occasion</option>
+                  </select>
+                </div>
               </div>
 
               <div className="form-row">
@@ -683,6 +717,44 @@ export default function VendorDashboard() {
                 </div>
               </div>
 
+              <div className="form-row">
+                <div>
+                  <label htmlFor="p-image-url">Ou coller une URL d'image (si déjà hébergée ailleurs)</label>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      id="p-image-url"
+                      type="text"
+                      value={imageUrlInput}
+                      onChange={(e) => setImageUrlInput(e.target.value)}
+                      placeholder="https://exemple.com/mon-image.jpg"
+                    />
+                    <button type="button" className="btn btn-ghost" onClick={handleAddImageUrl}>
+                      Ajouter
+                    </button>
+                  </div>
+                  {manualImageUrls.length > 0 && (
+                    <div style={{ display: "flex", gap: 8, marginTop: 10, flexWrap: "wrap" }}>
+                      {manualImageUrls.map((url, idx) => (
+                        <div key={idx} style={{ position: "relative" }}>
+                          <img
+                            src={url}
+                            alt={`URL ${idx + 1}`}
+                            style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 6, border: "1px solid var(--sand-200)" }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveImageUrl(idx)}
+                            style={{ position: "absolute", top: -6, right: -6, background: "var(--bissap-600)", color: "white", border: "none", borderRadius: "50%", width: 20, height: 20, fontSize: "0.7rem", cursor: "pointer" }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <button type="submit" className="btn btn-primary" disabled={uploading}>
                 {uploading ? "Envoi des photos..." : "Enregistrer le produit"}
               </button>
@@ -704,6 +776,7 @@ export default function VendorDashboard() {
                 <tr>
                   <th>Produit</th>
                   <th>SKU</th>
+                  <th>État</th>
                   <th>Prix</th>
                   <th>Prix barré</th>
                   <th>Vente Flash</th>
@@ -719,6 +792,11 @@ export default function VendorDashboard() {
                     <tr key={p.id}>
                       <td>{p.name}</td>
                       <td className="sku">{p.sku || "—"}</td>
+                      <td>
+                        <span className="badge badge-ok">
+                          {p.condition === "occasion" ? "Occasion" : p.condition === "quasi_neuf" ? "Quasi neuf" : "Neuf"}
+                        </span>
+                      </td>
                       <td>{Number(p.price).toLocaleString("fr-FR")} FCFA</td>
                       <td>
                         <div className="stock-adjust">

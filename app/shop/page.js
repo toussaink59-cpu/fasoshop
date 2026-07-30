@@ -7,6 +7,9 @@ import { addToCart, getCart, cartCount } from "@/lib/cart";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
 import Footer from "@/app/components/Footer";
 
+const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
+const CONDITION_COLORS = { neuf: "var(--gold-600)", quasi_neuf: "#6b7280", occasion: "var(--bissap-600)" };
+
 function ShopContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -225,6 +228,20 @@ function ShopContent() {
                   )}
                   <div className="name">{p.name}</div>
                 </Link>
+                <span
+                  style={{
+                    fontSize: "0.7rem",
+                    fontWeight: 700,
+                    color: "white",
+                    background: CONDITION_COLORS[p.condition] || "var(--gold-600)",
+                    borderRadius: 999,
+                    padding: "2px 8px",
+                    display: "inline-block",
+                    marginTop: 4,
+                  }}
+                >
+                  {CONDITION_LABELS[p.condition] || "Neuf"}
+                </span>
                 <div className="shop">{p.shop_name}</div>
                 <PriceDisplay product={p} />
                 <button

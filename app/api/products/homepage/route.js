@@ -27,7 +27,7 @@ export async function GET() {
   `;
 
   const bestSellersRaw = await sql`
-    SELECT p.id, p.name, p.price, p.compare_at_price, p.images, s.name AS shop_name,
+    SELECT p.id, p.name, p.price, p.compare_at_price, p.images, p.condition, s.name AS shop_name,
            COALESCE(sr.avg_rating, 0) AS shop_rating, COALESCE(sr.review_count, 0) AS shop_review_count,
            COALESCE(SUM(oi.quantity), 0) AS total_sold
     FROM products p
@@ -36,13 +36,13 @@ export async function GET() {
     LEFT JOIN orders o ON o.id = oi.order_id AND o.status IN ('paid', 'shipped', 'delivered')
     ${shopRatingJoin}
     WHERE s.status = 'active'
-    GROUP BY p.id, p.name, p.price, p.compare_at_price, p.images, s.name, sr.avg_rating, sr.review_count
+    GROUP BY p.id, p.name, p.price, p.compare_at_price, p.images, p.condition, s.name, sr.avg_rating, sr.review_count
     ORDER BY total_sold DESC, p.id DESC
     LIMIT 8
   `;
 
   const newArrivalsRaw = await sql`
-    SELECT p.id, p.name, p.price, p.compare_at_price, p.images, s.name AS shop_name,
+    SELECT p.id, p.name, p.price, p.compare_at_price, p.images, p.condition, s.name AS shop_name,
            COALESCE(sr.avg_rating, 0) AS shop_rating, COALESCE(sr.review_count, 0) AS shop_review_count
     FROM products p
     JOIN shops s ON s.id = p.shop_id

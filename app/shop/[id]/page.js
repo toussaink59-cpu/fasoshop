@@ -6,6 +6,9 @@ import Link from "next/link";
 import { addToCart, getCart, cartCount } from "@/lib/cart";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
 
+const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
+const CONDITION_COLORS = { neuf: "var(--gold-600)", quasi_neuf: "#6b7280", occasion: "var(--bissap-600)" };
+
 export default function ProductDetailPage() {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
@@ -123,7 +126,21 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          <h1>{product.name}</h1>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <h1 style={{ margin: 0 }}>{product.name}</h1>
+            <span
+              style={{
+                fontSize: "0.8rem",
+                fontWeight: 700,
+                color: "white",
+                background: CONDITION_COLORS[product.condition] || "var(--gold-600)",
+                borderRadius: 999,
+                padding: "3px 12px",
+              }}
+            >
+              {CONDITION_LABELS[product.condition] || "Neuf"}
+            </span>
+          </div>
           <p style={{ color: "var(--ink-400)" }}>{product.shop_name}</p>
           {product.category_name && (
             <p style={{ fontSize: "0.85rem", color: "var(--ink-400)" }}>
