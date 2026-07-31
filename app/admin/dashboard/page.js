@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const DOC_LABELS = { cni: "CNI", passeport: "Passeport", permis: "Permis" };
 const STATUS_LABELS = { active: "Active", pending: "En attente", suspended: "Suspendue", rejected: "Rejetée" };
@@ -158,6 +159,7 @@ export default function AdminDashboard() {
           🛒 FasoShop <span className="role-tag">Admin</span>
         </div>
         <div className="topbar-actions">
+          <Link href="/admin/analytics"><button>Analytics</button></Link>
           <button onClick={handleLogout}>Déconnexion</button>
         </div>
       </div>
