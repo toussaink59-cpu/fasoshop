@@ -37,7 +37,7 @@ export default function AProposPage() {
           <h2>Notre modèle</h2>
           <p>
             L'inscription est gratuite pour les vendeurs. FasoShop se rémunère uniquement via
-            une commission de 10% sur les ventes réalisées, ce qui aligne nos intérêts avec
+            une commission de 5,5% sur les ventes réalisées, ce qui aligne nos intérêts avec
             la réussite de chaque boutique.
           </p>
         </div>

@@ -28,7 +28,7 @@ export default function CGVPage() {
           <p>Les commandes peuvent être réglées via Mobile Money (Orange Money, Moov Money) ou selon les modalités affichées au moment du paiement.</p>
 
           <h2>5. Commission</h2>
-          <p>FasoShop prélève une commission de 10% sur chaque vente réalisée sur la plateforme.</p>
+          <p>FasoShop prélève une commission de 5,5% sur chaque vente réalisée sur la plateforme.</p>
 
           <h2>6. Livraison</h2>
           <p>Les délais de livraison sont indiqués par chaque vendeur et peuvent varier selon la localisation de l'acheteur.</p>

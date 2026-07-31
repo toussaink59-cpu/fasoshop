@@ -503,7 +503,7 @@ export default function VendorDashboard() {
         <div className="panel">
           <h2>Revenus</h2>
           <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
-            Une commission de 10% est prélevée par FasoShop sur chaque vente confirmée.
+            Une commission de 5,5% est prélevée par FasoShop sur chaque vente confirmée.
           </p>
 
           {!revenue ? (

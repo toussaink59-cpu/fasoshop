@@ -20,7 +20,7 @@ const FAQS = [
   },
   {
     q: "Quels sont les frais pour un vendeur ?",
-    a: "L'inscription est gratuite. FasoShop prélève uniquement une commission de 10% sur chaque vente réalisée.",
+    a: "L'inscription est gratuite. FasoShop prélève uniquement une commission de 5,5% sur chaque vente réalisée.",
   },
   {
     q: "Que faire si mon produit n'arrive pas ?",
