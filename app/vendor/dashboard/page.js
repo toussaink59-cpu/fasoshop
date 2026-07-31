@@ -5,6 +5,35 @@ import { useRouter } from "next/navigation";
 
 const DOC_LABELS = { cni: "CNI", passeport: "Passeport", permis: "Permis de conduire" };
 
+function SalesSparkline({ data }) {
+  const width = 600;
+  const height = 90;
+  const max = Math.max(...data.map((d) => d.gross), 1);
+  const stepX = width / (data.length - 1 || 1);
+
+  const points = data.map((d, i) => {
+    const x = i * stepX;
+    const y = height - (d.gross / max) * (height - 10) - 5;
+    return `${x},${y}`;
+  });
+
+  const areaPoints = `0,${height} ${points.join(" ")} ${width},${height}`;
+
+  return (
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: 90, display: "block" }}>
+      <polygon points={areaPoints} fill="var(--orange-100)" />
+      <polyline
+        points={points.join(" ")}
+        fill="none"
+        stroke="var(--orange-500)"
+        strokeWidth="2"
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
 export default function VendorDashboard() {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -509,26 +538,54 @@ export default function VendorDashboard() {
           {!revenue ? (
             <p>Chargement...</p>
           ) : (
-            <div className="stat-row">
-              <div className="stat-card">
-                <div className="label">Ventes brutes</div>
-                <div className="value">{Number(revenue.grossSales).toLocaleString("fr-FR")} FCFA</div>
-              </div>
-              <div className="stat-card">
-                <div className="label">Commission FasoShop</div>
-                <div className="value">{Number(revenue.totalCommission).toLocaleString("fr-FR")} FCFA</div>
-              </div>
-              <div className="stat-card">
-                <div className="label">Solde à recevoir</div>
-                <div className="value" style={{ color: "var(--bissap-600)" }}>
-                  {Number(revenue.netAmountDue).toLocaleString("fr-FR")} FCFA
+            <>
+              <div className="stat-row">
+                <div className="stat-card">
+                  <div className="label">Ventes aujourd'hui</div>
+                  <div className="value">{Number(revenue.todaySales).toLocaleString("fr-FR")} FCFA</div>
+                  <div style={{ fontSize: "0.78rem", color: "var(--ink-400)", marginTop: 2 }}>
+                    {revenue.todayOrderCount} commande{revenue.todayOrderCount > 1 ? "s" : ""}
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="label">Ventes ce mois-ci</div>
+                  <div className="value">{Number(revenue.monthSales).toLocaleString("fr-FR")} FCFA</div>
+                  <div style={{ fontSize: "0.78rem", color: "var(--ink-400)", marginTop: 2 }}>
+                    {revenue.monthOrderCount} commande{revenue.monthOrderCount > 1 ? "s" : ""}
+                  </div>
                 </div>
               </div>
-              <div className="stat-card">
-                <div className="label">Déjà versé</div>
-                <div className="value">{Number(revenue.netAmountSettled).toLocaleString("fr-FR")} FCFA</div>
+
+              {revenue.dailySeries && revenue.dailySeries.some((d) => d.gross > 0) && (
+                <div style={{ marginBottom: 20 }}>
+                  <div style={{ fontSize: "0.78rem", color: "var(--ink-400)", marginBottom: 8 }}>
+                    Ventes des 30 derniers jours
+                  </div>
+                  <SalesSparkline data={revenue.dailySeries} />
+                </div>
+              )}
+
+              <div className="stat-row">
+                <div className="stat-card">
+                  <div className="label">Ventes brutes</div>
+                  <div className="value">{Number(revenue.grossSales).toLocaleString("fr-FR")} FCFA</div>
+                </div>
+                <div className="stat-card">
+                  <div className="label">Commission FasoShop</div>
+                  <div className="value">{Number(revenue.totalCommission).toLocaleString("fr-FR")} FCFA</div>
+                </div>
+                <div className="stat-card">
+                  <div className="label">Solde à recevoir</div>
+                  <div className="value" style={{ color: "var(--bissap-600)" }}>
+                    {Number(revenue.netAmountDue).toLocaleString("fr-FR")} FCFA
+                  </div>
+                </div>
+                <div className="stat-card">
+                  <div className="label">Déjà versé</div>
+                  <div className="value">{Number(revenue.netAmountSettled).toLocaleString("fr-FR")} FCFA</div>
+                </div>
               </div>
-            </div>
+            </>
           )}
         </div>
 
