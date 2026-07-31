@@ -37,7 +37,7 @@ export async function GET() {
     ${shopRatingJoin}
     WHERE s.status = 'active'
     GROUP BY p.id, p.name, p.price, p.compare_at_price, p.images, p.condition, s.name, sr.avg_rating, sr.review_count
-    ORDER BY total_sold DESC, p.id DESC
+    ORDER BY RANDOM()
     LIMIT 8
   `;
 
@@ -48,7 +48,7 @@ export async function GET() {
     JOIN shops s ON s.id = p.shop_id
     ${shopRatingJoin}
     WHERE s.status = 'active'
-    ORDER BY p.id DESC
+    ORDER BY RANDOM()
     LIMIT 8
   `;
 

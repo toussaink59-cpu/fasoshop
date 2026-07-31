@@ -1681,3 +1681,140 @@ tbody tr:hover {
     gap: 24px;
   }
 }
+
+/* ============================================
+   Vente Flash : défilement horizontal façon Jumia
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.flash-scroll-wrap {
+  position: relative;
+  background: white;
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  padding: 4px 44px;
+}
+
+.flash-scroll-track {
+  display: flex;
+  gap: 1px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  background: var(--border);
+}
+
+.flash-scroll-track::-webkit-scrollbar {
+  display: none;
+}
+
+.flash-scroll-track .flash-card {
+  flex: 0 0 190px;
+  scroll-snap-align: start;
+  border-radius: 0;
+}
+
+.flash-scroll-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--ink-900);
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(36, 23, 18, 0.12);
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), background 0.18s ease;
+}
+
+.flash-scroll-arrow:hover {
+  background: var(--orange-100);
+  transform: translateY(-50%) scale(1.08);
+}
+
+.flash-scroll-arrow-left { left: 6px; }
+.flash-scroll-arrow-right { right: 6px; }
+
+@media (max-width: 640px) {
+  .flash-scroll-wrap { padding: 4px 36px; }
+  .flash-scroll-track .flash-card { flex-basis: 160px; }
+  .flash-scroll-arrow { width: 28px; height: 28px; font-size: 1.2rem; }
+}
+
+/* ============================================
+   Vente Flash : image produit + cartes plus grandes
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.flash-scroll-track .flash-card {
+  flex-basis: 220px;
+  padding: 14px;
+}
+
+.flash-card-image {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 4px;
+}
+
+.flash-card-image-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sand-100);
+  font-size: 2.2rem;
+}
+
+@media (max-width: 640px) {
+  .flash-scroll-track .flash-card { flex-basis: 170px; }
+}
+
+/* ============================================
+   Carrousel réduit + cartes "Pourquoi FasoShop" cliquables
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.banner-carousel {
+  min-height: 200px;
+  padding: 26px 70px;
+}
+
+.banner-title {
+  font-size: 1.6rem;
+}
+
+.banner-subtitle {
+  font-size: 0.9rem;
+  margin-bottom: 18px;
+}
+
+.banner-carousel .btn-hero {
+  padding: 10px 26px;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 640px) {
+  .banner-carousel { min-height: 170px; padding: 22px 46px; }
+  .banner-title { font-size: 1.25rem; }
+}
+
+.why-card {
+  display: block;
+  transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+              border-color 0.22s ease;
+}
+
+.why-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 14px 28px rgba(36, 23, 18, 0.12);
+  border-color: var(--orange-500);
+}

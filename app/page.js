@@ -153,9 +153,9 @@ export default function HomePage() {
         <div className="trust-item"><span className="trust-icon">↩️</span> Support client réactif</div>
       </div>
 
-      <FlashSaleSection />
-
       <WhyFasoShop />
+
+      <FlashSaleSection />
 
       <div className="home-section">
         <div className="section-head">

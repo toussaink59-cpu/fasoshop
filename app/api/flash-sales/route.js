@@ -5,7 +5,7 @@ import sql from "@/lib/db";
 // triés par fin la plus proche en premier, limité à 8 produits.
 export async function GET() {
   const products = await sql`
-    SELECT p.id, p.name, p.price, p.compare_at_price, p.stock_quantity,
+    SELECT p.id, p.name, p.price, p.compare_at_price, p.stock_quantity, p.images, p.condition,
            p.flash_sale_ends_at, p.flash_sale_stock_snapshot,
            s.name AS shop_name
     FROM products p
@@ -18,5 +18,10 @@ export async function GET() {
     LIMIT 8
   `;
 
-  return Response.json({ products });
+  const parsed = products.map((p) => ({
+    ...p,
+    images: typeof p.images === "string" ? JSON.parse(p.images) : p.images,
+  }));
+
+  return Response.json({ products: parsed });
 }

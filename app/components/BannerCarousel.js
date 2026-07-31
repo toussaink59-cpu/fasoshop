@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import Image from "next/image";
 
 const THEME_GRADIENTS = {
   "slide-gold": "linear-gradient(135deg, #241712 0%, #a1730f 130%)",
@@ -44,17 +43,6 @@ const SLIDES = [
     theme: "slide-millet",
     image: "/images/slide-mobilemoney.jpg", // à fournir
   },
-  {
-    id: 4,
-    type: "founder",
-    tag: "Notre fondateur",
-    quote:
-      "Le e-commerce ne devrait pas être réservé aux grandes villes. Avec FasoShop, chaque vendeur burkinabè trouve sa place, et chaque acheteur trouve ce qu'il cherche — où qu'il soit dans le pays.",
-    name: "KIEMDE P. Toussaint",
-    role: "Fondateur & CEO, FasoShop",
-    photo: "/images/founder.jpg",
-    theme: "slide-ink",
-  },
 ];
 
 const AUTOPLAY_MS = 5000;
@@ -94,34 +82,14 @@ export default function BannerCarousel() {
         ‹
       </button>
 
-      {slide.type === "founder" ? (
-        <div className="banner-slide banner-founder">
-          <div className="founder-photo-wrap">
-            <Image
-              src={slide.photo}
-              alt={slide.name}
-              width={140}
-              height={140}
-              className="founder-photo"
-            />
-          </div>
-          <span className="banner-tag">{slide.tag}</span>
-          <p className="founder-quote">"{slide.quote}"</p>
-          <div className="founder-attribution">
-            <span className="founder-name">{slide.name}</span>
-            <span className="founder-role">{slide.role}</span>
-          </div>
-        </div>
-      ) : (
-        <div className="banner-slide">
-          <span className="banner-tag">{slide.tag}</span>
-          <h1 className="banner-title">{slide.title}</h1>
-          <p className="banner-subtitle">{slide.subtitle}</p>
-          <Link href={slide.href} className="btn btn-primary btn-hero">
-            {slide.cta}
-          </Link>
-        </div>
-      )}
+      <div className="banner-slide">
+        <span className="banner-tag">{slide.tag}</span>
+        <h1 className="banner-title">{slide.title}</h1>
+        <p className="banner-subtitle">{slide.subtitle}</p>
+        <Link href={slide.href} className="btn btn-primary btn-hero">
+          {slide.cta}
+        </Link>
+      </div>
 
       <button
         className="banner-arrow banner-arrow-right"

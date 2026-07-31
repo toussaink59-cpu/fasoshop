@@ -1,4 +1,5 @@
 import Image from "next/image";
+import Link from "next/link";
 
 const REASONS = [
   {
@@ -26,7 +27,7 @@ export default function WhyFasoShop() {
       </div>
       <div className="why-grid">
         {REASONS.map((r) => (
-          <div className="why-card" key={r.title}>
+          <Link href="/shop" className="why-card" key={r.title} style={{ textDecoration: "none", color: "inherit" }}>
             <div className="why-card-image-wrap">
               <Image
                 src={r.image}
@@ -40,7 +41,7 @@ export default function WhyFasoShop() {
               <h3>{r.title}</h3>
               <p>{r.text}</p>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

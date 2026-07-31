@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
 
@@ -18,6 +18,7 @@ export default function FlashSaleSection() {
   const [products, setProducts] = useState([]);
   const [now, setNow] = useState(Date.now());
   const [loaded, setLoaded] = useState(false);
+  const scrollRef = useRef(null);
 
   useEffect(() => {
     fetch("/api/flash-sales")
@@ -33,6 +34,10 @@ export default function FlashSaleSection() {
     return () => clearInterval(timer);
   }, []);
 
+  function scrollByAmount(amount) {
+    scrollRef.current?.scrollBy({ left: amount, behavior: "smooth" });
+  }
+
   if (!loaded || products.length === 0) return null;
 
   const soonestEnd = Math.min(...products.map((p) => new Date(p.flash_sale_ends_at).getTime()));
@@ -43,38 +48,63 @@ export default function FlashSaleSection() {
       <div className="flash-header">
         <div className="flash-title">
           <span className="flash-lightning">⚡</span>
-          <h2>Ventes Flash</h2>
+          <h2>Vente Flash</h2>
         </div>
         <div className="flash-timer">
           Termine dans <strong>{formatCountdown(remaining)}</strong>
         </div>
       </div>
 
-      <div className="flash-grid">
-        {products.map((p) => {
-          const snapshot = p.flash_sale_stock_snapshot;
-          const soldRatio = snapshot
-            ? Math.min(100, Math.round(((snapshot - p.stock_quantity) / snapshot) * 100))
-            : 0;
-          return (
-            <Link href="/shop" key={p.id} className="flash-card" style={{ textDecoration: "none" }}>
-              {hasDiscount(p) && (
-                <span className="badge-discount">-{discountPercent(p)}%</span>
-              )}
-              <div className="name">{p.name}</div>
-              <div className="shop">{p.shop_name}</div>
-              <PriceDisplay product={p} />
-              {snapshot ? (
-                <div className="flash-stock-bar">
-                  <div className="flash-stock-track">
-                    <div className="flash-stock-fill" style={{ width: `${soldRatio}%` }} />
+      <div className="flash-scroll-wrap">
+        <button
+          type="button"
+          className="flash-scroll-arrow flash-scroll-arrow-left"
+          onClick={() => scrollByAmount(-320)}
+          aria-label="Précédent"
+        >
+          ‹
+        </button>
+
+        <div className="flash-scroll-track" ref={scrollRef}>
+          {products.map((p) => {
+            const snapshot = p.flash_sale_stock_snapshot;
+            const soldRatio = snapshot
+              ? Math.min(100, Math.round(((snapshot - p.stock_quantity) / snapshot) * 100))
+              : 0;
+            return (
+              <Link href={`/shop/${p.id}`} key={p.id} className="flash-card" style={{ textDecoration: "none" }}>
+                {hasDiscount(p) && (
+                  <span className="badge-discount">-{discountPercent(p)}%</span>
+                )}
+                {p.images && p.images.length > 0 ? (
+                  <img src={p.images[0]} alt={p.name} className="flash-card-image" />
+                ) : (
+                  <div className="flash-card-image flash-card-image-placeholder">🛍️</div>
+                )}
+                <div className="name">{p.name}</div>
+                <div className="shop">{p.shop_name}</div>
+                <PriceDisplay product={p} />
+                {snapshot ? (
+                  <div className="flash-stock-bar">
+                    <div className="flash-stock-track">
+                      <div className="flash-stock-fill" style={{ width: `${soldRatio}%` }} />
+                    </div>
+                    <span className="flash-stock-label">{p.stock_quantity} restants</span>
                   </div>
-                  <span className="flash-stock-label">{p.stock_quantity} restants</span>
-                </div>
-              ) : null}
-            </Link>
-          );
-        })}
+                ) : null}
+              </Link>
+            );
+          })}
+        </div>
+
+        <button
+          type="button"
+          className="flash-scroll-arrow flash-scroll-arrow-right"
+          onClick={() => scrollByAmount(320)}
+          aria-label="Suivant"
+        >
+          ›
+        </button>
       </div>
     </div>
   );
