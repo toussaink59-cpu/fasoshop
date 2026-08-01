@@ -1881,3 +1881,91 @@ tbody tr:hover {
   opacity: 0.7;
   margin-top: 4px;
 }
+
+/* ============================================
+   Corrections affichage mobile
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.topbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+@media (max-width: 640px) {
+  .topbar-actions button,
+  .topbar-actions a > button {
+    padding: 6px 12px;
+    font-size: 0.78rem;
+  }
+
+  .topbar-actions {
+    gap: 6px;
+  }
+
+  .brand {
+    font-size: 1.1rem;
+  }
+
+  .category-bar {
+    padding-left: 10px;
+  }
+
+  .mega-menu-trigger {
+    padding: 6px 10px;
+    font-size: 0.76rem;
+  }
+
+  .category-nav {
+    padding: 10px 16px 10px 6px;
+    gap: 8px;
+  }
+
+  .category-pill {
+    padding: 5px 11px;
+    font-size: 0.76rem;
+  }
+
+  .trust-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    justify-items: start;
+    gap: 14px 10px;
+    padding: 16px 20px;
+  }
+
+  .trust-item {
+    font-size: 0.78rem;
+  }
+
+  .banner-tag {
+    font-size: 0.66rem;
+    padding: 3px 10px;
+    margin-bottom: 10px;
+  }
+
+  .banner-title {
+    font-size: 1.15rem;
+    line-height: 1.25;
+  }
+
+  .banner-subtitle {
+    font-size: 0.82rem;
+    margin-bottom: 14px;
+  }
+}
+
+@media (max-width: 400px) {
+  .topbar-actions button,
+  .topbar-actions a > button {
+    padding: 5px 10px;
+    font-size: 0.72rem;
+  }
+
+  .trust-strip {
+    grid-template-columns: 1fr;
+  }
+}
