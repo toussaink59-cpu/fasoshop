@@ -3,20 +3,16 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
-export default function CategoryMegaMenu() {
-  const [categories, setCategories] = useState([]);
+export default function CategoryMegaMenu({ categories = [] }) {
   const [open, setOpen] = useState(false);
   const [activeParent, setActiveParent] = useState(null);
   const wrapRef = useRef(null);
 
   useEffect(() => {
-    fetch("/api/categories")
-      .then((r) => r.json())
-      .then((d) => {
-        setCategories(d.categories || []);
-        if (d.categories?.length) setActiveParent(d.categories[0].id);
-      });
-  }, []);
+    if (categories.length && activeParent === null) {
+      setActiveParent(categories[0].id);
+    }
+  }, [categories, activeParent]);
 
   useEffect(() => {
     function handleClickOutside(e) {
@@ -35,7 +31,6 @@ export default function CategoryMegaMenu() {
       <button className="mega-menu-trigger" onClick={() => setOpen((o) => !o)}>
         <span className="mega-menu-icon">☰</span> Toutes les catégories
       </button>
-
       {open && (
         <div className="mega-menu-panel">
           <div className="mega-menu-list">
@@ -51,7 +46,6 @@ export default function CategoryMegaMenu() {
               </button>
             ))}
           </div>
-
           {active && (
             <div className="mega-menu-detail">
               <h3>{active.emoji} {active.name}</h3>

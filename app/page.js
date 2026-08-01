@@ -131,7 +131,7 @@ export default function HomePage() {
       </div>
 
       <div className="category-bar">
-        <CategoryMegaMenu />
+        <CategoryMegaMenu categories={categories} />
         <nav className="category-nav">
           {categories.map((c) => (
             <Link key={c.slug} href={`/shop?category=${c.slug}`} className="category-pill">
