@@ -29,7 +29,9 @@ export default function CategoryMegaMenu({ categories = [] }) {
   return (
     <div className="mega-menu-wrap" ref={wrapRef}>
       <button className="mega-menu-trigger" onClick={() => setOpen((o) => !o)}>
-        <span className="mega-menu-icon">☰</span> Toutes les catégories
+        <span className="mega-menu-icon">☰</span>
+        <span className="mega-menu-label-full">Toutes les catégories</span>
+        <span className="mega-menu-label-short">Catégories</span>
       </button>
       {open && (
         <div className="mega-menu-panel">

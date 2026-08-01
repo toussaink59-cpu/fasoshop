@@ -1969,3 +1969,99 @@ tbody tr:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* ============================================
+   Correctifs mobile v2 : grille confiance renforcée,
+   libellé court pour le bouton catégories
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.mega-menu-label-short {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .trust-strip {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px 10px !important;
+    padding: 16px 18px !important;
+    justify-content: initial !important;
+  }
+
+  .trust-item {
+    font-size: 0.76rem;
+    gap: 6px;
+  }
+
+  .mega-menu-label-full {
+    display: none;
+  }
+
+  .mega-menu-label-short {
+    display: inline;
+  }
+
+  .mega-menu-trigger {
+    padding: 6px 12px;
+  }
+
+  .category-nav {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 400px) {
+  .trust-strip {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* ============================================
+   Correctifs mobile v2 : grille confiance renforcée,
+   libellé court pour le bouton catégories
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.mega-menu-label-short {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .trust-strip {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 12px 10px !important;
+    padding: 16px 18px !important;
+    justify-content: initial !important;
+  }
+
+  .trust-item {
+    font-size: 0.76rem;
+    gap: 6px;
+  }
+
+  .mega-menu-label-full {
+    display: none;
+  }
+
+  .mega-menu-label-short {
+    display: inline;
+  }
+
+  .mega-menu-trigger {
+    padding: 6px 12px;
+  }
+
+  .category-nav {
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 400px) {
+  .trust-strip {
+    grid-template-columns: 1fr !important;
+  }
+}
