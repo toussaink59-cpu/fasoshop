@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 const DOC_LABELS = { cni: "CNI", passeport: "Passeport", permis: "Permis de conduire" };
 
@@ -54,6 +55,18 @@ export default function VendorDashboard() {
   const [lowStockAlertDismissed, setLowStockAlertDismissed] = useState(false);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [newOrdersAlertDismissed, setNewOrdersAlertDismissed] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState(0);
+
+  useEffect(() => {
+    function loadUnread() {
+      fetch("/api/conversations/unread-count")
+        .then((r) => r.json())
+        .then((d) => setUnreadMessages(d.unread || 0));
+    }
+    loadUnread();
+    const timer = setInterval(loadUnread, 15000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Resoumission de la pièce d'identité après un rejet
   const [resubmitDocType, setResubmitDocType] = useState("cni");
@@ -407,6 +420,9 @@ export default function VendorDashboard() {
           🛒 FasoShop <span className="role-tag">Vendeur</span>
         </div>
         <div className="topbar-actions">
+          <Link href="/messages" style={{ marginRight: 10, color: "var(--sand-50)", fontSize: "0.85rem" }}>
+            Messages {unreadMessages > 0 ? `(${unreadMessages})` : ""}
+          </Link>
           <a
             href="/vendor/orders"
             style={{ marginRight: 10, color: "var(--sand-50)", fontSize: "0.85rem", position: "relative" }}

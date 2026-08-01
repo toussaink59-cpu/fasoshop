@@ -1818,3 +1818,66 @@ tbody tr:hover {
   box-shadow: 0 14px 28px rgba(36, 23, 18, 0.12);
   border-color: var(--orange-500);
 }
+
+/* ============================================
+   Messagerie acheteur/vendeur
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.conversation-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  text-decoration: none;
+  color: var(--ink-900);
+  transition: background 0.15s ease;
+}
+
+.conversation-row:hover {
+  background: var(--sand-100);
+}
+
+.conversation-unread-badge {
+  flex-shrink: 0;
+  background: var(--orange-500);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+}
+
+.chat-bubble {
+  max-width: 75%;
+  padding: 10px 14px;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.chat-bubble-theirs {
+  align-self: flex-start;
+  background: var(--sand-100);
+  color: var(--ink-900);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-bubble-mine {
+  align-self: flex-end;
+  background: var(--orange-500);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-bubble-time {
+  display: block;
+  font-size: 0.68rem;
+  opacity: 0.7;
+  margin-top: 4px;
+}

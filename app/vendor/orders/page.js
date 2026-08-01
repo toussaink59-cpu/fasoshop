@@ -16,6 +16,9 @@ export default function VendorOrdersPage() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [shopId, setShopId] = useState(null);
+  const [contactingId, setContactingId] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const load = useCallback(async () => {
     const res = await fetch("/api/vendor/orders");
@@ -28,7 +31,23 @@ export default function VendorOrdersPage() {
     setLoading(false);
   }, [router]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    fetch("/api/vendor/shop")
+      .then((r) => r.json())
+      .then((d) => setShopId(d.shop?.id || null));
+  }, [load]);
+
+  useEffect(() => {
+    function loadUnread() {
+      fetch("/api/conversations/unread-count")
+        .then((r) => r.json())
+        .then((d) => setUnreadCount(d.unread || 0));
+    }
+    loadUnread();
+    const timer = setInterval(loadUnread, 15000);
+    return () => clearInterval(timer);
+  }, []);
 
   async function updateStatus(orderId, status) {
     setError("");
@@ -45,11 +64,33 @@ export default function VendorOrdersPage() {
     load();
   }
 
+  async function handleContact(orderId) {
+    if (!shopId) return;
+    setError("");
+    setContactingId(orderId);
+
+    const res = await fetch("/api/conversations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId, shopId }),
+    });
+    const data = await res.json();
+    setContactingId(null);
+
+    if (!res.ok) {
+      setError(data.error || "Erreur lors de l'ouverture de la conversation.");
+      return;
+    }
+
+    router.push(`/messages/${data.conversationId}`);
+  }
+
   return (
     <div className="shell">
       <div className="topbar">
         <div className="brand">🛒 FasoShop <span className="role-tag">Vendeur</span></div>
         <div className="topbar-actions">
+          <Link href="/messages"><button>Messages {unreadCount > 0 ? `(${unreadCount})` : ""}</button></Link>
           <Link href="/vendor/dashboard"><button>Mon stock</button></Link>
         </div>
       </div>
@@ -101,16 +142,25 @@ export default function VendorOrdersPage() {
                       </span>
                     </td>
                     <td>
-                      {it.delivery_status === "preparation" && (
-                        <button className="btn btn-primary" onClick={() => updateStatus(it.order_id, "shipped")}>
-                          Marquer expédiée
+                      <div className="stock-adjust">
+                        {it.delivery_status === "preparation" && (
+                          <button className="btn btn-primary" onClick={() => updateStatus(it.order_id, "shipped")}>
+                            Marquer expédiée
+                          </button>
+                        )}
+                        {it.delivery_status === "shipped" && (
+                          <button className="btn btn-primary" onClick={() => updateStatus(it.order_id, "delivered")}>
+                            Marquer livrée
+                          </button>
+                        )}
+                        <button
+                          className="btn btn-ghost"
+                          onClick={() => handleContact(it.order_id)}
+                          disabled={!shopId || contactingId === it.order_id}
+                        >
+                          💬 {contactingId === it.order_id ? "..." : "Contacter"}
                         </button>
-                      )}
-                      {it.delivery_status === "shipped" && (
-                        <button className="btn btn-primary" onClick={() => updateStatus(it.order_id, "delivered")}>
-                          Marquer livrée
-                        </button>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))}

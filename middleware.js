@@ -1,6 +1,7 @@
-// Middleware Edge — protège les routes /api/vendor/*, /api/admin/*, /api/orders/*
-// et /api/addresses/*. Vérifie le token JWT présent dans le cookie httpOnly et
-// injecte l'utilisateur (id, role) dans les headers pour les API routes.
+// Middleware Edge — protège les routes /api/vendor/*, /api/admin/*, /api/orders/*,
+// /api/addresses/* et /api/conversations/*. Vérifie le token JWT présent dans le
+// cookie httpOnly et injecte l'utilisateur (id, role) dans les headers pour les
+// API routes.
 // /api/products/* est public (catalogue) mais reçoit quand même les infos
 // utilisateur si connecté (nécessaire pour laisser un avis, par exemple).
 import { NextResponse } from "next/server";
@@ -13,13 +14,20 @@ export async function middleware(request) {
   const isOrdersRoute = pathname.startsWith("/api/orders");
   const isProductsRoute = pathname.startsWith("/api/products");
   const isAddressesRoute = pathname.startsWith("/api/addresses");
+  const isConversationsRoute = pathname.startsWith("/api/conversations");
 
-  if (!isVendorRoute && !isAdminRoute && !isOrdersRoute && !isProductsRoute && !isAddressesRoute) {
+  if (
+    !isVendorRoute &&
+    !isAdminRoute &&
+    !isOrdersRoute &&
+    !isProductsRoute &&
+    !isAddressesRoute &&
+    !isConversationsRoute
+  ) {
     return NextResponse.next();
   }
 
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-
   if (!token) {
     if (isProductsRoute) {
       // Catalogue public : on laisse passer sans utilisateur attaché
@@ -32,7 +40,6 @@ export async function middleware(request) {
   }
 
   const payload = await verifyToken(token);
-
   if (!payload) {
     if (isProductsRoute) {
       return NextResponse.next();
@@ -49,7 +56,6 @@ export async function middleware(request) {
       { status: 403 }
     );
   }
-
   if (isVendorRoute && payload.role !== "vendor" && payload.role !== "admin") {
     return NextResponse.json(
       { error: "Accès réservé aux vendeurs." },
@@ -57,7 +63,8 @@ export async function middleware(request) {
     );
   }
 
-  // isOrdersRoute, isAddressesRoute : tout utilisateur connecté peut y accéder
+  // isOrdersRoute, isAddressesRoute, isConversationsRoute : tout utilisateur
+  // connecté peut y accéder (le contrôle fin d'accès se fait dans chaque route)
   // isProductsRoute : public, mais on attache quand même l'utilisateur s'il est connecté
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-user-id", String(payload.userId));
@@ -75,5 +82,6 @@ export const config = {
     "/api/orders/:path*",
     "/api/products/:path*",
     "/api/addresses/:path*",
+    "/api/conversations/:path*",
   ],
 };

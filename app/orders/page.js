@@ -18,6 +18,9 @@ function OrdersContent() {
   const confirmedMethod = searchParams.get("method");
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [contactingKey, setContactingKey] = useState(null);
+  const [error, setError] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
 
   useEffect(() => {
     fetch("/api/orders").then(async (res) => {
@@ -31,12 +34,47 @@ function OrdersContent() {
     });
   }, [router]);
 
+  useEffect(() => {
+    function loadUnread() {
+      fetch("/api/conversations/unread-count")
+        .then((r) => r.json())
+        .then((d) => setUnreadCount(d.unread || 0));
+    }
+    loadUnread();
+    const timer = setInterval(loadUnread, 15000);
+    return () => clearInterval(timer);
+  }, []);
+
+  async function handleContact(orderId, shopId) {
+    const key = `${orderId}-${shopId}`;
+    setError("");
+    setContactingKey(key);
+
+    const res = await fetch("/api/conversations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId, shopId }),
+    });
+    const data = await res.json();
+    setContactingKey(null);
+
+    if (!res.ok) {
+      setError(data.error || "Erreur lors de l'ouverture de la conversation.");
+      return;
+    }
+
+    router.push(`/messages/${data.conversationId}`);
+  }
+
   return (
     <div className="shell">
       <div className="topbar">
         <Link href="/shop" className="brand" style={{ textDecoration: "none" }}>
           🛒 FasoShop
         </Link>
+        <div className="topbar-actions">
+          <Link href="/messages"><button>Messages {unreadCount > 0 ? `(${unreadCount})` : ""}</button></Link>
+        </div>
       </div>
       <div className="woven-strip" />
       <div className="content">
@@ -51,6 +89,7 @@ function OrdersContent() {
               : "Paiement à la livraison — vous serez contacté au numéro fourni."}
           </div>
         )}
+        {error && <div className="error-box">{error}</div>}
         {loading ? (
           <p>Chargement...</p>
         ) : orders.length === 0 ? (
@@ -74,30 +113,41 @@ function OrdersContent() {
               </div>
 
               {/* Une sous-commande par boutique, chacune avec son propre statut de livraison */}
-              {order.subOrders.map((sub) => (
-                <div
-                  key={sub.shopId}
-                  style={{
-                    border: "1px solid var(--sand-200)",
-                    borderRadius: 8,
-                    padding: 12,
-                    marginBottom: 10,
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                    <strong style={{ fontSize: "0.9rem" }}>{sub.shopName}</strong>
-                    <span className={`status-pill status-${sub.deliveryStatus}`}>
-                      {STATUS_LABELS[sub.deliveryStatus] || sub.deliveryStatus}
-                    </span>
-                  </div>
-                  {sub.items.map((item, idx) => (
-                    <div key={idx} style={{ fontSize: "0.9rem", display: "flex", justifyContent: "space-between" }}>
-                      <span>{item.quantity} × {item.productName}</span>
-                      <span>{Number(item.priceAtPurchase * item.quantity).toLocaleString("fr-FR")} FCFA</span>
+              {order.subOrders.map((sub) => {
+                const key = `${order.id}-${sub.shopId}`;
+                return (
+                  <div
+                    key={sub.shopId}
+                    style={{
+                      border: "1px solid var(--sand-200)",
+                      borderRadius: 8,
+                      padding: 12,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                      <strong style={{ fontSize: "0.9rem" }}>{sub.shopName}</strong>
+                      <span className={`status-pill status-${sub.deliveryStatus}`}>
+                        {STATUS_LABELS[sub.deliveryStatus] || sub.deliveryStatus}
+                      </span>
                     </div>
-                  ))}
-                </div>
-              ))}
+                    {sub.items.map((item, idx) => (
+                      <div key={idx} style={{ fontSize: "0.9rem", display: "flex", justifyContent: "space-between" }}>
+                        <span>{item.quantity} × {item.productName}</span>
+                        <span>{Number(item.priceAtPurchase * item.quantity).toLocaleString("fr-FR")} FCFA</span>
+                      </div>
+                    ))}
+                    <button
+                      className="btn btn-ghost"
+                      style={{ marginTop: 8, fontSize: "0.8rem" }}
+                      onClick={() => handleContact(order.id, sub.shopId)}
+                      disabled={contactingKey === key}
+                    >
+                      💬 {contactingKey === key ? "Ouverture..." : "Contacter le vendeur"}
+                    </button>
+                  </div>
+                );
+              })}
 
               <div style={{ textAlign: "right", fontWeight: 700, marginTop: 8 }}>
                 Total : {Number(order.total).toLocaleString("fr-FR")} FCFA
