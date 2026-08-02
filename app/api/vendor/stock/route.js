@@ -8,7 +8,8 @@ export async function GET(request) {
 
   const products = await sql`
     SELECT p.id, p.name, p.sku, p.price, p.compare_at_price, p.stock_quantity, p.low_stock_threshold,
-           p.flash_sale_ends_at, p.flash_sale_stock_snapshot, p.condition,
+           p.flash_sale_ends_at, p.flash_sale_stock_snapshot, p.condition, p.brand,
+           p.is_sponsored, p.sponsored_until,
            p.status, p.updated_at, s.name AS shop_name,
            c.name AS category_name, c.id AS category_id
     FROM products p
@@ -29,7 +30,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json();
-    const { name, description, price, compareAtPrice, sku, stockQuantity, lowStockThreshold, categoryId, images, condition } = body;
+    const { name, description, price, compareAtPrice, sku, stockQuantity, lowStockThreshold, categoryId, images, condition, brand } = body;
     if (!name || price === undefined) {
       return Response.json(
         { error: "Le nom et le prix du produit sont requis." },
@@ -71,9 +72,9 @@ export async function POST(request) {
     const initialStock = Number(stockQuantity) || 0;
 
     const [product] = await sql`
-      INSERT INTO products (shop_id, name, description, price, compare_at_price, sku, stock_quantity, low_stock_threshold, category_id, images, condition)
-      VALUES (${shop.id}, ${name}, ${description || null}, ${price}, ${compareAtPrice || null}, ${sku || null}, ${initialStock}, ${lowStockThreshold || 5}, ${categoryId || null}, ${JSON.stringify(images || [])}, ${finalCondition})
-      RETURNING id, name, price, stock_quantity, images, condition
+      INSERT INTO products (shop_id, name, description, price, compare_at_price, sku, stock_quantity, low_stock_threshold, category_id, images, condition, brand)
+      VALUES (${shop.id}, ${name}, ${description || null}, ${price}, ${compareAtPrice || null}, ${sku || null}, ${initialStock}, ${lowStockThreshold || 5}, ${categoryId || null}, ${JSON.stringify(images || [])}, ${finalCondition}, ${brand || null})
+      RETURNING id, name, price, stock_quantity, images, condition, brand
     `;
 
     if (initialStock > 0) {

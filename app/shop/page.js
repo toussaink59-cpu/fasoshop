@@ -26,30 +26,51 @@ function Stars({ rating }) {
   );
 }
 
-function ProductCard({ p, onAdd, justAdded }) {
-  const [favMsg, setFavMsg] = useState(false);
+function ProductCard({ p, onAdd, justAdded, user, router }) {
+  const [favorited, setFavorited] = useState(Boolean(p.is_favorited));
+  const [favBusy, setFavBusy] = useState(false);
 
-  function handleFav(e) {
+  async function handleFav(e) {
     e.preventDefault();
-    setFavMsg(true);
-    setTimeout(() => setFavMsg(false), 1400);
+    if (!user) {
+      router.push("/login");
+      return;
+    }
+    setFavBusy(true);
+    if (favorited) {
+      await fetch(`/api/favorites/${p.id}`, { method: "DELETE" });
+      setFavorited(false);
+    } else {
+      await fetch("/api/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productId: p.id }),
+      });
+      setFavorited(true);
+    }
+    setFavBusy(false);
   }
 
   return (
     <div className="product-card shop-card">
       <button
-        className="shop-card-fav"
+        className={`shop-card-fav ${favorited ? "shop-card-fav-active" : ""}`}
         onClick={handleFav}
-        aria-label="Ajouter aux favoris"
-        title="Ajouter aux favoris"
+        disabled={favBusy}
+        aria-label={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
+        title={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
       >
-        {favMsg ? "🔜" : "♡"}
+        {favorited ? "♥" : "♡"}
       </button>
 
       <Link href={`/shop/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
         <div className="shop-card-image-wrap">
           {hasDiscount(p) && <span className="badge-discount">-{discountPercent(p)}%</span>}
-          {p.isNew && <span className="shop-card-badge-new">Nouveau</span>}
+          {p.is_sponsored ? (
+            <span className="shop-card-badge-sponsored">Sponsorisé</span>
+          ) : p.isNew ? (
+            <span className="shop-card-badge-new">Nouveau</span>
+          ) : null}
           {p.images && p.images.length > 0 ? (
             <img src={p.images[0]} alt={p.name} className="shop-card-image" />
           ) : (
@@ -98,11 +119,19 @@ function FilterSidebar({
   categorySlug,
   shopId,
   condition,
+  brand,
+  city,
+  minRating,
+  brands,
+  cities,
   minPrice,
   maxPrice,
   onCategoryPick,
   onShopChange,
   onConditionPick,
+  onBrandChange,
+  onCityChange,
+  onMinRatingPick,
   minPriceInput,
   maxPriceInput,
   setMinPriceInput,
@@ -195,6 +224,51 @@ function FilterSidebar({
           ))}
         </select>
       </div>
+
+      {brands.length > 0 && (
+        <div className="sidebar-section">
+          <h3>Marque</h3>
+          <select value={brand} onChange={(e) => onBrandChange(e.target.value)}>
+            <option value="">Toutes les marques</option>
+            {brands.map((b) => (
+              <option key={b} value={b}>{b}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {cities.length > 0 && (
+        <div className="sidebar-section">
+          <h3>Ville</h3>
+          <select value={city} onChange={(e) => onCityChange(e.target.value)}>
+            <option value="">Toutes les villes</option>
+            {cities.map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      <div className="sidebar-section">
+        <h3>Note minimum</h3>
+        <div className="sidebar-cat-list">
+          <button
+            className={`sidebar-cat-link ${!minRating ? "active" : ""}`}
+            onClick={() => onMinRatingPick("")}
+          >
+            Toutes les notes
+          </button>
+          {[4, 3, 2].map((n) => (
+            <button
+              key={n}
+              className={`sidebar-cat-link ${minRating === String(n) ? "active" : ""}`}
+              onClick={() => onMinRatingPick(String(n))}
+            >
+              {"★".repeat(n)}{"☆".repeat(5 - n)} et plus
+            </button>
+          ))}
+        </div>
+      </div>
     </>
   );
 }
@@ -205,6 +279,9 @@ function ShopContent() {
   const categorySlug = searchParams.get("category") || "";
   const shopId = searchParams.get("shopId") || "";
   const condition = searchParams.get("condition") || "";
+  const brand = searchParams.get("brand") || "";
+  const city = searchParams.get("city") || "";
+  const minRating = searchParams.get("minRating") || "";
   const sort = searchParams.get("sort") || "newest";
   const q = searchParams.get("q") || "";
   const minPrice = searchParams.get("minPrice") || "";
@@ -213,6 +290,8 @@ function ShopContent() {
   const [products, setProducts] = useState([]);
   const [shops, setShops] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [brands, setBrands] = useState([]);
+  const [cities, setCities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [count, setCount] = useState(0);
   const [justAdded, setJustAdded] = useState(null);
@@ -227,6 +306,8 @@ function ShopContent() {
   useEffect(() => {
     fetch("/api/shops").then((r) => r.json()).then((d) => setShops(d.shops || []));
     fetch("/api/categories").then((r) => r.json()).then((d) => setCategories(d.categories || []));
+    fetch("/api/products/brands").then((r) => r.json()).then((d) => setBrands(d.brands || []));
+    fetch("/api/shops/cities").then((r) => r.json()).then((d) => setCities(d.cities || []));
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((d) => {
@@ -244,6 +325,9 @@ function ShopContent() {
     if (maxPrice) params.set("maxPrice", maxPrice);
     if (shopId) params.set("shopId", shopId);
     if (condition) params.set("condition", condition);
+    if (brand) params.set("brand", brand);
+    if (city) params.set("city", city);
+    if (minRating) params.set("minRating", minRating);
     if (sort) params.set("sort", sort);
 
     fetch(`/api/products?${params.toString()}`)
@@ -253,7 +337,7 @@ function ShopContent() {
         setLoading(false);
       });
     setCount(cartCount(getCart()));
-  }, [categorySlug, q, minPrice, maxPrice, shopId, condition, sort]);
+  }, [categorySlug, q, minPrice, maxPrice, shopId, condition, brand, city, minRating, sort]);
 
   function updateParams(patch) {
     const params = new URLSearchParams(searchParams.toString());
@@ -296,11 +380,19 @@ function ShopContent() {
     categorySlug,
     shopId,
     condition,
+    brand,
+    city,
+    minRating,
+    brands,
+    cities,
     minPrice,
     maxPrice,
     onCategoryPick: (slug) => updateParams({ category: slug }),
     onShopChange: (id) => updateParams({ shopId: id }),
     onConditionPick: (val) => updateParams({ condition: val }),
+    onBrandChange: (val) => updateParams({ brand: val }),
+    onCityChange: (val) => updateParams({ city: val }),
+    onMinRatingPick: (val) => updateParams({ minRating: val }),
     minPriceInput,
     maxPriceInput,
     setMinPriceInput,
@@ -316,6 +408,7 @@ function ShopContent() {
         </Link>
         <div className="topbar-actions">
           <Link href="/devenir-vendeur"><button>Devenir vendeur</button></Link>
+          {userChecked && user && <Link href="/favoris"><button>♡ Favoris</button></Link>}
           {userChecked && user ? (
             <>
               <Link href={accountLink()}><button>Bonjour, {user.full_name?.split(" ")[0]}</button></Link>
@@ -395,7 +488,7 @@ function ShopContent() {
           ) : (
             <div className="shop-grid">
               {products.map((p) => (
-                <ProductCard key={p.id} p={p} onAdd={handleAdd} justAdded={justAdded} />
+                <ProductCard key={p.id} p={p} onAdd={handleAdd} justAdded={justAdded} user={user} router={router} />
               ))}
             </div>
           )}

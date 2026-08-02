@@ -9,7 +9,7 @@ export async function GET(request) {
   const userId = request.headers.get("x-user-id");
 
   const [shop] = await sql`
-    SELECT id, name, status, mobile_money_number, mobile_money_operator,
+    SELECT id, name, status, mobile_money_number, mobile_money_operator, city,
            id_document_type, id_document_number, rejection_reason
     FROM shops
     WHERE vendor_id = ${userId}
@@ -31,7 +31,22 @@ export async function PATCH(request) {
   const userId = request.headers.get("x-user-id");
 
   try {
-    const { mobileMoneyNumber, mobileMoneyOperator, idDocumentType, idDocumentNumber } = await request.json();
+    const { mobileMoneyNumber, mobileMoneyOperator, idDocumentType, idDocumentNumber, city } = await request.json();
+
+    // Cas 0 : mise à jour de la ville de la boutique
+    if (city !== undefined) {
+      const [shop] = await sql`
+        UPDATE shops
+        SET city = ${city.trim() || null}
+        WHERE vendor_id = ${userId}
+        RETURNING id, name, status, mobile_money_number, mobile_money_operator, city,
+                  id_document_type, id_document_number, rejection_reason
+      `;
+      if (!shop) {
+        return Response.json({ error: "Aucune boutique associée à ce compte." }, { status: 404 });
+      }
+      return Response.json({ shop });
+    }
 
     // Cas 1 : mise à jour Mobile Money (comportement existant)
     if (mobileMoneyNumber !== undefined || mobileMoneyOperator !== undefined) {
@@ -55,7 +70,7 @@ export async function PATCH(request) {
         UPDATE shops
         SET mobile_money_number = ${mobileMoneyNumber}, mobile_money_operator = ${mobileMoneyOperator}
         WHERE vendor_id = ${userId}
-        RETURNING id, name, status, mobile_money_number, mobile_money_operator,
+        RETURNING id, name, status, mobile_money_number, mobile_money_operator, city,
                   id_document_type, id_document_number, rejection_reason
       `;
 

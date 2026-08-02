@@ -56,6 +56,10 @@ export default function VendorDashboard() {
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [newOrdersAlertDismissed, setNewOrdersAlertDismissed] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [cityInput, setCityInput] = useState("");
+  const [citySaved, setCitySaved] = useState(false);
+  const [sponsorRequests, setSponsorRequests] = useState({});
+  const [sponsorBusy, setSponsorBusy] = useState(null);
 
   useEffect(() => {
     function loadUnread() {
@@ -82,6 +86,7 @@ export default function VendorDashboard() {
     stockQuantity: "",
     categoryId: "",
     condition: "neuf",
+    brand: "",
   });
   const [categories, setCategories] = useState([]);
   const [selectedParentCat, setSelectedParentCat] = useState("");
@@ -153,6 +158,7 @@ export default function VendorDashboard() {
               setMmOperator(d.shop.mobile_money_operator || "orange_money");
               setResubmitDocType(d.shop.id_document_type || "cni");
               setResubmitDocNumber(d.shop.id_document_number || "");
+              setCityInput(d.shop.city || "");
             }
           });
       });
@@ -231,6 +237,7 @@ export default function VendorDashboard() {
         categoryId: newProduct.categoryId || undefined,
         images: imageUrls,
         condition: newProduct.condition,
+        brand: newProduct.brand || undefined,
       }),
     });
     const data = await res.json();
@@ -241,7 +248,7 @@ export default function VendorDashboard() {
     }
 
     setSuccess(`Produit "${data.product.name}" ajouté avec ${data.product.stock_quantity} en stock.`);
-    setNewProduct({ name: "", sku: "", price: "", compareAtPrice: "", stockQuantity: "", categoryId: "", condition: "neuf" });
+    setNewProduct({ name: "", sku: "", price: "", compareAtPrice: "", stockQuantity: "", categoryId: "", condition: "neuf", brand: "" });
     setSelectedParentCat("");
     setSelectedFiles([]);
     setPreviewUrls([]);
@@ -401,6 +408,41 @@ export default function VendorDashboard() {
 
     setSuccess(`Produit "${data.name}" supprimé.`);
     loadStock();
+  }
+
+  async function handleSaveCity(e) {
+    e.preventDefault();
+    setCitySaved(false);
+
+    const res = await fetch("/api/vendor/shop", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ city: cityInput }),
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      setShop(data.shop);
+      setCitySaved(true);
+      setTimeout(() => setCitySaved(false), 2500);
+    }
+  }
+
+  async function handleRequestSponsor(productId) {
+    setError("");
+    setSponsorBusy(productId);
+
+    const res = await fetch(`/api/vendor/products/${productId}/sponsor`, { method: "POST" });
+    const data = await res.json();
+    setSponsorBusy(null);
+
+    if (!res.ok) {
+      setError(data.error || "Erreur lors de la demande de sponsoring.");
+      return;
+    }
+
+    setSponsorRequests((r) => ({ ...r, [productId]: "pending" }));
+    setSuccess("Demande envoyée ! Contactez-nous pour finaliser le paiement, puis nous validerons la mise en avant.");
   }
 
   async function handleLogout() {
@@ -644,6 +686,23 @@ export default function VendorDashboard() {
           </form>
         </div>
 
+        <div className="panel">
+          <h2>Ville de la boutique</h2>
+          <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
+            Utilisée pour le filtre "Ville" du catalogue, afin d'aider les acheteurs à trouver des boutiques proches d'eux.
+          </p>
+          {citySaved && <div className="success-box">Ville enregistrée.</div>}
+          <form onSubmit={handleSaveCity} style={{ display: "flex", gap: 8 }}>
+            <input
+              value={cityInput}
+              onChange={(e) => setCityInput(e.target.value)}
+              placeholder="Ex : Ouagadougou"
+              style={{ flex: 1 }}
+            />
+            <button type="submit" className="btn btn-primary">Enregistrer</button>
+          </form>
+        </div>
+
         <div className="stat-row">
           <div className="stat-card">
             <div className="label">Produits</div>
@@ -700,6 +759,15 @@ export default function VendorDashboard() {
                     value={newProduct.sku}
                     onChange={(e) => setNewProduct({ ...newProduct, sku: e.target.value })}
                     placeholder="Optionnel"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="p-brand">Marque (optionnel)</label>
+                  <input
+                    id="p-brand"
+                    value={newProduct.brand}
+                    onChange={(e) => setNewProduct({ ...newProduct, brand: e.target.value })}
+                    placeholder="Ex : Samsung, Nike..."
                   />
                 </div>
               </div>
@@ -874,6 +942,7 @@ export default function VendorDashboard() {
                   <th>Vente Flash</th>
                   <th>Stock</th>
                   <th>Ajuster</th>
+                  <th>Sponsoring</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -964,6 +1033,23 @@ export default function VendorDashboard() {
                             − Retirer
                           </button>
                         </div>
+                      </td>
+                      <td>
+                        {p.is_sponsored && p.sponsored_until && new Date(p.sponsored_until) > new Date() ? (
+                          <span className="badge badge-ok">
+                            Actif jusqu'au {new Date(p.sponsored_until).toLocaleDateString("fr-FR")}
+                          </span>
+                        ) : sponsorRequests[p.id] === "pending" ? (
+                          <span className="badge badge-low">Demande envoyée</span>
+                        ) : (
+                          <button
+                            className="btn btn-ghost"
+                            onClick={() => handleRequestSponsor(p.id)}
+                            disabled={sponsorBusy === p.id}
+                          >
+                            {sponsorBusy === p.id ? "..." : "🚀 Sponsoriser"}
+                          </button>
+                        )}
                       </td>
                       <td>
                         <button className="btn btn-danger" onClick={() => handleDeleteProduct(p.id, p.name)}>

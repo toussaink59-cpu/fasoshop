@@ -15,6 +15,7 @@ export async function middleware(request) {
   const isProductsRoute = pathname.startsWith("/api/products");
   const isAddressesRoute = pathname.startsWith("/api/addresses");
   const isConversationsRoute = pathname.startsWith("/api/conversations");
+  const isFavoritesRoute = pathname.startsWith("/api/favorites");
 
   if (
     !isVendorRoute &&
@@ -22,7 +23,8 @@ export async function middleware(request) {
     !isOrdersRoute &&
     !isProductsRoute &&
     !isAddressesRoute &&
-    !isConversationsRoute
+    !isConversationsRoute &&
+    !isFavoritesRoute
   ) {
     return NextResponse.next();
   }
@@ -83,5 +85,6 @@ export const config = {
     "/api/products/:path*",
     "/api/addresses/:path*",
     "/api/conversations/:path*",
+    "/api/favorites/:path*",
   ],
 };

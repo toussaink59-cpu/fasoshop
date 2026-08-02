@@ -8,72 +8,17 @@ import BannerCarousel from "@/app/components/BannerCarousel";
 import CategoryMegaMenu from "@/app/components/CategoryMegaMenu";
 import WhyFasoShop from "@/app/components/WhyFasoShop";
 import Footer from "@/app/components/Footer";
-import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
 import FlashSaleSection from "@/app/components/FlashSaleSection";
-
-const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
-const CONDITION_COLORS = { neuf: "var(--gold-600)", quasi_neuf: "#6b7280", occasion: "var(--bissap-600)" };
-
-function ProductCard({ p }) {
-  return (
-    <Link href={`/shop/${p.id}`} className="product-card" style={{ textDecoration: "none" }}>
-      {hasDiscount(p) && <span className="badge-discount">-{discountPercent(p)}%</span>}
-      {p.images && p.images.length > 0 ? (
-        <img
-          src={p.images[0]}
-          alt={p.name}
-          style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", borderRadius: 6, marginBottom: 8 }}
-        />
-      ) : (
-        <div style={{ width: "100%", aspectRatio: "1 / 1", background: "var(--sand-100)", borderRadius: 6, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>
-          🛍️
-        </div>
-      )}
-      <div className="name">{p.name}</div>
-      <span
-        style={{
-          fontSize: "0.7rem",
-          fontWeight: 700,
-          color: "white",
-          background: CONDITION_COLORS[p.condition] || "var(--gold-600)",
-          borderRadius: 999,
-          padding: "2px 8px",
-          display: "inline-block",
-          marginTop: 4,
-        }}
-      >
-        {CONDITION_LABELS[p.condition] || "Neuf"}
-      </span>
-      <div className="shop">
-        {p.shop_name}
-        {Number(p.shop_review_count) > 0 && (
-          <span style={{ color: "var(--gold-600)", marginLeft: 6 }}>⭐ {p.shop_rating}</span>
-        )}
-      </div>
-      <PriceDisplay product={p} />
-    </Link>
-  );
-}
 
 export default function HomePage() {
   const router = useRouter();
   const [count, setCount] = useState(0);
-  const [bestSellers, setBestSellers] = useState([]);
-  const [newArrivals, setNewArrivals] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [userChecked, setUserChecked] = useState(false);
 
   useEffect(() => {
     setCount(cartCount(getCart()));
-    fetch("/api/products/homepage")
-      .then((r) => r.json())
-      .then((data) => {
-        setBestSellers(data.bestSellers || []);
-        setNewArrivals(data.newArrivals || []);
-        setLoading(false);
-      });
     fetch("/api/categories")
       .then((r) => r.json())
       .then((d) => setCategories(d.categories || []));
@@ -118,6 +63,7 @@ export default function HomePage() {
 
         <div className="topbar-actions">
           <Link href="/devenir-vendeur"><button>Devenir vendeur</button></Link>
+          {userChecked && user && <Link href="/favoris"><button>♡ Favoris</button></Link>}
           {userChecked && user ? (
             <>
               <Link href={accountLink()}><button>Bonjour, {user.full_name?.split(" ")[0]}</button></Link>
@@ -157,44 +103,12 @@ export default function HomePage() {
 
       <FlashSaleSection />
 
-      <div className="home-section">
-        <div className="section-head">
-          <h2>🔥 Meilleures ventes</h2>
-          <Link href="/shop" className="view-all">Voir tout le catalogue →</Link>
-        </div>
-
-        {loading ? (
-          <p>Chargement...</p>
-        ) : bestSellers.length === 0 ? (
-          <div className="empty-state">
-            <div className="glyph">🛍️</div>
-            <p>Aucun produit disponible pour l'instant.</p>
-          </div>
-        ) : (
-          <div className="product-grid">
-            {bestSellers.map((p) => <ProductCard p={p} key={p.id} />)}
-          </div>
-        )}
-      </div>
-
-      <div className="home-section">
-        <div className="section-head">
-          <h2>🆕 Nouveautés</h2>
-          <Link href="/shop" className="view-all">Voir tout le catalogue →</Link>
-        </div>
-
-        {loading ? (
-          <p>Chargement...</p>
-        ) : newArrivals.length === 0 ? (
-          <div className="empty-state">
-            <div className="glyph">🛍️</div>
-            <p>Aucun produit disponible pour l'instant.</p>
-          </div>
-        ) : (
-          <div className="product-grid">
-            {newArrivals.map((p) => <ProductCard p={p} key={p.id} />)}
-          </div>
-        )}
+      <div className="home-section" style={{ textAlign: "center" }}>
+        <Link href="/shop">
+          <button className="btn btn-primary" style={{ fontSize: "1rem", padding: "14px 36px" }}>
+            Voir tout le catalogue →
+          </button>
+        </Link>
       </div>
 
       <Footer />

@@ -24,6 +24,16 @@ export default function AdminDashboard() {
 
   const [orders, setOrders] = useState([]);
   const [orderStats, setOrderStats] = useState(null);
+  const [sponsorships, setSponsorships] = useState([]);
+  const [decidingSponsorId, setDecidingSponsorId] = useState(null);
+
+  const loadSponsorships = useCallback(async () => {
+    const res = await fetch("/api/admin/sponsorships");
+    if (res.ok) {
+      const data = await res.json();
+      setSponsorships(data.requests || []);
+    }
+  }, []);
 
   const loadOrders = useCallback(async () => {
     const res = await fetch("/api/admin/orders");
@@ -76,8 +86,9 @@ export default function AdminDashboard() {
         loadData("", false);
         loadReviews();
         loadOrders();
+        loadSponsorships();
       });
-  }, [loadData, loadReviews, loadOrders, router]);
+  }, [loadData, loadReviews, loadOrders, loadSponsorships, router]);
 
   function applyFilters(shopId, lowOnly) {
     setSelectedShop(shopId);
@@ -120,6 +131,27 @@ export default function AdminDashboard() {
       return;
     }
     handleShopStatusChange(shopId, "rejected", rejectReason);
+  }
+
+  async function handleSponsorDecision(requestId, status) {
+    setError("");
+    setDecidingSponsorId(requestId);
+
+    const res = await fetch(`/api/admin/sponsorships/${requestId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status }),
+    });
+    const data = await res.json();
+
+    setDecidingSponsorId(null);
+
+    if (!res.ok) {
+      setError(data.error || "Erreur lors du traitement de la demande.");
+      return;
+    }
+
+    loadSponsorships();
   }
 
   async function handleDeleteReview(reviewId) {
@@ -357,6 +389,59 @@ export default function AdminDashboard() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        <div className="panel">
+          <h2>Demandes de sponsoring</h2>
+          <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
+            Un vendeur a demandé la mise en avant d'un produit. Vérifiez que le paiement a bien été reçu (par ailleurs, tant que le paiement en ligne n'est pas automatisé) avant de valider.
+          </p>
+
+          {sponsorships.filter((s) => s.status === "pending").length === 0 ? (
+            <p style={{ color: "var(--ink-400)" }}>Aucune demande en attente.</p>
+          ) : (
+            <table>
+              <thead>
+                <tr>
+                  <th>Produit</th>
+                  <th>Boutique</th>
+                  <th>Vendeur</th>
+                  <th>Prix</th>
+                  <th>Demandé le</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sponsorships.filter((s) => s.status === "pending").map((s) => (
+                  <tr key={s.id}>
+                    <td>{s.product_name}</td>
+                    <td>{s.shop_name}</td>
+                    <td>{s.vendor_name}</td>
+                    <td>{Number(s.price).toLocaleString("fr-FR")} FCFA</td>
+                    <td>{new Date(s.requested_at).toLocaleDateString("fr-FR")}</td>
+                    <td>
+                      <div className="stock-adjust">
+                        <button
+                          className="btn btn-primary"
+                          disabled={decidingSponsorId === s.id}
+                          onClick={() => handleSponsorDecision(s.id, "approved")}
+                        >
+                          Valider (30j)
+                        </button>
+                        <button
+                          className="btn btn-danger"
+                          disabled={decidingSponsorId === s.id}
+                          onClick={() => handleSponsorDecision(s.id, "rejected")}
+                        >
+                          Rejeter
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
 
         <div className="panel">

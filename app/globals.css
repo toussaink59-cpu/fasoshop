@@ -2758,3 +2758,27 @@ tbody tr:hover {
     border-bottom: 1px solid var(--border);
   }
 }
+
+/* ============================================
+   Phase 2 : badge sponsorisé, favori actif
+   À coller à la fin de app/globals.css
+   ============================================ */
+
+.shop-card-badge-sponsored {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: var(--gold-500);
+  color: var(--ink-900);
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.65rem;
+  padding: 3px 9px;
+  border-radius: 20px;
+  z-index: 1;
+  text-transform: uppercase;
+}
+
+.shop-card-fav-active {
+  color: var(--bissap-600);
+}
