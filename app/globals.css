@@ -2782,3 +2782,468 @@ tbody tr:hover {
 .shop-card-fav-active {
   color: var(--bissap-600);
 }
+
+/* ============================================
+   NAVIGATION MOBILE — SiteHeader / SideMenu / BottomNav
+   Refonte mobile-first (grille 8px, coins 12-16px, zones tactiles 48px min).
+   Palette réutilisée depuis :root (identité FasoShop existante) :
+     vert principal   -> --millet-600
+     accent promo/CTA -> --gold-500 / --gold-600
+     fond             -> --sand-50
+     cartes/gris clair-> --sand-100
+     texte            -> --ink-900
+   ============================================ */
+
+/* ---- Header sticky ---- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--sand-50);
+  border-bottom: 1px solid var(--border);
+}
+
+.site-header-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 60px;
+  padding: 0 8px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.site-header-icon-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border: none;
+  background: transparent;
+  border-radius: 999px;
+  font-size: 1.15rem;
+  color: var(--ink-900);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+
+.site-header-icon-btn:hover,
+.site-header-icon-btn:focus-visible {
+  background: var(--sand-100);
+  outline: none;
+}
+
+.site-header-logo {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(0.95rem, 4vw, 1.15rem);
+  color: var(--ink-900);
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding: 0 4px;
+}
+
+.site-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.site-header-badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--bissap-600);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* Actions desktop (Devenir vendeur / Compte / Déconnexion) — masquées en
+   mobile pour ne pas surcharger le header compact, restaurées ≥768px pour
+   ne pas régresser l'expérience desktop existante. */
+.site-header-desktop-actions {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-header-link {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--ink-900);
+  border-radius: 999px;
+  padding: 8px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.btn-header-link:hover {
+  background: var(--sand-100);
+  border-color: var(--millet-600);
+}
+
+.site-header-hamburger {
+  display: flex;
+}
+
+@media (min-width: 768px) {
+  .site-header-desktop-actions { display: flex; }
+  .site-header-hamburger { display: none; }
+  .site-header-row { padding: 0 24px; gap: 12px; }
+  .site-header-search-row { padding: 8px 24px 14px; }
+}
+
+/* ---- Barre de recherche ---- */
+.site-header-search-row {
+  padding: 6px 8px 10px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.search-bar-wrap {
+  position: relative;
+}
+
+.search-bar-standalone {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: var(--sand-100);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 10px 16px;
+}
+
+.search-bar-icon {
+  font-size: 0.95rem;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.search-bar-standalone input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 15px;
+  font-family: var(--font-body);
+  color: var(--ink-900);
+}
+
+.search-bar-standalone input::placeholder {
+  color: var(--ink-400);
+}
+
+.search-suggestions {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(36, 23, 18, 0.14);
+  z-index: 110;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 6px 0;
+}
+
+.search-suggestions-label {
+  padding: 8px 16px 4px;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-400);
+  font-weight: 700;
+}
+
+.search-suggestion-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 16px;
+  border: none;
+  background: transparent;
+  font-size: 0.9rem;
+  color: var(--ink-900);
+  cursor: pointer;
+  min-height: 48px;
+}
+
+.search-suggestion-item:hover,
+.search-suggestion-item:focus-visible {
+  background: var(--sand-100);
+  outline: none;
+}
+
+/* ---- Menu latéral (SideMenu) ---- */
+.side-menu-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(36, 23, 18, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+  z-index: 190;
+}
+
+.side-menu-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.side-menu {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: min(85vw, 340px);
+  background: #fff;
+  z-index: 200;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 8px 0 32px rgba(36, 23, 18, 0.18);
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.side-menu.is-open {
+  transform: translateX(0);
+}
+
+.side-menu-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 24px 16px 18px;
+  background: var(--millet-100);
+  border-bottom: 1px solid var(--border);
+}
+
+.side-menu-avatar {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 50%;
+  background: var(--millet-600);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.side-menu-username {
+  margin: 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.side-menu-usermail {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: var(--ink-400);
+}
+
+.side-menu-guest {
+  flex: 1;
+}
+
+.side-menu-guest p {
+  margin: 0 0 10px;
+  font-weight: 600;
+}
+
+.side-menu-guest-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.side-menu-guest-actions button {
+  padding: 9px 14px;
+  font-size: 0.82rem;
+}
+
+.side-menu-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(36, 23, 18, 0.08);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.side-menu-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 0 24px;
+}
+
+.side-menu-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 20px;
+  border: none;
+  background: none;
+  text-align: left;
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-family: var(--font-body);
+  color: var(--ink-900);
+  cursor: pointer;
+}
+
+.side-menu-link:hover,
+.side-menu-link:focus-visible {
+  background: var(--sand-100);
+  outline: none;
+}
+
+.side-menu-link-accent {
+  color: var(--millet-600);
+  font-weight: 600;
+}
+
+.side-menu-link-small {
+  min-height: auto;
+  padding: 8px 20px;
+  font-size: 0.8rem;
+  color: var(--ink-400);
+}
+
+.side-menu-logout {
+  color: var(--bissap-600);
+  font-weight: 600;
+}
+
+.side-menu-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 8px 0;
+}
+
+.side-menu-section-title {
+  padding: 10px 20px 4px;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-400);
+  font-weight: 700;
+}
+
+/* ---- Bottom Navigation (mobile uniquement) ---- */
+.bottom-nav {
+  display: none;
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 150;
+  background: #fff;
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 56px;
+  text-decoration: none;
+  color: var(--ink-400);
+  font-family: var(--font-body);
+}
+
+.bottom-nav-item.is-active {
+  color: var(--millet-600);
+}
+
+.bottom-nav-icon {
+  position: relative;
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.bottom-nav-badge {
+  position: absolute;
+  top: -6px;
+  right: -10px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--bissap-600);
+  color: #fff;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+}
+
+.bottom-nav-label {
+  font-size: 0.65rem;
+  font-weight: 500;
+}
+
+@media (max-width: 767px) {
+  .bottom-nav {
+    display: flex;
+  }
+
+  /* Espace réservé en bas pour que le contenu ne soit jamais masqué par la
+     bottom nav fixe (footer, boutons de fin de page, etc.). */
+  .shell {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Aucun élément de la nouvelle navigation ne doit jamais provoquer de
+   débordement horizontal, quelle que soit la largeur de l'écran testée. */
+.site-header,
+.side-menu,
+.bottom-nav {
+  max-width: 100vw;
+}

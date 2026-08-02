@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { getCategoriesTree } from "@/lib/queries/categories";
 import { getCurrentUser } from "@/lib/session";
-import HomeHeader from "@/app/components/HomeHeader";
+import SiteHeader from "@/app/components/SiteHeader";
+import BottomNav from "@/app/components/BottomNav";
 import BannerCarousel from "@/app/components/BannerCarousel";
 import WhyFasoShop from "@/app/components/WhyFasoShop";
 import Footer from "@/app/components/Footer";
@@ -25,7 +26,7 @@ export default async function HomePage() {
 
   return (
     <div className="shell">
-      <HomeHeader initialUser={user} categories={categories} />
+      <SiteHeader initialUser={user} categories={categories} />
 
       <div className="woven-strip" />
 
@@ -51,6 +52,7 @@ export default async function HomePage() {
       </div>
 
       <Footer />
+      <BottomNav user={user} />
     </div>
   );
 }
