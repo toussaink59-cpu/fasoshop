@@ -6,6 +6,8 @@ import Link from "next/link";
 import { addToCart, getCart, cartCount } from "@/lib/cart";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
 import Footer from "@/app/components/Footer";
+import SiteHeader from "@/app/components/SiteHeader";
+import BottomNav from "@/app/components/BottomNav";
 
 const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
 const CONDITION_COLORS = { neuf: "var(--gold-600)", quasi_neuf: "#6b7280", occasion: "var(--bissap-600)" };
@@ -373,19 +375,6 @@ function ShopContent({
     setTimeout(() => setJustAdded(null), 1200);
   }
 
-  async function handleLogout() {
-    await fetch("/api/auth/logout", { method: "POST" });
-    setUser(null);
-    router.push("/");
-  }
-
-  function accountLink() {
-    if (!user) return "/login";
-    if (user.role === "vendor") return "/vendor/dashboard";
-    if (user.role === "admin") return "/admin/dashboard";
-    return "/orders";
-  }
-
   const sidebarProps = {
     categories,
     shops,
@@ -414,26 +403,9 @@ function ShopContent({
 
   return (
     <div className="shell">
-      <div className="topbar">
-        <Link href="/" className="brand" style={{ textDecoration: "none" }}>
-          🛒 FasoShop
-        </Link>
-        <div className="topbar-actions">
-          <Link href="/devenir-vendeur"><button>Devenir vendeur</button></Link>
-          {user && <Link href="/favoris"><button>♡ Favoris</button></Link>}
-          {user ? (
-            <>
-              <Link href={accountLink()}><button>Bonjour, {user.full_name?.split(" ")[0]}</button></Link>
-              <button onClick={handleLogout}>Déconnexion</button>
-            </>
-          ) : (
-            <Link href="/login"><button>Se connecter</button></Link>
-          )}
-        </div>
-      </div>
-      <div className="woven-strip" />
+      <SiteHeader initialUser={user} categories={categories} searchValue={q} />
 
-      {/* Catégories en défilement horizontal — mobile uniquement */}
+      {/* Catégories en défilement horizontal — filtre rapide propre au catalogue */}
       <div className="shop-mobile-cats">
         <button
           className={`category-pill ${!categorySlug ? "active-pill" : ""}`}
@@ -527,6 +499,7 @@ function ShopContent({
       )}
 
       <Footer />
+      <BottomNav user={user} />
     </div>
   );
 }
