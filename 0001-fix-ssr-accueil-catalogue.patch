@@ -1,0 +1,2031 @@
+From 4a4f1cab230baf577312664168aa05b38601b307 Mon Sep 17 00:00:00 2001
+From: FasoShop QA Bot <qa@fasoshop.dev>
+Date: Sun, 2 Aug 2026 15:26:44 +0000
+Subject: [PATCH] fix(ssr): rendu serveur de l'accueil et du catalogue
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+- Extraction de la logique SQL des routes API vers lib/queries/*.js
+  (categories, shops, products, flashSales, homepage) et lib/session.js,
+  réutilisés à la fois par les routes API et les Server Components.
+- app/page.js : converti en Server Component async. Catégories et
+  utilisateur résolus côté serveur (Promise.all) avant l'envoi du HTML.
+  Header interactif extrait dans app/components/HomeHeader.js (client).
+- app/shop/page.js : converti en Server Component async recevant
+  searchParams. Produits/boutiques/catégories/marques/villes/utilisateur
+  résolus côté serveur selon les filtres déjà présents dans l'URL.
+  Toute la logique interactive existante (filtres, tri, favoris, ajout
+  panier) déplacée telle quelle dans app/shop/ShopClient.js, seedée avec
+  les données SSR au lieu de useState([]) + useEffect + 'Chargement...'.
+- generateMetadata() par page (accueil, catalogue selon recherche/catégorie)
+  + title template dans app/layout.js : fin des titres identiques sur
+  toutes les pages.
+- Suppression de app/page.js.backup (fichier mort, identique à une
+  ancienne version de page.js).
+
+Comportement fonctionnel inchangé : mêmes filtres, même tri, mêmes
+appels API pour les changements de filtre après le premier rendu.
+Validé avec un build Next.js complet (npm run build) : compilation
+réussie, 53 pages générées, / et /shop confirmées dynamiques (ƒ).
+---
+ app/api/auth/me/route.js           |  23 +-
+ app/api/categories/route.js        |  16 +-
+ app/api/flash-sales/route.js       |  24 +-
+ app/api/products/brands/route.js   |  11 +-
+ app/api/products/homepage/route.js |  53 +--
+ app/api/products/route.js          |  75 +---
+ app/api/shops/cities/route.js      |  10 +-
+ app/api/shops/route.js             |   6 +-
+ app/components/HomeHeader.js       |  84 +++++
+ app/layout.js                      |   5 +-
+ app/page.js                        |  99 +----
+ app/page.js.backup                 |  22 --
+ app/shop/ShopClient.js             | 540 +++++++++++++++++++++++++++
+ app/shop/page.js                   | 578 +++--------------------------
+ lib/queries/categories.js          |  16 +
+ lib/queries/flashSales.js          |  22 ++
+ lib/queries/homepage.js            |  53 +++
+ lib/queries/products.js            | 103 +++++
+ lib/queries/shops.js               |  19 +
+ lib/session.js                     |  21 ++
+ 20 files changed, 971 insertions(+), 809 deletions(-)
+ create mode 100644 app/components/HomeHeader.js
+ delete mode 100644 app/page.js.backup
+ create mode 100644 app/shop/ShopClient.js
+ create mode 100644 lib/queries/categories.js
+ create mode 100644 lib/queries/flashSales.js
+ create mode 100644 lib/queries/homepage.js
+ create mode 100644 lib/queries/products.js
+ create mode 100644 lib/queries/shops.js
+ create mode 100644 lib/session.js
+
+diff --git a/app/api/auth/me/route.js b/app/api/auth/me/route.js
+index c39ee89..073e31b 100644
+--- a/app/api/auth/me/route.js
++++ b/app/api/auth/me/route.js
+@@ -1,23 +1,6 @@
+-import sql from "@/lib/db";
+-import { verifyToken, AUTH_COOKIE_NAME } from "@/lib/auth";
+-import { cookies } from "next/headers";
++import { getCurrentUser } from "@/lib/session";
+ 
+ export async function GET() {
+-  const cookieStore = await cookies();
+-  const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
+-
+-  if (!token) {
+-    return Response.json({ user: null }, { status: 200 });
+-  }
+-
+-  const payload = await verifyToken(token);
+-  if (!payload) {
+-    return Response.json({ user: null }, { status: 200 });
+-  }
+-
+-  const [user] = await sql`
+-    SELECT id, email, full_name, role FROM users WHERE id = ${payload.userId}
+-  `;
+-
+-  return Response.json({ user: user || null });
++  const user = await getCurrentUser();
++  return Response.json({ user });
+ }
+diff --git a/app/api/categories/route.js b/app/api/categories/route.js
+index dda69be..bef6c4b 100644
+--- a/app/api/categories/route.js
++++ b/app/api/categories/route.js
+@@ -1,19 +1,7 @@
+-import sql from "@/lib/db";
++import { getCategoriesTree } from "@/lib/queries/categories";
+ 
+ // GET /api/categories
+ // Renvoie les catégories principales, chacune avec ses sous-catégories imbriquées.
+ export async function GET() {
+-  const rows = await sql`
+-    SELECT id, name, slug, parent_id, emoji, sort_order
+-    FROM categories
+-    ORDER BY parent_id NULLS FIRST, sort_order
+-  `;
+-
+-  const parents = rows.filter((r) => !r.parent_id);
+-  const categories = parents.map((parent) => ({
+-    ...parent,
+-    children: rows.filter((r) => r.parent_id === parent.id),
+-  }));
+-
+-  return Response.json({ categories });
++  return Response.json({ categories: await getCategoriesTree() });
+ }
+diff --git a/app/api/flash-sales/route.js b/app/api/flash-sales/route.js
+index 52ca22c..057dcee 100644
+--- a/app/api/flash-sales/route.js
++++ b/app/api/flash-sales/route.js
+@@ -1,27 +1,9 @@
+-import sql from "@/lib/db";
++import { getActiveFlashSales } from "@/lib/queries/flashSales";
+ 
+ // GET /api/flash-sales
+ // Renvoie les produits actuellement en vente flash (date de fin non dépassée),
+ // triés par fin la plus proche en premier, limité à 8 produits.
+ export async function GET() {
+-  const products = await sql`
+-    SELECT p.id, p.name, p.price, p.compare_at_price, p.stock_quantity, p.images, p.condition,
+-           p.flash_sale_ends_at, p.flash_sale_stock_snapshot,
+-           s.name AS shop_name
+-    FROM products p
+-    JOIN shops s ON s.id = p.shop_id
+-    WHERE p.flash_sale_ends_at IS NOT NULL
+-      AND p.flash_sale_ends_at > NOW()
+-      AND p.status = 'active' AND s.status = 'active'
+-      AND p.stock_quantity > 0
+-    ORDER BY p.flash_sale_ends_at ASC
+-    LIMIT 8
+-  `;
+-
+-  const parsed = products.map((p) => ({
+-    ...p,
+-    images: typeof p.images === "string" ? JSON.parse(p.images) : p.images,
+-  }));
+-
+-  return Response.json({ products: parsed });
++  const products = await getActiveFlashSales();
++  return Response.json({ products });
+ }
+diff --git a/app/api/products/brands/route.js b/app/api/products/brands/route.js
+index b40a2d2..80774f3 100644
+--- a/app/api/products/brands/route.js
++++ b/app/api/products/brands/route.js
+@@ -1,14 +1,7 @@
+-import sql from "@/lib/db";
++import { getBrands } from "@/lib/queries/products";
+ 
+ // GET /api/products/brands
+ // Liste les marques distinctes utilisées par des produits actifs, pour le filtre.
+ export async function GET() {
+-  const rows = await sql`
+-    SELECT DISTINCT p.brand
+-    FROM products p
+-    JOIN shops s ON s.id = p.shop_id
+-    WHERE p.status = 'active' AND s.status = 'active' AND p.brand IS NOT NULL AND p.brand != ''
+-    ORDER BY p.brand ASC
+-  `;
+-  return Response.json({ brands: rows.map((r) => r.brand) });
++  return Response.json({ brands: await getBrands() });
+ }
+diff --git a/app/api/products/homepage/route.js b/app/api/products/homepage/route.js
+index 5784e6d..ac0efec 100644
+--- a/app/api/products/homepage/route.js
++++ b/app/api/products/homepage/route.js
+@@ -1,59 +1,10 @@
+-import sql from "@/lib/db";
+-
+-function parseImages(images) {
+-  if (Array.isArray(images)) return images;
+-  if (typeof images === "string") {
+-    try {
+-      return JSON.parse(images);
+-    } catch {
+-      return [];
+-    }
+-  }
+-  return [];
+-}
++import { getHomepageProducts } from "@/lib/queries/homepage";
+ 
+ // GET /api/products/homepage
+ // Renvoie les produits les plus vendus (bestSellers) et les plus récents
+ // (newArrivals), uniquement des boutiques actives (vérifiées), avec la note
+ // moyenne de la boutique.
+ export async function GET() {
+-  const shopRatingJoin = sql`
+-    LEFT JOIN (
+-      SELECT p2.shop_id, AVG(r.rating)::numeric(2,1) AS avg_rating, COUNT(r.id) AS review_count
+-      FROM reviews r
+-      JOIN products p2 ON p2.id = r.product_id
+-      GROUP BY p2.shop_id
+-    ) sr ON sr.shop_id = s.id
+-  `;
+-
+-  const bestSellersRaw = await sql`
+-    SELECT p.id, p.name, p.price, p.compare_at_price, p.images, p.condition, s.name AS shop_name,
+-           COALESCE(sr.avg_rating, 0) AS shop_rating, COALESCE(sr.review_count, 0) AS shop_review_count,
+-           COALESCE(SUM(oi.quantity), 0) AS total_sold
+-    FROM products p
+-    JOIN shops s ON s.id = p.shop_id
+-    LEFT JOIN order_items oi ON oi.product_id = p.id
+-    LEFT JOIN orders o ON o.id = oi.order_id AND o.status IN ('paid', 'shipped', 'delivered')
+-    ${shopRatingJoin}
+-    WHERE s.status = 'active'
+-    GROUP BY p.id, p.name, p.price, p.compare_at_price, p.images, p.condition, s.name, sr.avg_rating, sr.review_count
+-    ORDER BY RANDOM()
+-    LIMIT 8
+-  `;
+-
+-  const newArrivalsRaw = await sql`
+-    SELECT p.id, p.name, p.price, p.compare_at_price, p.images, p.condition, s.name AS shop_name,
+-           COALESCE(sr.avg_rating, 0) AS shop_rating, COALESCE(sr.review_count, 0) AS shop_review_count
+-    FROM products p
+-    JOIN shops s ON s.id = p.shop_id
+-    ${shopRatingJoin}
+-    WHERE s.status = 'active'
+-    ORDER BY RANDOM()
+-    LIMIT 8
+-  `;
+-
+-  const bestSellers = bestSellersRaw.map((p) => ({ ...p, images: parseImages(p.images) }));
+-  const newArrivals = newArrivalsRaw.map((p) => ({ ...p, images: parseImages(p.images) }));
+-
++  const { bestSellers, newArrivals } = await getHomepageProducts();
+   return Response.json({ bestSellers, newArrivals });
+ }
+diff --git a/app/api/products/route.js b/app/api/products/route.js
+index d0d5454..0a69130 100644
+--- a/app/api/products/route.js
++++ b/app/api/products/route.js
+@@ -1,11 +1,4 @@
+-import sql from "@/lib/db";
+-
+-const SORT_CLAUSES = {
+-  newest: sql => sql`p.created_at DESC`,
+-  price_asc: sql => sql`p.price ASC`,
+-  price_desc: sql => sql`p.price DESC`,
+-  rating: sql => sql`avg_rating DESC NULLS LAST, p.created_at DESC`,
+-};
++import { getProducts } from "@/lib/queries/products";
+ 
+ // GET /api/products
+ // Catalogue public — uniquement les produits actifs et en stock.
+@@ -16,60 +9,20 @@ const SORT_CLAUSES = {
+ export async function GET(request) {
+   const { searchParams } = new URL(request.url);
+   const userId = request.headers.get("x-user-id");
+-  const categorySlug = searchParams.get("category");
+-  const q = searchParams.get("q");
+-  const minPrice = searchParams.get("minPrice");
+-  const maxPrice = searchParams.get("maxPrice");
+-  const shopId = searchParams.get("shopId");
+-  const condition = searchParams.get("condition");
+-  const brand = searchParams.get("brand");
+-  const city = searchParams.get("city");
+-  const minRating = searchParams.get("minRating");
+-  const sortKey = SORT_CLAUSES[searchParams.get("sort")] ? searchParams.get("sort") : "newest";
+-
+-  let products = await sql`
+-    SELECT p.id, p.name, p.description, p.price, p.compare_at_price, p.stock_quantity, p.images, p.condition,
+-           p.brand, p.created_at,
+-           (p.is_sponsored AND p.sponsored_until > NOW()) AS is_sponsored,
+-           s.id AS shop_id, s.name AS shop_name, s.city AS shop_city,
+-           c.name AS category_name, c.slug AS category_slug,
+-           COALESCE(r.avg_rating, 0) AS avg_rating, COALESCE(r.review_count, 0) AS review_count,
+-           (${userId}::int IS NOT NULL AND EXISTS (
+-             SELECT 1 FROM favorites f WHERE f.product_id = p.id AND f.user_id = ${userId}::int
+-           )) AS is_favorited
+-    FROM products p
+-    JOIN shops s ON s.id = p.shop_id
+-    LEFT JOIN categories c ON c.id = p.category_id
+-    LEFT JOIN (
+-      SELECT product_id, AVG(rating)::numeric(2,1) AS avg_rating, COUNT(*)::int AS review_count
+-      FROM reviews
+-      GROUP BY product_id
+-    ) r ON r.product_id = p.id
+-    WHERE p.status = 'active' AND s.status = 'active'
+-      AND (${categorySlug}::text IS NULL OR p.category_id IN (
+-        SELECT id FROM categories
+-        WHERE slug = ${categorySlug}
+-           OR parent_id = (SELECT id FROM categories WHERE slug = ${categorySlug})
+-      ))
+-      AND (${q}::text IS NULL OR p.name ILIKE ${q ? `%${q}%` : null})
+-      AND (${minPrice}::numeric IS NULL OR p.price >= ${minPrice}::numeric)
+-      AND (${maxPrice}::numeric IS NULL OR p.price <= ${maxPrice}::numeric)
+-      AND (${shopId}::int IS NULL OR s.id = ${shopId}::int)
+-      AND (${condition}::text IS NULL OR p.condition = ${condition})
+-      AND (${brand}::text IS NULL OR p.brand = ${brand})
+-      AND (${city}::text IS NULL OR s.city = ${city})
+-      AND (${minRating}::numeric IS NULL OR COALESCE(r.avg_rating, 0) >= ${minRating}::numeric)
+-    ORDER BY (p.is_sponsored AND p.sponsored_until > NOW()) DESC, ${SORT_CLAUSES[sortKey](sql)}
+-  `;
+-
+-  const now = Date.now();
+-  const NEW_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // 14 jours
+ 
+-  products = products.map((p) => ({
+-    ...p,
+-    images: typeof p.images === "string" ? JSON.parse(p.images) : p.images,
+-    isNew: p.created_at ? now - new Date(p.created_at).getTime() < NEW_WINDOW_MS : false,
+-  }));
++  const filters = {
++    categorySlug: searchParams.get("category"),
++    q: searchParams.get("q"),
++    minPrice: searchParams.get("minPrice"),
++    maxPrice: searchParams.get("maxPrice"),
++    shopId: searchParams.get("shopId"),
++    condition: searchParams.get("condition"),
++    brand: searchParams.get("brand"),
++    city: searchParams.get("city"),
++    minRating: searchParams.get("minRating"),
++    sort: searchParams.get("sort") || "newest",
++  };
+ 
++  const products = await getProducts(filters, userId);
+   return Response.json({ products, total: products.length });
+ }
+diff --git a/app/api/shops/cities/route.js b/app/api/shops/cities/route.js
+index 0b6a01b..9736a75 100644
+--- a/app/api/shops/cities/route.js
++++ b/app/api/shops/cities/route.js
+@@ -1,13 +1,7 @@
+-import sql from "@/lib/db";
++import { getShopCities } from "@/lib/queries/shops";
+ 
+ // GET /api/shops/cities
+ // Liste les villes distinctes des boutiques actives, pour le filtre catalogue.
+ export async function GET() {
+-  const rows = await sql`
+-    SELECT DISTINCT city
+-    FROM shops
+-    WHERE status = 'active' AND city IS NOT NULL AND city != ''
+-    ORDER BY city ASC
+-  `;
+-  return Response.json({ cities: rows.map((r) => r.city) });
++  return Response.json({ cities: await getShopCities() });
+ }
+diff --git a/app/api/shops/route.js b/app/api/shops/route.js
+index 1e3c6c3..17fbb32 100644
+--- a/app/api/shops/route.js
++++ b/app/api/shops/route.js
+@@ -1,10 +1,8 @@
+-import sql from "@/lib/db";
++import { getActiveShops } from "@/lib/queries/shops";
+ 
+ // GET /api/shops
+ // Liste publique des boutiques actives, pour le filtre du catalogue.
+ export async function GET() {
+-  const shops = await sql`
+-    SELECT id, name FROM shops WHERE status = 'active' ORDER BY name
+-  `;
++  const shops = await getActiveShops();
+   return Response.json({ shops });
+ }
+diff --git a/app/components/HomeHeader.js b/app/components/HomeHeader.js
+new file mode 100644
+index 0000000..e17fe4a
+--- /dev/null
++++ b/app/components/HomeHeader.js
+@@ -0,0 +1,84 @@
++"use client";
++
++import { useState, useEffect } from "react";
++import { useRouter } from "next/navigation";
++import Link from "next/link";
++import { getCart, cartCount } from "@/lib/cart";
++import CategoryMegaMenu from "@/app/components/CategoryMegaMenu";
++
++// Header de la page d'accueil : reçoit l'utilisateur et les catégories déjà
++// résolus côté serveur (pas de flash "Se connecter" -> "Bonjour X", pas de
++// requête réseau supplémentaire au chargement). Seul le compteur du panier
++// (localStorage, propre au navigateur) est calculé côté client.
++export default function HomeHeader({ initialUser, categories }) {
++  const router = useRouter();
++  const [count, setCount] = useState(0);
++  const [user, setUser] = useState(initialUser);
++
++  useEffect(() => {
++    const updateCount = () => setCount(cartCount(getCart()));
++    updateCount();
++    window.addEventListener("fasoshop-cart-updated", updateCount);
++    return () => window.removeEventListener("fasoshop-cart-updated", updateCount);
++  }, []);
++
++  async function handleLogout() {
++    await fetch("/api/auth/logout", { method: "POST" });
++    setUser(null);
++    router.push("/");
++  }
++
++  function accountLink() {
++    if (!user) return "/login";
++    if (user.role === "vendor") return "/vendor/dashboard";
++    if (user.role === "admin") return "/admin/dashboard";
++    return "/orders";
++  }
++
++  return (
++    <>
++      <div className="topbar home-topbar">
++        <Link href="/" className="brand" style={{ textDecoration: "none" }}>
++          🛒 FasoShop
++        </Link>
++
++        <form
++          className="search-bar"
++          onSubmit={(e) => {
++            e.preventDefault();
++            const q = e.target.elements.q.value;
++            router.push(q ? `/shop?q=${encodeURIComponent(q)}` : "/shop");
++          }}
++        >
++          <input type="text" name="q" placeholder="Rechercher un produit, une boutique..." />
++        </form>
++
++        <div className="topbar-actions">
++          <Link href="/devenir-vendeur"><button>Devenir vendeur</button></Link>
++          {user && <Link href="/favoris"><button>♡ Favoris</button></Link>}
++          {user ? (
++            <>
++              <Link href={accountLink()}><button>Bonjour, {user.full_name?.split(" ")[0]}</button></Link>
++              <button onClick={handleLogout}>Déconnexion</button>
++            </>
++          ) : (
++            <Link href="/login"><button>Compte</button></Link>
++          )}
++          <Link href="/cart"><button>Panier {count > 0 ? `(${count})` : ""}</button></Link>
++        </div>
++      </div>
++
++      <div className="category-bar">
++        <CategoryMegaMenu categories={categories} />
++        <nav className="category-nav">
++          {categories.map((c) => (
++            <Link key={c.slug} href={`/shop?category=${c.slug}`} className="category-pill">
++              <span className="category-emoji">{c.emoji}</span>
++              {c.name}
++            </Link>
++          ))}
++        </nav>
++      </div>
++    </>
++  );
++}
+diff --git a/app/layout.js b/app/layout.js
+index 5a6a890..7e33a43 100644
+--- a/app/layout.js
++++ b/app/layout.js
+@@ -1,7 +1,10 @@
+ import "./globals.css";
+ 
+ export const metadata = {
+-  title: "FasoShop",
++  title: {
++    default: "FasoShop — Marketplace multi-vendeur au Burkina Faso",
++    template: "%s | FasoShop",
++  },
+   description: "Marketplace multi-vendeur au Burkina Faso",
+ };
+ 
+diff --git a/app/page.js b/app/page.js
+index 2b34c40..819f8db 100644
+--- a/app/page.js
++++ b/app/page.js
+@@ -1,92 +1,31 @@
+-"use client";
+-
+-import { useState, useEffect } from "react";
+-import { useRouter } from "next/navigation";
+ import Link from "next/link";
+-import { getCart, cartCount } from "@/lib/cart";
++import { getCategoriesTree } from "@/lib/queries/categories";
++import { getCurrentUser } from "@/lib/session";
++import HomeHeader from "@/app/components/HomeHeader";
+ import BannerCarousel from "@/app/components/BannerCarousel";
+-import CategoryMegaMenu from "@/app/components/CategoryMegaMenu";
+ import WhyFasoShop from "@/app/components/WhyFasoShop";
+ import Footer from "@/app/components/Footer";
+ import FlashSaleSection from "@/app/components/FlashSaleSection";
+ 
+-export default function HomePage() {
+-  const router = useRouter();
+-  const [count, setCount] = useState(0);
+-  const [categories, setCategories] = useState([]);
+-  const [user, setUser] = useState(null);
+-  const [userChecked, setUserChecked] = useState(false);
+-
+-  useEffect(() => {
+-    setCount(cartCount(getCart()));
+-    fetch("/api/categories")
+-      .then((r) => r.json())
+-      .then((d) => setCategories(d.categories || []));
+-    fetch("/api/auth/me")
+-      .then((r) => r.json())
+-      .then((d) => {
+-        setUser(d.user || null);
+-        setUserChecked(true);
+-      });
+-  }, []);
+-
+-  async function handleLogout() {
+-    await fetch("/api/auth/logout", { method: "POST" });
+-    setUser(null);
+-    router.push("/");
+-  }
+-
+-  function accountLink() {
+-    if (!user) return "/login";
+-    if (user.role === "vendor") return "/vendor/dashboard";
+-    if (user.role === "admin") return "/admin/dashboard";
+-    return "/orders";
+-  }
++export const metadata = {
++  title: "Accueil",
++  description:
++    "Commandez où que vous soyez au Burkina Faso. Paiement à la livraison disponible sur toutes les boutiques FasoShop.",
++};
++
++// Server Component : les catégories et l'utilisateur connecté sont résolus
++// côté serveur avant l'envoi du HTML (plus de "Chargement..." au premier
++// rendu, contenu indexable par les moteurs de recherche, pas de flash
++// visuel sur l'état de connexion).
++export default async function HomePage() {
++  const [categories, user] = await Promise.all([
++    getCategoriesTree(),
++    getCurrentUser(),
++  ]);
+ 
+   return (
+     <div className="shell">
+-      <div className="topbar home-topbar">
+-        <Link href="/" className="brand" style={{ textDecoration: "none" }}>
+-          🛒 FasoShop
+-        </Link>
+-
+-        <form
+-          className="search-bar"
+-          onSubmit={(e) => {
+-            e.preventDefault();
+-            const q = e.target.elements.q.value;
+-            router.push(q ? `/shop?q=${encodeURIComponent(q)}` : "/shop");
+-          }}
+-        >
+-          <input type="text" name="q" placeholder="Rechercher un produit, une boutique..." />
+-        </form>
+-
+-        <div className="topbar-actions">
+-          <Link href="/devenir-vendeur"><button>Devenir vendeur</button></Link>
+-          {userChecked && user && <Link href="/favoris"><button>♡ Favoris</button></Link>}
+-          {userChecked && user ? (
+-            <>
+-              <Link href={accountLink()}><button>Bonjour, {user.full_name?.split(" ")[0]}</button></Link>
+-              <button onClick={handleLogout}>Déconnexion</button>
+-            </>
+-          ) : (
+-            <Link href="/login"><button>Compte</button></Link>
+-          )}
+-          <Link href="/cart"><button>Panier {count > 0 ? `(${count})` : ""}</button></Link>
+-        </div>
+-      </div>
+-
+-      <div className="category-bar">
+-        <CategoryMegaMenu categories={categories} />
+-        <nav className="category-nav">
+-          {categories.map((c) => (
+-            <Link key={c.slug} href={`/shop?category=${c.slug}`} className="category-pill">
+-              <span className="category-emoji">{c.emoji}</span>
+-              {c.name}
+-            </Link>
+-          ))}
+-        </nav>
+-      </div>
++      <HomeHeader initialUser={user} categories={categories} />
+ 
+       <div className="woven-strip" />
+ 
+diff --git a/app/page.js.backup b/app/page.js.backup
+deleted file mode 100644
+index b686fdb..0000000
+--- a/app/page.js.backup
++++ /dev/null
+@@ -1,22 +0,0 @@
+-import Link from "next/link";
+-
+-export default function HomePage() {
+-  return (
+-    <div className="auth-wrap">
+-      <div className="auth-card" style={{ textAlign: "center" }}>
+-        <h1>🛒 FasoShop</h1>
+-        <p className="subtitle">Le marché en ligne du Burkina Faso.</p>
+-        <Link href="/login">
+-          <button className="btn btn-primary" style={{ width: "100%" }}>
+-            Se connecter / S'inscrire
+-          </button>
+-        </Link>
+-        <Link href="/shop">
+-          <button className="btn btn-ghost" style={{ width: "100%", marginTop: 10 }}>
+-            Voir le catalogue
+-          </button>
+-        </Link>
+-      </div>
+-    </div>
+-  );
+-}
+diff --git a/app/shop/ShopClient.js b/app/shop/ShopClient.js
+new file mode 100644
+index 0000000..54a1a68
+--- /dev/null
++++ b/app/shop/ShopClient.js
+@@ -0,0 +1,540 @@
++"use client";
++
++import { useState, useEffect, useRef, Suspense } from "react";
++import { useSearchParams, useRouter } from "next/navigation";
++import Link from "next/link";
++import { addToCart, getCart, cartCount } from "@/lib/cart";
++import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
++import Footer from "@/app/components/Footer";
++
++const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
++const CONDITION_COLORS = { neuf: "var(--gold-600)", quasi_neuf: "#6b7280", occasion: "var(--bissap-600)" };
++const SORT_OPTIONS = [
++  { value: "newest", label: "Nouveautés" },
++  { value: "price_asc", label: "Prix croissant" },
++  { value: "price_desc", label: "Prix décroissant" },
++  { value: "rating", label: "Mieux notés" },
++];
++
++function Stars({ rating }) {
++  const rounded = Math.round(Number(rating) || 0);
++  return (
++    <span className="stars" aria-label={`${rating} sur 5`}>
++      {"★".repeat(rounded)}
++      {"☆".repeat(5 - rounded)}
++    </span>
++  );
++}
++
++function ProductCard({ p, onAdd, justAdded, user, router }) {
++  const [favorited, setFavorited] = useState(Boolean(p.is_favorited));
++  const [favBusy, setFavBusy] = useState(false);
++
++  async function handleFav(e) {
++    e.preventDefault();
++    if (!user) {
++      router.push("/login");
++      return;
++    }
++    setFavBusy(true);
++    if (favorited) {
++      await fetch(`/api/favorites/${p.id}`, { method: "DELETE" });
++      setFavorited(false);
++    } else {
++      await fetch("/api/favorites", {
++        method: "POST",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify({ productId: p.id }),
++      });
++      setFavorited(true);
++    }
++    setFavBusy(false);
++  }
++
++  return (
++    <div className="product-card shop-card">
++      <button
++        className={`shop-card-fav ${favorited ? "shop-card-fav-active" : ""}`}
++        onClick={handleFav}
++        disabled={favBusy}
++        aria-label={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
++        title={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
++      >
++        {favorited ? "♥" : "♡"}
++      </button>
++
++      <Link href={`/shop/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
++        <div className="shop-card-image-wrap">
++          {hasDiscount(p) && <span className="badge-discount">-{discountPercent(p)}%</span>}
++          {p.is_sponsored ? (
++            <span className="shop-card-badge-sponsored">Sponsorisé</span>
++          ) : p.isNew ? (
++            <span className="shop-card-badge-new">Nouveau</span>
++          ) : null}
++          {p.images && p.images.length > 0 ? (
++            <img src={p.images[0]} alt={p.name} className="shop-card-image" />
++          ) : (
++            <div className="shop-card-image shop-card-image-placeholder">🛍️</div>
++          )}
++        </div>
++        <div className="name shop-card-name">{p.name}</div>
++      </Link>
++
++      <span
++        className="shop-card-condition"
++        style={{ background: CONDITION_COLORS[p.condition] || "var(--gold-600)" }}
++      >
++        {CONDITION_LABELS[p.condition] || "Neuf"}
++      </span>
++
++      <div className="shop">{p.shop_name}</div>
++
++      {Number(p.review_count) > 0 && (
++        <div className="shop-card-rating">
++          <Stars rating={p.avg_rating} />
++          <span className="shop-card-rating-count">({p.review_count})</span>
++        </div>
++      )}
++
++      <PriceDisplay product={p} />
++
++      <button
++        className="btn btn-primary"
++        onClick={() => onAdd(p)}
++        disabled={p.stock_quantity <= 0}
++      >
++        {p.stock_quantity <= 0
++          ? "Rupture de stock"
++          : justAdded === p.id
++          ? "Ajouté ✓"
++          : "Ajouter au panier"}
++      </button>
++    </div>
++  );
++}
++
++function FilterSidebar({
++  categories,
++  shops,
++  categorySlug,
++  shopId,
++  condition,
++  brand,
++  city,
++  minRating,
++  brands,
++  cities,
++  minPrice,
++  maxPrice,
++  onCategoryPick,
++  onShopChange,
++  onConditionPick,
++  onBrandChange,
++  onCityChange,
++  onMinRatingPick,
++  minPriceInput,
++  maxPriceInput,
++  setMinPriceInput,
++  setMaxPriceInput,
++  onApplyPrice,
++}) {
++  return (
++    <>
++      <div className="sidebar-section">
++        <h3>Catégories</h3>
++        <div className="sidebar-cat-list">
++          <button
++            className={`sidebar-cat-link ${!categorySlug ? "active" : ""}`}
++            onClick={() => onCategoryPick("")}
++          >
++            Toutes les catégories
++          </button>
++          {categories.map((cat) => (
++            <div key={cat.id}>
++              <button
++                className={`sidebar-cat-link ${categorySlug === cat.slug ? "active" : ""}`}
++                onClick={() => onCategoryPick(cat.slug)}
++              >
++                {cat.emoji} {cat.name}
++              </button>
++              {cat.children?.map((sub) => (
++                <button
++                  key={sub.id}
++                  className={`sidebar-cat-link sidebar-cat-link-sub ${categorySlug === sub.slug ? "active" : ""}`}
++                  onClick={() => onCategoryPick(sub.slug)}
++                >
++                  {sub.name}
++                </button>
++              ))}
++            </div>
++          ))}
++        </div>
++      </div>
++
++      <div className="sidebar-section">
++        <h3>Prix (FCFA)</h3>
++        <div style={{ display: "flex", gap: 8 }}>
++          <input
++            type="number"
++            min="0"
++            placeholder="Min"
++            value={minPriceInput}
++            onChange={(e) => setMinPriceInput(e.target.value)}
++          />
++          <input
++            type="number"
++            min="0"
++            placeholder="Max"
++            value={maxPriceInput}
++            onChange={(e) => setMaxPriceInput(e.target.value)}
++          />
++        </div>
++        <button className="btn btn-ghost" style={{ width: "100%", marginTop: 8 }} onClick={onApplyPrice}>
++          Appliquer
++        </button>
++      </div>
++
++      <div className="sidebar-section">
++        <h3>État</h3>
++        <div className="sidebar-cat-list">
++          <button
++            className={`sidebar-cat-link ${!condition ? "active" : ""}`}
++            onClick={() => onConditionPick("")}
++          >
++            Tous les états
++          </button>
++          {Object.entries(CONDITION_LABELS).map(([key, label]) => (
++            <button
++              key={key}
++              className={`sidebar-cat-link ${condition === key ? "active" : ""}`}
++              onClick={() => onConditionPick(key)}
++            >
++              {label}
++            </button>
++          ))}
++        </div>
++      </div>
++
++      <div className="sidebar-section">
++        <h3>Boutique</h3>
++        <select value={shopId} onChange={(e) => onShopChange(e.target.value)}>
++          <option value="">Toutes les boutiques</option>
++          {shops.map((s) => (
++            <option key={s.id} value={s.id}>{s.name}</option>
++          ))}
++        </select>
++      </div>
++
++      {brands.length > 0 && (
++        <div className="sidebar-section">
++          <h3>Marque</h3>
++          <select value={brand} onChange={(e) => onBrandChange(e.target.value)}>
++            <option value="">Toutes les marques</option>
++            {brands.map((b) => (
++              <option key={b} value={b}>{b}</option>
++            ))}
++          </select>
++        </div>
++      )}
++
++      {cities.length > 0 && (
++        <div className="sidebar-section">
++          <h3>Ville</h3>
++          <select value={city} onChange={(e) => onCityChange(e.target.value)}>
++            <option value="">Toutes les villes</option>
++            {cities.map((c) => (
++              <option key={c} value={c}>{c}</option>
++            ))}
++          </select>
++        </div>
++      )}
++
++      <div className="sidebar-section">
++        <h3>Note minimum</h3>
++        <div className="sidebar-cat-list">
++          <button
++            className={`sidebar-cat-link ${!minRating ? "active" : ""}`}
++            onClick={() => onMinRatingPick("")}
++          >
++            Toutes les notes
++          </button>
++          {[4, 3, 2].map((n) => (
++            <button
++              key={n}
++              className={`sidebar-cat-link ${minRating === String(n) ? "active" : ""}`}
++              onClick={() => onMinRatingPick(String(n))}
++            >
++              {"★".repeat(n)}{"☆".repeat(5 - n)} et plus
++            </button>
++          ))}
++        </div>
++      </div>
++    </>
++  );
++}
++
++function ShopContent({
++  initialProducts,
++  initialShops,
++  initialCategories,
++  initialBrands,
++  initialCities,
++  initialUser,
++}) {
++  const searchParams = useSearchParams();
++  const router = useRouter();
++  const categorySlug = searchParams.get("category") || "";
++  const shopId = searchParams.get("shopId") || "";
++  const condition = searchParams.get("condition") || "";
++  const brand = searchParams.get("brand") || "";
++  const city = searchParams.get("city") || "";
++  const minRating = searchParams.get("minRating") || "";
++  const sort = searchParams.get("sort") || "newest";
++  const q = searchParams.get("q") || "";
++  const minPrice = searchParams.get("minPrice") || "";
++  const maxPrice = searchParams.get("maxPrice") || "";
++
++  // Données résolues côté serveur (SSR) pour le premier rendu : catalogue déjà
++  // rempli, aucun "Chargement..." initial, contenu indexable par les moteurs
++  // de recherche. Les filtres/tri restent gérés côté client comme avant.
++  const [products, setProducts] = useState(initialProducts);
++  const [shops] = useState(initialShops);
++  const [categories] = useState(initialCategories);
++  const [brands] = useState(initialBrands);
++  const [cities] = useState(initialCities);
++  const [loading, setLoading] = useState(false);
++  const [count, setCount] = useState(0);
++  const [justAdded, setJustAdded] = useState(null);
++  const [user, setUser] = useState(initialUser);
++  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
++
++  const [searchInput, setSearchInput] = useState(q);
++  const [minPriceInput, setMinPriceInput] = useState(minPrice);
++  const [maxPriceInput, setMaxPriceInput] = useState(maxPrice);
++
++  useEffect(() => {
++    const updateCount = () => setCount(cartCount(getCart()));
++    updateCount();
++    window.addEventListener("fasoshop-cart-updated", updateCount);
++    return () => window.removeEventListener("fasoshop-cart-updated", updateCount);
++  }, []);
++
++  // Le premier rendu correspond déjà aux searchParams résolus côté serveur
++  // (voir app/shop/page.js) : on saute le premier passage de cet effet pour
++  // éviter un refetch redondant, et on ne re-fetch qu'au vrai changement de
++  // filtre/tri fait par l'utilisateur.
++  const isFirstRun = useRef(true);
++  useEffect(() => {
++    if (isFirstRun.current) {
++      isFirstRun.current = false;
++      return;
++    }
++
++    setLoading(true);
++    const params = new URLSearchParams();
++    if (categorySlug) params.set("category", categorySlug);
++    if (q) params.set("q", q);
++    if (minPrice) params.set("minPrice", minPrice);
++    if (maxPrice) params.set("maxPrice", maxPrice);
++    if (shopId) params.set("shopId", shopId);
++    if (condition) params.set("condition", condition);
++    if (brand) params.set("brand", brand);
++    if (city) params.set("city", city);
++    if (minRating) params.set("minRating", minRating);
++    if (sort) params.set("sort", sort);
++
++    fetch(`/api/products?${params.toString()}`)
++      .then((r) => r.json())
++      .then((data) => {
++        setProducts(data.products || []);
++        setLoading(false);
++      });
++  }, [categorySlug, q, minPrice, maxPrice, shopId, condition, brand, city, minRating, sort]);
++
++  function updateParams(patch) {
++    const params = new URLSearchParams(searchParams.toString());
++    Object.entries(patch).forEach(([key, value]) => {
++      if (value) params.set(key, value);
++      else params.delete(key);
++    });
++    router.push(`/shop?${params.toString()}`);
++    setMobileFiltersOpen(false);
++  }
++
++  function handleSearchSubmit(e) {
++    e.preventDefault();
++    updateParams({ q: searchInput });
++  }
++
++  function handleAdd(product) {
++    addToCart(product);
++    setCount(cartCount(getCart()));
++    setJustAdded(product.id);
++    setTimeout(() => setJustAdded(null), 1200);
++  }
++
++  async function handleLogout() {
++    await fetch("/api/auth/logout", { method: "POST" });
++    setUser(null);
++    router.push("/");
++  }
++
++  function accountLink() {
++    if (!user) return "/login";
++    if (user.role === "vendor") return "/vendor/dashboard";
++    if (user.role === "admin") return "/admin/dashboard";
++    return "/orders";
++  }
++
++  const sidebarProps = {
++    categories,
++    shops,
++    categorySlug,
++    shopId,
++    condition,
++    brand,
++    city,
++    minRating,
++    brands,
++    cities,
++    minPrice,
++    maxPrice,
++    onCategoryPick: (slug) => updateParams({ category: slug }),
++    onShopChange: (id) => updateParams({ shopId: id }),
++    onConditionPick: (val) => updateParams({ condition: val }),
++    onBrandChange: (val) => updateParams({ brand: val }),
++    onCityChange: (val) => updateParams({ city: val }),
++    onMinRatingPick: (val) => updateParams({ minRating: val }),
++    minPriceInput,
++    maxPriceInput,
++    setMinPriceInput,
++    setMaxPriceInput,
++    onApplyPrice: () => updateParams({ minPrice: minPriceInput, maxPrice: maxPriceInput }),
++  };
++
++  return (
++    <div className="shell">
++      <div className="topbar">
++        <Link href="/" className="brand" style={{ textDecoration: "none" }}>
++          🛒 FasoShop
++        </Link>
++        <div className="topbar-actions">
++          <Link href="/devenir-vendeur"><button>Devenir vendeur</button></Link>
++          {user && <Link href="/favoris"><button>♡ Favoris</button></Link>}
++          {user ? (
++            <>
++              <Link href={accountLink()}><button>Bonjour, {user.full_name?.split(" ")[0]}</button></Link>
++              <button onClick={handleLogout}>Déconnexion</button>
++            </>
++          ) : (
++            <Link href="/login"><button>Se connecter</button></Link>
++          )}
++        </div>
++      </div>
++      <div className="woven-strip" />
++
++      {/* Catégories en défilement horizontal — mobile uniquement */}
++      <div className="shop-mobile-cats">
++        <button
++          className={`category-pill ${!categorySlug ? "active-pill" : ""}`}
++          onClick={() => updateParams({ category: "" })}
++        >
++          Tout
++        </button>
++        {categories.map((cat) => (
++          <button
++            key={cat.id}
++            className={`category-pill ${categorySlug === cat.slug ? "active-pill" : ""}`}
++            onClick={() => updateParams({ category: cat.slug })}
++          >
++            {cat.emoji} {cat.name}
++          </button>
++        ))}
++      </div>
++
++      <div className="shop-layout">
++        <aside className="shop-sidebar">
++          <FilterSidebar {...sidebarProps} />
++        </aside>
++
++        <div className="shop-main">
++          <div className="page-header" style={{ marginBottom: 12 }}>
++            <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
++              <input
++                type="text"
++                placeholder="Rechercher un produit..."
++                value={searchInput}
++                onChange={(e) => setSearchInput(e.target.value)}
++                style={{ flex: 1 }}
++              />
++              <button type="submit" className="btn btn-primary">Rechercher</button>
++            </form>
++          </div>
++
++          <div className="shop-toolbar">
++            <span className="shop-result-count">
++              {loading ? "Chargement..." : `${products.length} produit${products.length > 1 ? "s" : ""}`}
++            </span>
++            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
++              <button
++                className="btn btn-ghost shop-mobile-filter-btn"
++                onClick={() => setMobileFiltersOpen(true)}
++              >
++                ⚙ Filtres
++              </button>
++              <select value={sort} onChange={(e) => updateParams({ sort: e.target.value })} style={{ width: "auto" }}>
++                {SORT_OPTIONS.map((opt) => (
++                  <option key={opt.value} value={opt.value}>{opt.label}</option>
++                ))}
++              </select>
++            </div>
++          </div>
++
++          {loading ? (
++            <p>Chargement...</p>
++          ) : products.length === 0 ? (
++            <div className="empty-state">
++              <div className="glyph">🛍️</div>
++              <p>Aucun produit ne correspond à votre recherche.</p>
++            </div>
++          ) : (
++            <div className="shop-grid">
++              {products.map((p) => (
++                <ProductCard key={p.id} p={p} onAdd={handleAdd} justAdded={justAdded} user={user} router={router} />
++              ))}
++            </div>
++          )}
++        </div>
++      </div>
++
++      {/* Panneau de filtres coulissant — mobile uniquement */}
++      {mobileFiltersOpen && (
++        <div className="shop-filter-overlay" onClick={() => setMobileFiltersOpen(false)}>
++          <div className="shop-filter-drawer" onClick={(e) => e.stopPropagation()}>
++            <div className="shop-filter-drawer-head">
++              <strong>Filtres</strong>
++              <button className="btn btn-ghost" onClick={() => setMobileFiltersOpen(false)}>Fermer ✕</button>
++            </div>
++            <FilterSidebar {...sidebarProps} />
++          </div>
++        </div>
++      )}
++
++      {count > 0 && (
++        <Link href="/cart" className="cart-fab">
++          🛒 Panier ({count})
++        </Link>
++      )}
++
++      <Footer />
++    </div>
++  );
++}
++
++export default function ShopClient(props) {
++  return (
++    <Suspense fallback={<div className="shell"><div className="content"><p>Chargement...</p></div></div>}>
++      <ShopContent {...props} />
++    </Suspense>
++  );
++}
+diff --git a/app/shop/page.js b/app/shop/page.js
+index 16cce9a..a6935bb 100644
+--- a/app/shop/page.js
++++ b/app/shop/page.js
+@@ -1,528 +1,70 @@
+-"use client";
+-
+-import { useState, useEffect, Suspense } from "react";
+-import { useSearchParams, useRouter } from "next/navigation";
+-import Link from "next/link";
+-import { addToCart, getCart, cartCount } from "@/lib/cart";
+-import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
+-import Footer from "@/app/components/Footer";
+-
+-const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
+-const CONDITION_COLORS = { neuf: "var(--gold-600)", quasi_neuf: "#6b7280", occasion: "var(--bissap-600)" };
+-const SORT_OPTIONS = [
+-  { value: "newest", label: "Nouveautés" },
+-  { value: "price_asc", label: "Prix croissant" },
+-  { value: "price_desc", label: "Prix décroissant" },
+-  { value: "rating", label: "Mieux notés" },
+-];
+-
+-function Stars({ rating }) {
+-  const rounded = Math.round(Number(rating) || 0);
+-  return (
+-    <span className="stars" aria-label={`${rating} sur 5`}>
+-      {"★".repeat(rounded)}
+-      {"☆".repeat(5 - rounded)}
+-    </span>
+-  );
+-}
+-
+-function ProductCard({ p, onAdd, justAdded, user, router }) {
+-  const [favorited, setFavorited] = useState(Boolean(p.is_favorited));
+-  const [favBusy, setFavBusy] = useState(false);
+-
+-  async function handleFav(e) {
+-    e.preventDefault();
+-    if (!user) {
+-      router.push("/login");
+-      return;
+-    }
+-    setFavBusy(true);
+-    if (favorited) {
+-      await fetch(`/api/favorites/${p.id}`, { method: "DELETE" });
+-      setFavorited(false);
+-    } else {
+-      await fetch("/api/favorites", {
+-        method: "POST",
+-        headers: { "Content-Type": "application/json" },
+-        body: JSON.stringify({ productId: p.id }),
+-      });
+-      setFavorited(true);
+-    }
+-    setFavBusy(false);
++import { getProducts, getBrands } from "@/lib/queries/products";
++import { getActiveShops, getShopCities } from "@/lib/queries/shops";
++import { getCategoriesTree } from "@/lib/queries/categories";
++import { getCurrentUser } from "@/lib/session";
++import ShopClient from "@/app/shop/ShopClient";
++
++// Next.js 15 : searchParams est une Promise dans les Server Components.
++export async function generateMetadata({ searchParams }) {
++  const sp = await searchParams;
++  const q = sp?.q;
++  const category = sp?.category;
++
++  if (q) {
++    return {
++      title: `Résultats pour "${q}"`,
++      description: `Produits correspondant à "${q}" sur le catalogue FasoShop.`,
++    };
+   }
+-
+-  return (
+-    <div className="product-card shop-card">
+-      <button
+-        className={`shop-card-fav ${favorited ? "shop-card-fav-active" : ""}`}
+-        onClick={handleFav}
+-        disabled={favBusy}
+-        aria-label={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
+-        title={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
+-      >
+-        {favorited ? "♥" : "♡"}
+-      </button>
+-
+-      <Link href={`/shop/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+-        <div className="shop-card-image-wrap">
+-          {hasDiscount(p) && <span className="badge-discount">-{discountPercent(p)}%</span>}
+-          {p.is_sponsored ? (
+-            <span className="shop-card-badge-sponsored">Sponsorisé</span>
+-          ) : p.isNew ? (
+-            <span className="shop-card-badge-new">Nouveau</span>
+-          ) : null}
+-          {p.images && p.images.length > 0 ? (
+-            <img src={p.images[0]} alt={p.name} className="shop-card-image" />
+-          ) : (
+-            <div className="shop-card-image shop-card-image-placeholder">🛍️</div>
+-          )}
+-        </div>
+-        <div className="name shop-card-name">{p.name}</div>
+-      </Link>
+-
+-      <span
+-        className="shop-card-condition"
+-        style={{ background: CONDITION_COLORS[p.condition] || "var(--gold-600)" }}
+-      >
+-        {CONDITION_LABELS[p.condition] || "Neuf"}
+-      </span>
+-
+-      <div className="shop">{p.shop_name}</div>
+-
+-      {Number(p.review_count) > 0 && (
+-        <div className="shop-card-rating">
+-          <Stars rating={p.avg_rating} />
+-          <span className="shop-card-rating-count">({p.review_count})</span>
+-        </div>
+-      )}
+-
+-      <PriceDisplay product={p} />
+-
+-      <button
+-        className="btn btn-primary"
+-        onClick={() => onAdd(p)}
+-        disabled={p.stock_quantity <= 0}
+-      >
+-        {p.stock_quantity <= 0
+-          ? "Rupture de stock"
+-          : justAdded === p.id
+-          ? "Ajouté ✓"
+-          : "Ajouter au panier"}
+-      </button>
+-    </div>
+-  );
+-}
+-
+-function FilterSidebar({
+-  categories,
+-  shops,
+-  categorySlug,
+-  shopId,
+-  condition,
+-  brand,
+-  city,
+-  minRating,
+-  brands,
+-  cities,
+-  minPrice,
+-  maxPrice,
+-  onCategoryPick,
+-  onShopChange,
+-  onConditionPick,
+-  onBrandChange,
+-  onCityChange,
+-  onMinRatingPick,
+-  minPriceInput,
+-  maxPriceInput,
+-  setMinPriceInput,
+-  setMaxPriceInput,
+-  onApplyPrice,
+-}) {
+-  return (
+-    <>
+-      <div className="sidebar-section">
+-        <h3>Catégories</h3>
+-        <div className="sidebar-cat-list">
+-          <button
+-            className={`sidebar-cat-link ${!categorySlug ? "active" : ""}`}
+-            onClick={() => onCategoryPick("")}
+-          >
+-            Toutes les catégories
+-          </button>
+-          {categories.map((cat) => (
+-            <div key={cat.id}>
+-              <button
+-                className={`sidebar-cat-link ${categorySlug === cat.slug ? "active" : ""}`}
+-                onClick={() => onCategoryPick(cat.slug)}
+-              >
+-                {cat.emoji} {cat.name}
+-              </button>
+-              {cat.children?.map((sub) => (
+-                <button
+-                  key={sub.id}
+-                  className={`sidebar-cat-link sidebar-cat-link-sub ${categorySlug === sub.slug ? "active" : ""}`}
+-                  onClick={() => onCategoryPick(sub.slug)}
+-                >
+-                  {sub.name}
+-                </button>
+-              ))}
+-            </div>
+-          ))}
+-        </div>
+-      </div>
+-
+-      <div className="sidebar-section">
+-        <h3>Prix (FCFA)</h3>
+-        <div style={{ display: "flex", gap: 8 }}>
+-          <input
+-            type="number"
+-            min="0"
+-            placeholder="Min"
+-            value={minPriceInput}
+-            onChange={(e) => setMinPriceInput(e.target.value)}
+-          />
+-          <input
+-            type="number"
+-            min="0"
+-            placeholder="Max"
+-            value={maxPriceInput}
+-            onChange={(e) => setMaxPriceInput(e.target.value)}
+-          />
+-        </div>
+-        <button className="btn btn-ghost" style={{ width: "100%", marginTop: 8 }} onClick={onApplyPrice}>
+-          Appliquer
+-        </button>
+-      </div>
+-
+-      <div className="sidebar-section">
+-        <h3>État</h3>
+-        <div className="sidebar-cat-list">
+-          <button
+-            className={`sidebar-cat-link ${!condition ? "active" : ""}`}
+-            onClick={() => onConditionPick("")}
+-          >
+-            Tous les états
+-          </button>
+-          {Object.entries(CONDITION_LABELS).map(([key, label]) => (
+-            <button
+-              key={key}
+-              className={`sidebar-cat-link ${condition === key ? "active" : ""}`}
+-              onClick={() => onConditionPick(key)}
+-            >
+-              {label}
+-            </button>
+-          ))}
+-        </div>
+-      </div>
+-
+-      <div className="sidebar-section">
+-        <h3>Boutique</h3>
+-        <select value={shopId} onChange={(e) => onShopChange(e.target.value)}>
+-          <option value="">Toutes les boutiques</option>
+-          {shops.map((s) => (
+-            <option key={s.id} value={s.id}>{s.name}</option>
+-          ))}
+-        </select>
+-      </div>
+-
+-      {brands.length > 0 && (
+-        <div className="sidebar-section">
+-          <h3>Marque</h3>
+-          <select value={brand} onChange={(e) => onBrandChange(e.target.value)}>
+-            <option value="">Toutes les marques</option>
+-            {brands.map((b) => (
+-              <option key={b} value={b}>{b}</option>
+-            ))}
+-          </select>
+-        </div>
+-      )}
+-
+-      {cities.length > 0 && (
+-        <div className="sidebar-section">
+-          <h3>Ville</h3>
+-          <select value={city} onChange={(e) => onCityChange(e.target.value)}>
+-            <option value="">Toutes les villes</option>
+-            {cities.map((c) => (
+-              <option key={c} value={c}>{c}</option>
+-            ))}
+-          </select>
+-        </div>
+-      )}
+-
+-      <div className="sidebar-section">
+-        <h3>Note minimum</h3>
+-        <div className="sidebar-cat-list">
+-          <button
+-            className={`sidebar-cat-link ${!minRating ? "active" : ""}`}
+-            onClick={() => onMinRatingPick("")}
+-          >
+-            Toutes les notes
+-          </button>
+-          {[4, 3, 2].map((n) => (
+-            <button
+-              key={n}
+-              className={`sidebar-cat-link ${minRating === String(n) ? "active" : ""}`}
+-              onClick={() => onMinRatingPick(String(n))}
+-            >
+-              {"★".repeat(n)}{"☆".repeat(5 - n)} et plus
+-            </button>
+-          ))}
+-        </div>
+-      </div>
+-    </>
+-  );
+-}
+-
+-function ShopContent() {
+-  const searchParams = useSearchParams();
+-  const router = useRouter();
+-  const categorySlug = searchParams.get("category") || "";
+-  const shopId = searchParams.get("shopId") || "";
+-  const condition = searchParams.get("condition") || "";
+-  const brand = searchParams.get("brand") || "";
+-  const city = searchParams.get("city") || "";
+-  const minRating = searchParams.get("minRating") || "";
+-  const sort = searchParams.get("sort") || "newest";
+-  const q = searchParams.get("q") || "";
+-  const minPrice = searchParams.get("minPrice") || "";
+-  const maxPrice = searchParams.get("maxPrice") || "";
+-
+-  const [products, setProducts] = useState([]);
+-  const [shops, setShops] = useState([]);
+-  const [categories, setCategories] = useState([]);
+-  const [brands, setBrands] = useState([]);
+-  const [cities, setCities] = useState([]);
+-  const [loading, setLoading] = useState(true);
+-  const [count, setCount] = useState(0);
+-  const [justAdded, setJustAdded] = useState(null);
+-  const [user, setUser] = useState(null);
+-  const [userChecked, setUserChecked] = useState(false);
+-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+-
+-  const [searchInput, setSearchInput] = useState(q);
+-  const [minPriceInput, setMinPriceInput] = useState(minPrice);
+-  const [maxPriceInput, setMaxPriceInput] = useState(maxPrice);
+-
+-  useEffect(() => {
+-    fetch("/api/shops").then((r) => r.json()).then((d) => setShops(d.shops || []));
+-    fetch("/api/categories").then((r) => r.json()).then((d) => setCategories(d.categories || []));
+-    fetch("/api/products/brands").then((r) => r.json()).then((d) => setBrands(d.brands || []));
+-    fetch("/api/shops/cities").then((r) => r.json()).then((d) => setCities(d.cities || []));
+-    fetch("/api/auth/me")
+-      .then((r) => r.json())
+-      .then((d) => {
+-        setUser(d.user || null);
+-        setUserChecked(true);
+-      });
+-  }, []);
+-
+-  useEffect(() => {
+-    setLoading(true);
+-    const params = new URLSearchParams();
+-    if (categorySlug) params.set("category", categorySlug);
+-    if (q) params.set("q", q);
+-    if (minPrice) params.set("minPrice", minPrice);
+-    if (maxPrice) params.set("maxPrice", maxPrice);
+-    if (shopId) params.set("shopId", shopId);
+-    if (condition) params.set("condition", condition);
+-    if (brand) params.set("brand", brand);
+-    if (city) params.set("city", city);
+-    if (minRating) params.set("minRating", minRating);
+-    if (sort) params.set("sort", sort);
+-
+-    fetch(`/api/products?${params.toString()}`)
+-      .then((r) => r.json())
+-      .then((data) => {
+-        setProducts(data.products || []);
+-        setLoading(false);
+-      });
+-    setCount(cartCount(getCart()));
+-  }, [categorySlug, q, minPrice, maxPrice, shopId, condition, brand, city, minRating, sort]);
+-
+-  function updateParams(patch) {
+-    const params = new URLSearchParams(searchParams.toString());
+-    Object.entries(patch).forEach(([key, value]) => {
+-      if (value) params.set(key, value);
+-      else params.delete(key);
+-    });
+-    router.push(`/shop?${params.toString()}`);
+-    setMobileFiltersOpen(false);
++  if (category) {
++    return {
++      title: `Catégorie : ${category}`,
++      description: `Découvrez les produits de la catégorie ${category} sur FasoShop.`,
++    };
+   }
+-
+-  function handleSearchSubmit(e) {
+-    e.preventDefault();
+-    updateParams({ q: searchInput });
+-  }
+-
+-  function handleAdd(product) {
+-    addToCart(product);
+-    setCount(cartCount(getCart()));
+-    setJustAdded(product.id);
+-    setTimeout(() => setJustAdded(null), 1200);
+-  }
+-
+-  async function handleLogout() {
+-    await fetch("/api/auth/logout", { method: "POST" });
+-    setUser(null);
+-    router.push("/");
+-  }
+-
+-  function accountLink() {
+-    if (!user) return "/login";
+-    if (user.role === "vendor") return "/vendor/dashboard";
+-    if (user.role === "admin") return "/admin/dashboard";
+-    return "/orders";
+-  }
+-
+-  const sidebarProps = {
+-    categories,
+-    shops,
+-    categorySlug,
+-    shopId,
+-    condition,
+-    brand,
+-    city,
+-    minRating,
+-    brands,
+-    cities,
+-    minPrice,
+-    maxPrice,
+-    onCategoryPick: (slug) => updateParams({ category: slug }),
+-    onShopChange: (id) => updateParams({ shopId: id }),
+-    onConditionPick: (val) => updateParams({ condition: val }),
+-    onBrandChange: (val) => updateParams({ brand: val }),
+-    onCityChange: (val) => updateParams({ city: val }),
+-    onMinRatingPick: (val) => updateParams({ minRating: val }),
+-    minPriceInput,
+-    maxPriceInput,
+-    setMinPriceInput,
+-    setMaxPriceInput,
+-    onApplyPrice: () => updateParams({ minPrice: minPriceInput, maxPrice: maxPriceInput }),
++  return {
++    title: "Catalogue",
++    description: "Parcourez tous les produits disponibles sur FasoShop, toutes boutiques confondues.",
+   };
++}
+ 
+-  return (
+-    <div className="shell">
+-      <div className="topbar">
+-        <Link href="/" className="brand" style={{ textDecoration: "none" }}>
+-          🛒 FasoShop
+-        </Link>
+-        <div className="topbar-actions">
+-          <Link href="/devenir-vendeur"><button>Devenir vendeur</button></Link>
+-          {userChecked && user && <Link href="/favoris"><button>♡ Favoris</button></Link>}
+-          {userChecked && user ? (
+-            <>
+-              <Link href={accountLink()}><button>Bonjour, {user.full_name?.split(" ")[0]}</button></Link>
+-              <button onClick={handleLogout}>Déconnexion</button>
+-            </>
+-          ) : (
+-            <Link href="/login"><button>Se connecter</button></Link>
+-          )}
+-        </div>
+-      </div>
+-      <div className="woven-strip" />
+-
+-      {/* Catégories en défilement horizontal — mobile uniquement */}
+-      <div className="shop-mobile-cats">
+-        <button
+-          className={`category-pill ${!categorySlug ? "active-pill" : ""}`}
+-          onClick={() => updateParams({ category: "" })}
+-        >
+-          Tout
+-        </button>
+-        {categories.map((cat) => (
+-          <button
+-            key={cat.id}
+-            className={`category-pill ${categorySlug === cat.slug ? "active-pill" : ""}`}
+-            onClick={() => updateParams({ category: cat.slug })}
+-          >
+-            {cat.emoji} {cat.name}
+-          </button>
+-        ))}
+-      </div>
+-
+-      <div className="shop-layout">
+-        <aside className="shop-sidebar">
+-          <FilterSidebar {...sidebarProps} />
+-        </aside>
+-
+-        <div className="shop-main">
+-          <div className="page-header" style={{ marginBottom: 12 }}>
+-            <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+-              <input
+-                type="text"
+-                placeholder="Rechercher un produit..."
+-                value={searchInput}
+-                onChange={(e) => setSearchInput(e.target.value)}
+-                style={{ flex: 1 }}
+-              />
+-              <button type="submit" className="btn btn-primary">Rechercher</button>
+-            </form>
+-          </div>
+-
+-          <div className="shop-toolbar">
+-            <span className="shop-result-count">
+-              {loading ? "Chargement..." : `${products.length} produit${products.length > 1 ? "s" : ""}`}
+-            </span>
+-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+-              <button
+-                className="btn btn-ghost shop-mobile-filter-btn"
+-                onClick={() => setMobileFiltersOpen(true)}
+-              >
+-                ⚙ Filtres
+-              </button>
+-              <select value={sort} onChange={(e) => updateParams({ sort: e.target.value })} style={{ width: "auto" }}>
+-                {SORT_OPTIONS.map((opt) => (
+-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+-                ))}
+-              </select>
+-            </div>
+-          </div>
+-
+-          {loading ? (
+-            <p>Chargement...</p>
+-          ) : products.length === 0 ? (
+-            <div className="empty-state">
+-              <div className="glyph">🛍️</div>
+-              <p>Aucun produit ne correspond à votre recherche.</p>
+-            </div>
+-          ) : (
+-            <div className="shop-grid">
+-              {products.map((p) => (
+-                <ProductCard key={p.id} p={p} onAdd={handleAdd} justAdded={justAdded} user={user} router={router} />
+-              ))}
+-            </div>
+-          )}
+-        </div>
+-      </div>
+-
+-      {/* Panneau de filtres coulissant — mobile uniquement */}
+-      {mobileFiltersOpen && (
+-        <div className="shop-filter-overlay" onClick={() => setMobileFiltersOpen(false)}>
+-          <div className="shop-filter-drawer" onClick={(e) => e.stopPropagation()}>
+-            <div className="shop-filter-drawer-head">
+-              <strong>Filtres</strong>
+-              <button className="btn btn-ghost" onClick={() => setMobileFiltersOpen(false)}>Fermer ✕</button>
+-            </div>
+-            <FilterSidebar {...sidebarProps} />
+-          </div>
+-        </div>
+-      )}
++// Server Component : le premier rendu contient déjà les produits correspondant
++// aux filtres présents dans l'URL (SSR), les filtres/tri restant ensuite gérés
++// côté client (ShopClient) exactement comme avant.
++export default async function ShopPage({ searchParams }) {
++  const sp = await searchParams;
++
++  const filters = {
++    categorySlug: sp?.category || null,
++    q: sp?.q || null,
++    minPrice: sp?.minPrice || null,
++    maxPrice: sp?.maxPrice || null,
++    shopId: sp?.shopId || null,
++    condition: sp?.condition || null,
++    brand: sp?.brand || null,
++    city: sp?.city || null,
++    minRating: sp?.minRating || null,
++    sort: sp?.sort || "newest",
++  };
+ 
+-      {count > 0 && (
+-        <Link href="/cart" className="cart-fab">
+-          🛒 Panier ({count})
+-        </Link>
+-      )}
++  const user = await getCurrentUser();
+ 
+-      <Footer />
+-    </div>
+-  );
+-}
++  const [products, shops, categories, brands, cities] = await Promise.all([
++    getProducts(filters, user?.id ?? null),
++    getActiveShops(),
++    getCategoriesTree(),
++    getBrands(),
++    getShopCities(),
++  ]);
+ 
+-export default function ShopPage() {
+   return (
+-    <Suspense fallback={<div className="shell"><div className="content"><p>Chargement...</p></div></div>}>
+-      <ShopContent />
+-    </Suspense>
++    <ShopClient
++      initialProducts={products}
++      initialShops={shops}
++      initialCategories={categories}
++      initialBrands={brands}
++      initialCities={cities}
++      initialUser={user}
++    />
+   );
+ }
+diff --git a/lib/queries/categories.js b/lib/queries/categories.js
+new file mode 100644
+index 0000000..ab80b59
+--- /dev/null
++++ b/lib/queries/categories.js
+@@ -0,0 +1,16 @@
++import sql from "@/lib/db";
++
++// Catégories principales avec leurs sous-catégories imbriquées.
++export async function getCategoriesTree() {
++  const rows = await sql`
++    SELECT id, name, slug, parent_id, emoji, sort_order
++    FROM categories
++    ORDER BY parent_id NULLS FIRST, sort_order
++  `;
++
++  const parents = rows.filter((r) => !r.parent_id);
++  return parents.map((parent) => ({
++    ...parent,
++    children: rows.filter((r) => r.parent_id === parent.id),
++  }));
++}
+diff --git a/lib/queries/flashSales.js b/lib/queries/flashSales.js
+new file mode 100644
+index 0000000..fb820a3
+--- /dev/null
++++ b/lib/queries/flashSales.js
+@@ -0,0 +1,22 @@
++import sql from "@/lib/db";
++import { parseImages } from "@/lib/queries/products";
++
++// Produits actuellement en vente flash (date de fin non dépassée),
++// triés par fin la plus proche en premier, limité à 8 produits.
++export async function getActiveFlashSales() {
++  const products = await sql`
++    SELECT p.id, p.name, p.price, p.compare_at_price, p.stock_quantity, p.images, p.condition,
++           p.flash_sale_ends_at, p.flash_sale_stock_snapshot,
++           s.name AS shop_name
++    FROM products p
++    JOIN shops s ON s.id = p.shop_id
++    WHERE p.flash_sale_ends_at IS NOT NULL
++      AND p.flash_sale_ends_at > NOW()
++      AND p.status = 'active' AND s.status = 'active'
++      AND p.stock_quantity > 0
++    ORDER BY p.flash_sale_ends_at ASC
++    LIMIT 8
++  `;
++
++  return products.map((p) => ({ ...p, images: parseImages(p.images) }));
++}
+diff --git a/lib/queries/homepage.js b/lib/queries/homepage.js
+new file mode 100644
+index 0000000..ab05539
+--- /dev/null
++++ b/lib/queries/homepage.js
+@@ -0,0 +1,53 @@
++import sql from "@/lib/db";
++import { parseImages } from "@/lib/queries/products";
++
++/**
++ * Produits les plus vendus (bestSellers) et les plus récents (newArrivals),
++ * uniquement des boutiques actives (vérifiées), avec la note moyenne de la boutique.
++ *
++ * NOTE : cette fonction/route existe mais n'est actuellement appelée par aucune
++ * page du frontend (app/page.js ne l'utilise plus). Conservée telle quelle
++ * (aucune suppression de fonctionnalité sans demande explicite) — à réintégrer
++ * dans la page d'accueil ou à retirer selon la décision produit.
++ */
++export async function getHomepageProducts() {
++  const shopRatingJoin = sql`
++    LEFT JOIN (
++      SELECT p2.shop_id, AVG(r.rating)::numeric(2,1) AS avg_rating, COUNT(r.id) AS review_count
++      FROM reviews r
++      JOIN products p2 ON p2.id = r.product_id
++      GROUP BY p2.shop_id
++    ) sr ON sr.shop_id = s.id
++  `;
++
++  const bestSellersRaw = await sql`
++    SELECT p.id, p.name, p.price, p.compare_at_price, p.images, p.condition, s.name AS shop_name,
++           COALESCE(sr.avg_rating, 0) AS shop_rating, COALESCE(sr.review_count, 0) AS shop_review_count,
++           COALESCE(SUM(oi.quantity), 0) AS total_sold
++    FROM products p
++    JOIN shops s ON s.id = p.shop_id
++    LEFT JOIN order_items oi ON oi.product_id = p.id
++    LEFT JOIN orders o ON o.id = oi.order_id AND o.status IN ('paid', 'shipped', 'delivered')
++    ${shopRatingJoin}
++    WHERE s.status = 'active'
++    GROUP BY p.id, p.name, p.price, p.compare_at_price, p.images, p.condition, s.name, sr.avg_rating, sr.review_count
++    ORDER BY RANDOM()
++    LIMIT 8
++  `;
++
++  const newArrivalsRaw = await sql`
++    SELECT p.id, p.name, p.price, p.compare_at_price, p.images, p.condition, s.name AS shop_name,
++           COALESCE(sr.avg_rating, 0) AS shop_rating, COALESCE(sr.review_count, 0) AS shop_review_count
++    FROM products p
++    JOIN shops s ON s.id = p.shop_id
++    ${shopRatingJoin}
++    WHERE s.status = 'active'
++    ORDER BY RANDOM()
++    LIMIT 8
++  `;
++
++  return {
++    bestSellers: bestSellersRaw.map((p) => ({ ...p, images: parseImages(p.images) })),
++    newArrivals: newArrivalsRaw.map((p) => ({ ...p, images: parseImages(p.images) })),
++  };
++}
+diff --git a/lib/queries/products.js b/lib/queries/products.js
+new file mode 100644
+index 0000000..5771294
+--- /dev/null
++++ b/lib/queries/products.js
+@@ -0,0 +1,103 @@
++import sql from "@/lib/db";
++
++export function parseImages(images) {
++  if (Array.isArray(images)) return images;
++  if (typeof images === "string") {
++    try {
++      return JSON.parse(images);
++    } catch {
++      return [];
++    }
++  }
++  return [];
++}
++
++const SORT_CLAUSES = {
++  newest: (sql) => sql`p.created_at DESC`,
++  price_asc: (sql) => sql`p.price ASC`,
++  price_desc: (sql) => sql`p.price DESC`,
++  rating: (sql) => sql`avg_rating DESC NULLS LAST, p.created_at DESC`,
++};
++
++/**
++ * Catalogue public — uniquement les produits actifs et en stock.
++ * Filtres : category (slug), q (texte), minPrice, maxPrice, shopId,
++ *           condition (neuf|quasi_neuf|occasion), brand, city, minRating (1-5)
++ * Tri : newest|price_asc|price_desc|rating (défaut : newest)
++ * Les produits sponsorisés actifs remontent toujours en tête de liste.
++ *
++ * @param {object} filters
++ * @param {number|string|null} userId - utilisateur connecté, pour calculer is_favorited
++ */
++export async function getProducts(filters = {}, userId = null) {
++  const {
++    categorySlug = null,
++    q = null,
++    minPrice = null,
++    maxPrice = null,
++    shopId = null,
++    condition = null,
++    brand = null,
++    city = null,
++    minRating = null,
++    sort = "newest",
++  } = filters;
++
++  const sortKey = SORT_CLAUSES[sort] ? sort : "newest";
++
++  let products = await sql`
++    SELECT p.id, p.name, p.description, p.price, p.compare_at_price, p.stock_quantity, p.images, p.condition,
++           p.brand, p.created_at,
++           (p.is_sponsored AND p.sponsored_until > NOW()) AS is_sponsored,
++           s.id AS shop_id, s.name AS shop_name, s.city AS shop_city,
++           c.name AS category_name, c.slug AS category_slug,
++           COALESCE(r.avg_rating, 0) AS avg_rating, COALESCE(r.review_count, 0) AS review_count,
++           (${userId}::int IS NOT NULL AND EXISTS (
++             SELECT 1 FROM favorites f WHERE f.product_id = p.id AND f.user_id = ${userId}::int
++           )) AS is_favorited
++    FROM products p
++    JOIN shops s ON s.id = p.shop_id
++    LEFT JOIN categories c ON c.id = p.category_id
++    LEFT JOIN (
++      SELECT product_id, AVG(rating)::numeric(2,1) AS avg_rating, COUNT(*)::int AS review_count
++      FROM reviews
++      GROUP BY product_id
++    ) r ON r.product_id = p.id
++    WHERE p.status = 'active' AND s.status = 'active'
++      AND (${categorySlug}::text IS NULL OR p.category_id IN (
++        SELECT id FROM categories
++        WHERE slug = ${categorySlug}
++           OR parent_id = (SELECT id FROM categories WHERE slug = ${categorySlug})
++      ))
++      AND (${q}::text IS NULL OR p.name ILIKE ${q ? `%${q}%` : null})
++      AND (${minPrice}::numeric IS NULL OR p.price >= ${minPrice}::numeric)
++      AND (${maxPrice}::numeric IS NULL OR p.price <= ${maxPrice}::numeric)
++      AND (${shopId}::int IS NULL OR s.id = ${shopId}::int)
++      AND (${condition}::text IS NULL OR p.condition = ${condition})
++      AND (${brand}::text IS NULL OR p.brand = ${brand})
++      AND (${city}::text IS NULL OR s.city = ${city})
++      AND (${minRating}::numeric IS NULL OR COALESCE(r.avg_rating, 0) >= ${minRating}::numeric)
++    ORDER BY (p.is_sponsored AND p.sponsored_until > NOW()) DESC, ${SORT_CLAUSES[sortKey](sql)}
++  `;
++
++  const now = Date.now();
++  const NEW_WINDOW_MS = 14 * 24 * 60 * 60 * 1000; // 14 jours
++
++  return products.map((p) => ({
++    ...p,
++    images: parseImages(p.images),
++    isNew: p.created_at ? now - new Date(p.created_at).getTime() < NEW_WINDOW_MS : false,
++  }));
++}
++
++// Marques distinctes utilisées par des produits actifs, pour le filtre catalogue.
++export async function getBrands() {
++  const rows = await sql`
++    SELECT DISTINCT p.brand
++    FROM products p
++    JOIN shops s ON s.id = p.shop_id
++    WHERE p.status = 'active' AND s.status = 'active' AND p.brand IS NOT NULL AND p.brand != ''
++    ORDER BY p.brand ASC
++  `;
++  return rows.map((r) => r.brand);
++}
+diff --git a/lib/queries/shops.js b/lib/queries/shops.js
+new file mode 100644
+index 0000000..0ad7647
+--- /dev/null
++++ b/lib/queries/shops.js
+@@ -0,0 +1,19 @@
++import sql from "@/lib/db";
++
++// Liste publique des boutiques actives, pour le filtre du catalogue.
++export async function getActiveShops() {
++  return sql`
++    SELECT id, name FROM shops WHERE status = 'active' ORDER BY name
++  `;
++}
++
++// Villes distinctes des boutiques actives, pour le filtre catalogue.
++export async function getShopCities() {
++  const rows = await sql`
++    SELECT DISTINCT city
++    FROM shops
++    WHERE status = 'active' AND city IS NOT NULL AND city != ''
++    ORDER BY city ASC
++  `;
++  return rows.map((r) => r.city);
++}
+diff --git a/lib/session.js b/lib/session.js
+new file mode 100644
+index 0000000..f75b2a0
+--- /dev/null
++++ b/lib/session.js
+@@ -0,0 +1,21 @@
++// Helper Server-only : récupère l'utilisateur connecté à partir du cookie JWT.
++// Utilisable à la fois dans les Server Components (app/page.js, app/shop/page.js...)
++// et dans les API routes (ex: /api/auth/me), pour éviter de dupliquer la logique
++// de vérification de session à deux endroits.
++import { cookies } from "next/headers";
++import sql from "@/lib/db";
++import { verifyToken, AUTH_COOKIE_NAME } from "@/lib/auth";
++
++export async function getCurrentUser() {
++  const cookieStore = await cookies();
++  const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
++  if (!token) return null;
++
++  const payload = await verifyToken(token);
++  if (!payload) return null;
++
++  const [user] = await sql`
++    SELECT id, email, full_name, role FROM users WHERE id = ${payload.userId}
++  `;
++  return user || null;
++}
+-- 
+2.43.0
+

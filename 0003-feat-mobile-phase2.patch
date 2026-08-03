@@ -1,0 +1,904 @@
+From 9f890e92a01dd5b0f21e0fa87a0307ad145f3f29 Mon Sep 17 00:00:00 2001
+From: FasoShop QA Bot <qa@fasoshop.dev>
+Date: Mon, 3 Aug 2026 08:16:56 +0000
+Subject: [PATCH] feat(mobile): hero compact, cartes de confiance, sections
+ homepage (Phase 2)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Dépend du commit Phase 1 (feat(mobile): refonte navigation mobile) —
+utilise SiteHeader/BottomNav déjà en place sur / et /shop.
+
+Corrections/fondations :
+- lib/queries/homepage.js : bug réel corrigé — bestSellers/newArrivals
+  étaient triés par ORDER BY RANDOM() au lieu du critère annoncé (le champ
+  total_sold était calculé mais jamais utilisé pour trier). Ajout du
+  filtre p.status='active' qui manquait. Ajout getTopRated() pour la
+  section "Produits populaires" (vraies notes, pas de donnée simulée).
+- lib/queries/products.js : ajout de shop_verified (shops.verified_at)
+  pour le badge "Boutique vérifiée" — donnée réelle en base.
+- app/components/ProductCard.js : carte produit extraite en composant
+  partagé (catalogue + sections homepage), badge vérifié ajouté.
+- app/components/HorizontalProductSection.js : section générique
+  (titre + Voir tout + scroll horizontal), réutilisée pour Nouveautés/
+  Meilleures ventes/Populaires. Ne rend rien si la liste est vide.
+- app/components/FlashSaleSection.js : converti en SSR (reçoit les
+  produits en prop au lieu de les fetcher côté client) + lien Voir tout.
+- app/shop/ShopClient.js : suppression du ProductCard dupliqué en
+  interne (~90 lignes), bascule vers le composant partagé. Nettoyage de
+  justAdded/handleAdd/addToCart/PriceDisplay désormais inutiles ici (le
+  ProductCard partagé gère son propre état panier/favori).
+
+CSS (app/globals.css) :
+- Hero mobile resserré dans la fourchette demandée (240-300px) : le
+  hero avait déjà un bon traitement responsive (empilé, flèches, dots)
+  mais le panneau icône + la description à eux seuls dépassaient large-
+  ment cette hauteur une fois empilés. Masqués sur mobile uniquement,
+  coins arrondis + marge latérale 16px ajoutés.
+- Bandes de confiance redessinées en vraies cartes (icône + titre +
+  description), défilement horizontal sur mobile.
+- Nouvelles classes pour les sections homepage en scroll horizontal et
+  le badge vérifié sur les cartes produit.
+
+Volontairement absent : section "Recommandés". Aucun moteur de
+recommandation personnalisé n'existe en base (historique d'achat/
+navigation) — afficher des produits au hasard sous ce nom aurait été
+trompeur. À construire comme un vrai chantier data si souhaité.
+
+Validé avec npm run build (53 pages, compilation propre, / passe de
+4 à 8.19 kB avec les nouvelles sections, /shop réduit de 4.01 à
+3.18 kB après dédoublonnage du ProductCard).
+---
+ app/components/FlashSaleSection.js         |  17 +-
+ app/components/HorizontalProductSection.js |  30 ++++
+ app/components/ProductCard.js              | 116 ++++++++++++++
+ app/globals.css                            | 175 ++++++++++++++++++---
+ app/page.js                                |  73 ++++++++-
+ app/shop/ShopClient.js                     | 112 +------------
+ lib/queries/homepage.js                    | 105 ++++++++-----
+ lib/queries/products.js                    |   1 +
+ 8 files changed, 447 insertions(+), 182 deletions(-)
+ create mode 100644 app/components/HorizontalProductSection.js
+ create mode 100644 app/components/ProductCard.js
+
+diff --git a/app/components/FlashSaleSection.js b/app/components/FlashSaleSection.js
+index ee7a2d7..a67b4ff 100644
+--- a/app/components/FlashSaleSection.js
++++ b/app/components/FlashSaleSection.js
+@@ -14,21 +14,11 @@ function formatCountdown(ms) {
+   return `${pad(hours)}h : ${pad(minutes)}m : ${pad(seconds)}s`;
+ }
+ 
+-export default function FlashSaleSection() {
+-  const [products, setProducts] = useState([]);
++export default function FlashSaleSection({ initialProducts = [] }) {
++  const [products] = useState(initialProducts);
+   const [now, setNow] = useState(Date.now());
+-  const [loaded, setLoaded] = useState(false);
+   const scrollRef = useRef(null);
+ 
+-  useEffect(() => {
+-    fetch("/api/flash-sales")
+-      .then((r) => r.json())
+-      .then((d) => {
+-        setProducts(d.products || []);
+-        setLoaded(true);
+-      });
+-  }, []);
+-
+   useEffect(() => {
+     const timer = setInterval(() => setNow(Date.now()), 1000);
+     return () => clearInterval(timer);
+@@ -38,7 +28,7 @@ export default function FlashSaleSection() {
+     scrollRef.current?.scrollBy({ left: amount, behavior: "smooth" });
+   }
+ 
+-  if (!loaded || products.length === 0) return null;
++  if (products.length === 0) return null;
+ 
+   const soonestEnd = Math.min(...products.map((p) => new Date(p.flash_sale_ends_at).getTime()));
+   const remaining = soonestEnd - now;
+@@ -53,6 +43,7 @@ export default function FlashSaleSection() {
+         <div className="flash-timer">
+           Termine dans <strong>{formatCountdown(remaining)}</strong>
+         </div>
++        <Link href="/shop?sort=newest" className="section-see-all flash-see-all">Voir tout →</Link>
+       </div>
+ 
+       <div className="flash-scroll-wrap">
+diff --git a/app/components/HorizontalProductSection.js b/app/components/HorizontalProductSection.js
+new file mode 100644
+index 0000000..e5a386a
+--- /dev/null
++++ b/app/components/HorizontalProductSection.js
+@@ -0,0 +1,30 @@
++import Link from "next/link";
++import ProductCard from "@/app/components/ProductCard";
++
++// Section homepage générique : titre + lien "Voir tout" + défilement
++// horizontal de ProductCard. Utilisée pour Nouveautés / Meilleures ventes /
++// Populaires — toutes alimentées par de vraies requêtes SQL (voir
++// lib/queries/homepage.js et lib/queries/products.js), aucune donnée simulée.
++// Ne rend rien si la liste est vide (ex: aucune vente encore enregistrée
++// pour "Meilleures ventes") plutôt que d'afficher une section vide.
++export default function HorizontalProductSection({ title, icon, seeAllHref, products, user }) {
++  if (!products || products.length === 0) return null;
++
++  return (
++    <div className="home-section home-hscroll-section">
++      <div className="section-head">
++        <h2>{icon} {title}</h2>
++        {seeAllHref && (
++          <Link href={seeAllHref} className="section-see-all">Voir tout →</Link>
++        )}
++      </div>
++      <div className="home-hscroll-track">
++        {products.map((p) => (
++          <div className="home-hscroll-item" key={p.id}>
++            <ProductCard p={p} user={user} compact />
++          </div>
++        ))}
++      </div>
++    </div>
++  );
++}
+diff --git a/app/components/ProductCard.js b/app/components/ProductCard.js
+new file mode 100644
+index 0000000..42d0a1d
+--- /dev/null
++++ b/app/components/ProductCard.js
+@@ -0,0 +1,116 @@
++"use client";
++
++import { useState } from "react";
++import { useRouter } from "next/navigation";
++import Link from "next/link";
++import { addToCart, getCart, cartCount } from "@/lib/cart";
++import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
++
++const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
++const CONDITION_COLORS = { neuf: "var(--gold-600)", quasi_neuf: "#6b7280", occasion: "var(--bissap-600)" };
++
++export function Stars({ rating }) {
++  const rounded = Math.round(Number(rating) || 0);
++  return (
++    <span className="stars" aria-label={`${rating} sur 5`}>
++      {"★".repeat(rounded)}
++      {"☆".repeat(5 - rounded)}
++    </span>
++  );
++}
++
++// Carte produit standard (catalogue + sections horizontales de l'accueil).
++// Gère elle-même le favori et l'ajout au panier — aucun état à faire
++// remonter au parent, pour rester réutilisable telle quelle partout.
++export default function ProductCard({ p, user, compact = false }) {
++  const router = useRouter();
++  const [favorited, setFavorited] = useState(Boolean(p.is_favorited));
++  const [favBusy, setFavBusy] = useState(false);
++  const [justAdded, setJustAdded] = useState(false);
++
++  async function handleFav(e) {
++    e.preventDefault();
++    if (!user) {
++      router.push("/login");
++      return;
++    }
++    setFavBusy(true);
++    if (favorited) {
++      await fetch(`/api/favorites/${p.id}`, { method: "DELETE" });
++      setFavorited(false);
++    } else {
++      await fetch("/api/favorites", {
++        method: "POST",
++        headers: { "Content-Type": "application/json" },
++        body: JSON.stringify({ productId: p.id }),
++      });
++      setFavorited(true);
++    }
++    setFavBusy(false);
++  }
++
++  function handleAdd() {
++    addToCart(p);
++    cartCount(getCart());
++    setJustAdded(true);
++    setTimeout(() => setJustAdded(false), 1200);
++  }
++
++  return (
++    <div className={`product-card shop-card ${compact ? "shop-card-compact" : ""}`}>
++      <button
++        className={`shop-card-fav ${favorited ? "shop-card-fav-active" : ""}`}
++        onClick={handleFav}
++        disabled={favBusy}
++        aria-label={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
++        title={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
++      >
++        {favorited ? "♥" : "♡"}
++      </button>
++
++      <Link href={`/shop/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
++        <div className="shop-card-image-wrap">
++          {hasDiscount(p) && <span className="badge-discount">-{discountPercent(p)}%</span>}
++          {p.is_sponsored ? (
++            <span className="shop-card-badge-sponsored">Sponsorisé</span>
++          ) : p.isNew ? (
++            <span className="shop-card-badge-new">Nouveau</span>
++          ) : null}
++          {p.images && p.images.length > 0 ? (
++            <img src={p.images[0]} alt={p.name} className="shop-card-image" loading="lazy" />
++          ) : (
++            <div className="shop-card-image shop-card-image-placeholder">🛍️</div>
++          )}
++        </div>
++        <div className="name shop-card-name">{p.name}</div>
++      </Link>
++
++      <span
++        className="shop-card-condition"
++        style={{ background: CONDITION_COLORS[p.condition] || "var(--gold-600)" }}
++      >
++        {CONDITION_LABELS[p.condition] || "Neuf"}
++      </span>
++
++      <div className="shop-card-shop-row">
++        <span className="shop">{p.shop_name}</span>
++        {p.shop_verified && (
++          <span className="shop-card-verified" title="Boutique vérifiée">✓</span>
++        )}
++      </div>
++
++      {Number(p.review_count) > 0 && (
++        <div className="shop-card-rating">
++          <Stars rating={p.avg_rating} />
++          <span className="shop-card-rating-count">({p.review_count})</span>
++        </div>
++      )}
++
++      <PriceDisplay product={p} />
++
++      <button className="btn btn-primary" onClick={handleAdd} disabled={p.stock_quantity <= 0}>
++        {p.stock_quantity <= 0 ? "Rupture de stock" : justAdded ? "Ajouté ✓" : "Ajouter au panier"}
++      </button>
++    </div>
++  );
++}
+diff --git a/app/globals.css b/app/globals.css
+index 9601e63..eb57baa 100644
+--- a/app/globals.css
++++ b/app/globals.css
+@@ -2308,14 +2308,23 @@ tbody tr:hover {
+ 
+ /* ===== Mobile : ≤767px ===== */
+ @media (max-width: 767px) {
++  .hero-carousel {
++    margin: 12px 16px;
++    width: calc(100% - 32px);
++    border-radius: 16px;
++  }
++
+   .hero-slide {
+     grid-template-columns: 1fr;
+-    grid-template-rows: auto auto;
++    grid-template-rows: auto;
+     height: auto;
+-    min-height: 300px;
+-    padding: 28px 24px 64px;
++    min-height: 240px;
++    max-height: 300px;
++    padding: 24px 20px;
+     text-align: center;
+     gap: 4px;
++    border-radius: 16px;
++    overflow: hidden;
+   }
+ 
+   .hero-slide-text {
+@@ -2327,14 +2336,17 @@ tbody tr:hover {
+     justify-content: center;
+   }
+ 
++  /* Description masquée sur mobile : avec le panneau icône retiré, elle
++     suffirait à elle seule à dépasser la fourchette de hauteur cible
++     (240-300px). Le tag + titre + sous-titre restent le message principal. */
+   .hero-description {
+-    margin: 0 auto 22px;
++    display: none;
+   }
+ 
++  /* Panneau icône masqué sur mobile : illustration décorative qui n'apporte
++     pas d'information, retirée pour garder le Hero compact comme demandé. */
+   .hero-slide-visual {
+-    order: 1;
+-    height: auto;
+-    margin-bottom: 12px;
++    display: none;
+   }
+ 
+   .hero-slide-icon-panel {
+@@ -2349,26 +2361,22 @@ tbody tr:hover {
+   .hero-tag {
+     font-size: 0.68rem;
+     padding: 4px 12px;
+-    margin-bottom: 12px;
++    margin-bottom: 8px;
+   }
+ 
+   .hero-title {
+-    font-size: 1.5rem;
+-    margin-bottom: 8px;
++    font-size: 1.35rem;
++    margin-bottom: 6px;
+   }
+ 
+   .hero-subtitle {
+-    font-size: 0.9rem;
+-  }
+-
+-  .hero-description {
+-    font-size: 0.82rem;
+-    margin-bottom: 18px;
++    font-size: 0.85rem;
++    margin-bottom: 14px;
+   }
+ 
+   .hero-cta-primary, .hero-cta-secondary {
+-    padding: 10px 20px;
+-    font-size: 0.85rem;
++    padding: 9px 18px;
++    font-size: 0.82rem;
+   }
+ 
+   /* Flèches discrètes sur mobile — le swipe est le mode principal */
+@@ -2387,7 +2395,7 @@ tbody tr:hover {
+     height: 8px;
+   }
+   .hero-dots {
+-    bottom: 14px;
++    bottom: 10px;
+   }
+ }
+ 
+@@ -3247,3 +3255,132 @@ tbody tr:hover {
+ .bottom-nav {
+   max-width: 100vw;
+ }
++
++/* ============================================
++   PHASE 2 — Hero compact, cartes de confiance, sections homepage
++   ============================================ */
++
++/* ---- Cartes de confiance (remplace l'ancienne bande texte simple) ---- */
++.trust-strip {
++  display: flex;
++  gap: 12px;
++  overflow-x: auto;
++  scrollbar-width: none;
++  padding: 16px;
++}
++
++.trust-strip::-webkit-scrollbar {
++  display: none;
++}
++
++.trust-card {
++  display: flex;
++  align-items: center;
++  gap: 10px;
++  flex: 0 0 auto;
++  min-width: 210px;
++  background: #fff;
++  border: 1px solid var(--border);
++  border-radius: 14px;
++  padding: 12px 16px;
++  scroll-snap-align: start;
++}
++
++.trust-card .trust-icon {
++  font-size: 1.4rem;
++  flex-shrink: 0;
++}
++
++.trust-card-title {
++  margin: 0;
++  font-size: 0.85rem;
++  font-weight: 600;
++  color: var(--ink-900);
++}
++
++.trust-card-desc {
++  margin: 2px 0 0;
++  font-size: 0.72rem;
++  color: var(--ink-400);
++}
++
++@media (min-width: 768px) {
++  .trust-strip {
++    justify-content: center;
++    flex-wrap: wrap;
++    overflow: visible;
++  }
++}
++
++/* ---- Lien "Voir tout" des sections homepage ---- */
++.section-see-all {
++  color: var(--millet-600);
++  font-weight: 600;
++  font-size: 0.85rem;
++  text-decoration: none;
++  white-space: nowrap;
++}
++
++.section-see-all:hover {
++  text-decoration: underline;
++}
++
++.flash-see-all {
++  color: #fff;
++  font-size: 0.8rem;
++}
++
++/* ---- Sections produits en défilement horizontal (Nouveautés, etc.) ---- */
++.home-hscroll-track {
++  display: flex;
++  gap: 12px;
++  overflow-x: auto;
++  scroll-snap-type: x proximity;
++  scrollbar-width: none;
++  padding-bottom: 4px;
++}
++
++.home-hscroll-track::-webkit-scrollbar {
++  display: none;
++}
++
++.home-hscroll-item {
++  flex: 0 0 160px;
++  scroll-snap-align: start;
++}
++
++@media (min-width: 768px) {
++  .home-hscroll-item {
++    flex-basis: 200px;
++  }
++}
++
++/* ---- Badge "Boutique vérifiée" sur les cartes produit ---- */
++.shop-card-shop-row {
++  display: flex;
++  align-items: center;
++  gap: 5px;
++  padding: 0 14px;
++}
++
++.shop-card-shop-row .shop {
++  padding: 0;
++}
++
++.shop-card-verified {
++  display: inline-flex;
++  align-items: center;
++  justify-content: center;
++  width: 14px;
++  height: 14px;
++  border-radius: 50%;
++  background: var(--millet-600);
++  color: #fff;
++  font-size: 0.55rem;
++  font-weight: 700;
++  flex-shrink: 0;
++}
++
++.shop-card-compact .shop-card-name {
++  font-size: 0.85rem;
++}
+diff --git a/app/page.js b/app/page.js
+index 30dbd9e..b3e944b 100644
+--- a/app/page.js
++++ b/app/page.js
+@@ -1,12 +1,15 @@
+ import Link from "next/link";
+ import { getCategoriesTree } from "@/lib/queries/categories";
+ import { getCurrentUser } from "@/lib/session";
++import { getActiveFlashSales } from "@/lib/queries/flashSales";
++import { getBestSellers, getNewArrivals, getTopRated } from "@/lib/queries/homepage";
+ import SiteHeader from "@/app/components/SiteHeader";
+ import BottomNav from "@/app/components/BottomNav";
+ import BannerCarousel from "@/app/components/BannerCarousel";
+ import WhyFasoShop from "@/app/components/WhyFasoShop";
+ import Footer from "@/app/components/Footer";
+ import FlashSaleSection from "@/app/components/FlashSaleSection";
++import HorizontalProductSection from "@/app/components/HorizontalProductSection";
+ 
+ export const metadata = {
+   title: "Accueil",
+@@ -19,9 +22,13 @@ export const metadata = {
+ // rendu, contenu indexable par les moteurs de recherche, pas de flash
+ // visuel sur l'état de connexion).
+ export default async function HomePage() {
+-  const [categories, user] = await Promise.all([
++  const [categories, user, flashSales, bestSellers, newArrivals, topRated] = await Promise.all([
+     getCategoriesTree(),
+     getCurrentUser(),
++    getActiveFlashSales(),
++    getBestSellers(),
++    getNewArrivals(),
++    getTopRated(),
+   ]);
+ 
+   return (
+@@ -33,15 +40,69 @@ export default async function HomePage() {
+       <BannerCarousel />
+ 
+       <div className="trust-strip">
+-        <div className="trust-item"><span className="trust-icon">📱</span> Paiement Mobile Money</div>
+-        <div className="trust-item"><span className="trust-icon">🏪</span> Boutiques vérifiées</div>
+-        <div className="trust-item"><span className="trust-icon">🚚</span> Livraison partout au pays</div>
+-        <div className="trust-item"><span className="trust-icon">↩️</span> Support client réactif</div>
++        <div className="trust-card">
++          <span className="trust-icon">📱</span>
++          <div>
++            <p className="trust-card-title">Mobile Money</p>
++            <p className="trust-card-desc">Paiement rapide et sécurisé</p>
++          </div>
++        </div>
++        <div className="trust-card">
++          <span className="trust-icon">🏪</span>
++          <div>
++            <p className="trust-card-title">Boutiques vérifiées</p>
++            <p className="trust-card-desc">Vendeurs contrôlés par FasoShop</p>
++          </div>
++        </div>
++        <div className="trust-card">
++          <span className="trust-icon">🚚</span>
++          <div>
++            <p className="trust-card-title">Livraison rapide</p>
++            <p className="trust-card-desc">Partout au Burkina Faso</p>
++          </div>
++        </div>
++        <div className="trust-card">
++          <span className="trust-icon">↩️</span>
++          <div>
++            <p className="trust-card-title">Support 24/7</p>
++            <p className="trust-card-desc">Une équipe à votre écoute</p>
++          </div>
++        </div>
+       </div>
+ 
+       <WhyFasoShop />
+ 
+-      <FlashSaleSection />
++      <FlashSaleSection initialProducts={flashSales} />
++
++      <HorizontalProductSection
++        title="Nouveautés"
++        icon="✨"
++        seeAllHref="/shop?sort=newest"
++        products={newArrivals}
++        user={user}
++      />
++
++      <HorizontalProductSection
++        title="Meilleures ventes"
++        icon="🏆"
++        seeAllHref="/shop"
++        products={bestSellers}
++        user={user}
++      />
++
++      <HorizontalProductSection
++        title="Produits populaires"
++        icon="⭐"
++        seeAllHref="/shop?sort=rating"
++        products={topRated}
++        user={user}
++      />
++
++      {/* Section "Recommandés" volontairement absente : FasoShop n'a pas
++          encore de moteur de recommandation personnalisé (basé sur
++          l'historique d'achat/navigation). Afficher des produits au hasard
++          sous ce nom serait trompeur. À construire comme un vrai chantier
++          data si tu veux cette fonctionnalité. */}
+ 
+       <div className="home-section" style={{ textAlign: "center" }}>
+         <Link href="/shop">
+diff --git a/app/shop/ShopClient.js b/app/shop/ShopClient.js
+index 28bf4ef..fded0ee 100644
+--- a/app/shop/ShopClient.js
++++ b/app/shop/ShopClient.js
+@@ -3,14 +3,13 @@
+ import { useState, useEffect, useRef, Suspense } from "react";
+ import { useSearchParams, useRouter } from "next/navigation";
+ import Link from "next/link";
+-import { addToCart, getCart, cartCount } from "@/lib/cart";
+-import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
++import { getCart, cartCount } from "@/lib/cart";
+ import Footer from "@/app/components/Footer";
+ import SiteHeader from "@/app/components/SiteHeader";
+ import BottomNav from "@/app/components/BottomNav";
++import ProductCard from "@/app/components/ProductCard";
+ 
+ const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
+-const CONDITION_COLORS = { neuf: "var(--gold-600)", quasi_neuf: "#6b7280", occasion: "var(--bissap-600)" };
+ const SORT_OPTIONS = [
+   { value: "newest", label: "Nouveautés" },
+   { value: "price_asc", label: "Prix croissant" },
+@@ -18,103 +17,6 @@ const SORT_OPTIONS = [
+   { value: "rating", label: "Mieux notés" },
+ ];
+ 
+-function Stars({ rating }) {
+-  const rounded = Math.round(Number(rating) || 0);
+-  return (
+-    <span className="stars" aria-label={`${rating} sur 5`}>
+-      {"★".repeat(rounded)}
+-      {"☆".repeat(5 - rounded)}
+-    </span>
+-  );
+-}
+-
+-function ProductCard({ p, onAdd, justAdded, user, router }) {
+-  const [favorited, setFavorited] = useState(Boolean(p.is_favorited));
+-  const [favBusy, setFavBusy] = useState(false);
+-
+-  async function handleFav(e) {
+-    e.preventDefault();
+-    if (!user) {
+-      router.push("/login");
+-      return;
+-    }
+-    setFavBusy(true);
+-    if (favorited) {
+-      await fetch(`/api/favorites/${p.id}`, { method: "DELETE" });
+-      setFavorited(false);
+-    } else {
+-      await fetch("/api/favorites", {
+-        method: "POST",
+-        headers: { "Content-Type": "application/json" },
+-        body: JSON.stringify({ productId: p.id }),
+-      });
+-      setFavorited(true);
+-    }
+-    setFavBusy(false);
+-  }
+-
+-  return (
+-    <div className="product-card shop-card">
+-      <button
+-        className={`shop-card-fav ${favorited ? "shop-card-fav-active" : ""}`}
+-        onClick={handleFav}
+-        disabled={favBusy}
+-        aria-label={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
+-        title={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
+-      >
+-        {favorited ? "♥" : "♡"}
+-      </button>
+-
+-      <Link href={`/shop/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+-        <div className="shop-card-image-wrap">
+-          {hasDiscount(p) && <span className="badge-discount">-{discountPercent(p)}%</span>}
+-          {p.is_sponsored ? (
+-            <span className="shop-card-badge-sponsored">Sponsorisé</span>
+-          ) : p.isNew ? (
+-            <span className="shop-card-badge-new">Nouveau</span>
+-          ) : null}
+-          {p.images && p.images.length > 0 ? (
+-            <img src={p.images[0]} alt={p.name} className="shop-card-image" />
+-          ) : (
+-            <div className="shop-card-image shop-card-image-placeholder">🛍️</div>
+-          )}
+-        </div>
+-        <div className="name shop-card-name">{p.name}</div>
+-      </Link>
+-
+-      <span
+-        className="shop-card-condition"
+-        style={{ background: CONDITION_COLORS[p.condition] || "var(--gold-600)" }}
+-      >
+-        {CONDITION_LABELS[p.condition] || "Neuf"}
+-      </span>
+-
+-      <div className="shop">{p.shop_name}</div>
+-
+-      {Number(p.review_count) > 0 && (
+-        <div className="shop-card-rating">
+-          <Stars rating={p.avg_rating} />
+-          <span className="shop-card-rating-count">({p.review_count})</span>
+-        </div>
+-      )}
+-
+-      <PriceDisplay product={p} />
+-
+-      <button
+-        className="btn btn-primary"
+-        onClick={() => onAdd(p)}
+-        disabled={p.stock_quantity <= 0}
+-      >
+-        {p.stock_quantity <= 0
+-          ? "Rupture de stock"
+-          : justAdded === p.id
+-          ? "Ajouté ✓"
+-          : "Ajouter au panier"}
+-      </button>
+-    </div>
+-  );
+-}
+-
+ function FilterSidebar({
+   categories,
+   shops,
+@@ -306,7 +208,6 @@ function ShopContent({
+   const [cities] = useState(initialCities);
+   const [loading, setLoading] = useState(false);
+   const [count, setCount] = useState(0);
+-  const [justAdded, setJustAdded] = useState(null);
+   const [user, setUser] = useState(initialUser);
+   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+ 
+@@ -368,13 +269,6 @@ function ShopContent({
+     updateParams({ q: searchInput });
+   }
+ 
+-  function handleAdd(product) {
+-    addToCart(product);
+-    setCount(cartCount(getCart()));
+-    setJustAdded(product.id);
+-    setTimeout(() => setJustAdded(null), 1200);
+-  }
+-
+   const sidebarProps = {
+     categories,
+     shops,
+@@ -472,7 +366,7 @@ function ShopContent({
+           ) : (
+             <div className="shop-grid">
+               {products.map((p) => (
+-                <ProductCard key={p.id} p={p} onAdd={handleAdd} justAdded={justAdded} user={user} router={router} />
++                <ProductCard key={p.id} p={p} user={user} />
+               ))}
+             </div>
+           )}
+diff --git a/lib/queries/homepage.js b/lib/queries/homepage.js
+index ab05539..29689f1 100644
+--- a/lib/queries/homepage.js
++++ b/lib/queries/homepage.js
+@@ -2,52 +2,87 @@ import sql from "@/lib/db";
+ import { parseImages } from "@/lib/queries/products";
+ 
+ /**
+- * Produits les plus vendus (bestSellers) et les plus récents (newArrivals),
+- * uniquement des boutiques actives (vérifiées), avec la note moyenne de la boutique.
+- *
+- * NOTE : cette fonction/route existe mais n'est actuellement appelée par aucune
+- * page du frontend (app/page.js ne l'utilise plus). Conservée telle quelle
+- * (aucune suppression de fonctionnalité sans demande explicite) — à réintégrer
+- * dans la page d'accueil ou à retirer selon la décision produit.
++ * NOTE CORRECTIF (réintégration Phase 2) : la version précédente de cette
++ * requête triait les deux listes par `ORDER BY RANDOM()`, ce qui veut dire
++ * que "bestSellers" n'était en réalité PAS trié par ventes, et "newArrivals"
++ * PAS trié par date. Le champ total_sold était calculé mais jamais utilisé
++ * pour le tri. Corrigé ci-dessous. Le filtre p.status = 'active' manquait
++ * aussi (seul le statut de la boutique était vérifié).
+  */
+-export async function getHomepageProducts() {
+-  const shopRatingJoin = sql`
+-    LEFT JOIN (
+-      SELECT p2.shop_id, AVG(r.rating)::numeric(2,1) AS avg_rating, COUNT(r.id) AS review_count
+-      FROM reviews r
+-      JOIN products p2 ON p2.id = r.product_id
+-      GROUP BY p2.shop_id
+-    ) sr ON sr.shop_id = s.id
+-  `;
+ 
+-  const bestSellersRaw = await sql`
+-    SELECT p.id, p.name, p.price, p.compare_at_price, p.images, p.condition, s.name AS shop_name,
+-           COALESCE(sr.avg_rating, 0) AS shop_rating, COALESCE(sr.review_count, 0) AS shop_review_count,
++const PRODUCT_FIELDS = sql`
++  p.id, p.name, p.price, p.compare_at_price, p.stock_quantity, p.images, p.condition,
++  p.is_sponsored, p.sponsored_until,
++  s.id AS shop_id, s.name AS shop_name,
++  (s.verified_at IS NOT NULL) AS shop_verified
++`;
++
++const RATING_JOIN = sql`
++  LEFT JOIN (
++    SELECT product_id, AVG(rating)::numeric(2,1) AS avg_rating, COUNT(*)::int AS review_count
++    FROM reviews
++    GROUP BY product_id
++  ) r ON r.product_id = p.id
++`;
++
++function finalize(rows) {
++  return rows.map((p) => ({
++    ...p,
++    images: parseImages(p.images),
++    is_sponsored: Boolean(p.is_sponsored && p.sponsored_until && new Date(p.sponsored_until) > new Date()),
++  }));
++}
++
++// Produits les plus vendus — quantité réellement livrée/payée uniquement.
++export async function getBestSellers(limit = 8) {
++  const rows = await sql`
++    SELECT ${PRODUCT_FIELDS}, COALESCE(r.avg_rating, 0) AS avg_rating, COALESCE(r.review_count, 0) AS review_count,
+            COALESCE(SUM(oi.quantity), 0) AS total_sold
+     FROM products p
+     JOIN shops s ON s.id = p.shop_id
+     LEFT JOIN order_items oi ON oi.product_id = p.id
+     LEFT JOIN orders o ON o.id = oi.order_id AND o.status IN ('paid', 'shipped', 'delivered')
+-    ${shopRatingJoin}
+-    WHERE s.status = 'active'
+-    GROUP BY p.id, p.name, p.price, p.compare_at_price, p.images, p.condition, s.name, sr.avg_rating, sr.review_count
+-    ORDER BY RANDOM()
+-    LIMIT 8
++    ${RATING_JOIN}
++    WHERE p.status = 'active' AND s.status = 'active'
++    GROUP BY p.id, p.name, p.price, p.compare_at_price, p.stock_quantity, p.images, p.condition,
++             p.is_sponsored, p.sponsored_until, s.id, s.name, s.verified_at, r.avg_rating, r.review_count
++    HAVING COALESCE(SUM(oi.quantity), 0) > 0
++    ORDER BY total_sold DESC
++    LIMIT ${limit}
++  `;
++  return finalize(rows);
++}
++
++// Produits les plus récents.
++export async function getNewArrivals(limit = 8) {
++  const rows = await sql`
++    SELECT ${PRODUCT_FIELDS}, p.created_at, COALESCE(r.avg_rating, 0) AS avg_rating, COALESCE(r.review_count, 0) AS review_count
++    FROM products p
++    JOIN shops s ON s.id = p.shop_id
++    ${RATING_JOIN}
++    WHERE p.status = 'active' AND s.status = 'active'
++    ORDER BY p.created_at DESC
++    LIMIT ${limit}
+   `;
++  return finalize(rows);
++}
+ 
+-  const newArrivalsRaw = await sql`
+-    SELECT p.id, p.name, p.price, p.compare_at_price, p.images, p.condition, s.name AS shop_name,
+-           COALESCE(sr.avg_rating, 0) AS shop_rating, COALESCE(sr.review_count, 0) AS shop_review_count
++// Produits les mieux notés (au moins une note), pour la section "Populaires".
++export async function getTopRated(limit = 8) {
++  const rows = await sql`
++    SELECT ${PRODUCT_FIELDS}, COALESCE(r.avg_rating, 0) AS avg_rating, COALESCE(r.review_count, 0) AS review_count
+     FROM products p
+     JOIN shops s ON s.id = p.shop_id
+-    ${shopRatingJoin}
+-    WHERE s.status = 'active'
+-    ORDER BY RANDOM()
+-    LIMIT 8
++    ${RATING_JOIN}
++    WHERE p.status = 'active' AND s.status = 'active' AND r.review_count > 0
++    ORDER BY r.avg_rating DESC, r.review_count DESC
++    LIMIT ${limit}
+   `;
++  return finalize(rows);
++}
+ 
+-  return {
+-    bestSellers: bestSellersRaw.map((p) => ({ ...p, images: parseImages(p.images) })),
+-    newArrivals: newArrivalsRaw.map((p) => ({ ...p, images: parseImages(p.images) })),
+-  };
++// Conservé pour compatibilité avec /api/products/homepage (voir ce fichier).
++export async function getHomepageProducts() {
++  const [bestSellers, newArrivals] = await Promise.all([getBestSellers(), getNewArrivals()]);
++  return { bestSellers, newArrivals };
+ }
+diff --git a/lib/queries/products.js b/lib/queries/products.js
+index 5771294..dbd6359 100644
+--- a/lib/queries/products.js
++++ b/lib/queries/products.js
+@@ -50,6 +50,7 @@ export async function getProducts(filters = {}, userId = null) {
+            p.brand, p.created_at,
+            (p.is_sponsored AND p.sponsored_until > NOW()) AS is_sponsored,
+            s.id AS shop_id, s.name AS shop_name, s.city AS shop_city,
++           (s.verified_at IS NOT NULL) AS shop_verified,
+            c.name AS category_name, c.slug AS category_slug,
+            COALESCE(r.avg_rating, 0) AS avg_rating, COALESCE(r.review_count, 0) AS review_count,
+            (${userId}::int IS NOT NULL AND EXISTS (
+-- 
+2.43.0
+
