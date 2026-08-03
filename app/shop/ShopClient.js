@@ -2,8 +2,6 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { getCart, cartCount } from "@/lib/cart";
 import Footer from "@/app/components/Footer";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
@@ -207,20 +205,12 @@ function ShopContent({
   const [brands] = useState(initialBrands);
   const [cities] = useState(initialCities);
   const [loading, setLoading] = useState(false);
-  const [count, setCount] = useState(0);
   const [user, setUser] = useState(initialUser);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const [searchInput, setSearchInput] = useState(q);
   const [minPriceInput, setMinPriceInput] = useState(minPrice);
   const [maxPriceInput, setMaxPriceInput] = useState(maxPrice);
-
-  useEffect(() => {
-    const updateCount = () => setCount(cartCount(getCart()));
-    updateCount();
-    window.addEventListener("fasoshop-cart-updated", updateCount);
-    return () => window.removeEventListener("fasoshop-cart-updated", updateCount);
-  }, []);
 
   // Le premier rendu correspond déjà aux searchParams résolus côté serveur
   // (voir app/shop/page.js) : on saute le premier passage de cet effet pour
@@ -384,12 +374,6 @@ function ShopContent({
             <FilterSidebar {...sidebarProps} />
           </div>
         </div>
-      )}
-
-      {count > 0 && (
-        <Link href="/cart" className="cart-fab">
-          🛒 Panier ({count})
-        </Link>
       )}
 
       <Footer />

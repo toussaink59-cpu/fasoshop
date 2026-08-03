@@ -1,4 +1,5 @@
 import sql from "@/lib/db";
+import { getUserAddresses } from "@/lib/queries/addresses";
 
 // GET /api/addresses
 export async function GET(request) {
@@ -8,13 +9,7 @@ export async function GET(request) {
     return Response.json({ error: "Connexion requise." }, { status: 401 });
   }
 
-  const addresses = await sql`
-    SELECT id, libelle, adresse_texte, phone, par_defaut, latitude, longitude
-    FROM addresses
-    WHERE user_id = ${userId}
-    ORDER BY par_defaut DESC, created_at DESC
-  `;
-
+  const addresses = await getUserAddresses(userId);
   return Response.json({ addresses });
 }
 

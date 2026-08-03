@@ -1,17 +1,10 @@
 import sql from "@/lib/db";
+import { getProductReviews } from "@/lib/queries/productDetail";
 
 // GET /api/products/[id]/reviews
 export async function GET(request, { params }) {
   const { id } = await params;
-
-  const reviews = await sql`
-    SELECT r.id, r.rating, r.comment, r.created_at, u.full_name AS buyer_name
-    FROM reviews r
-    JOIN users u ON u.id = r.buyer_id
-    WHERE r.product_id = ${id}
-    ORDER BY r.created_at DESC
-  `;
-
+  const reviews = await getProductReviews(id);
   return Response.json({ reviews });
 }
 
