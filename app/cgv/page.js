@@ -1,13 +1,15 @@
-import Link from "next/link";
 import Footer from "@/app/components/Footer";
+import SiteHeader from "@/app/components/SiteHeader";
+import BottomNav from "@/app/components/BottomNav";
+import { getCurrentUser } from "@/lib/session";
+import { getCategoriesTree } from "@/lib/queries/categories";
 
-export default function CGVPage() {
+export default async function CGVPage() {
+  const [user, categories] = await Promise.all([getCurrentUser(), getCategoriesTree()]);
+
   return (
     <div className="shell">
-      <div className="topbar">
-        <Link href="/" className="brand" style={{ textDecoration: "none" }}>🛒 FasoShop</Link>
-      </div>
-      <div className="woven-strip" />
+      <SiteHeader initialUser={user} categories={categories} />
 
       <div className="content" style={{ maxWidth: 720, margin: "0 auto" }}>
         <div className="page-header">
@@ -43,6 +45,7 @@ export default function CGVPage() {
       </div>
 
       <Footer />
+      <BottomNav user={user} />
     </div>
   );
 }
