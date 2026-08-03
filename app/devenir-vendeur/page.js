@@ -1,7 +1,13 @@
 import Link from "next/link";
 import Footer from "@/app/components/Footer";
+import SiteHeader from "@/app/components/SiteHeader";
+import BottomNav from "@/app/components/BottomNav";
+import { getCurrentUser } from "@/lib/session";
+import { getCategoriesTree } from "@/lib/queries/categories";
 
-export default function DevenirVendeurPage() {
+export default async function DevenirVendeurPage() {
+  const [user, categories] = await Promise.all([getCurrentUser(), getCategoriesTree()]);
+
   const steps = [
     { title: "Créez votre compte", desc: "Renseignez le nom de votre boutique, vos coordonnées et votre pièce d'identité." },
     { title: "Vérification", desc: "Notre équipe vérifie vos informations sous peu de temps pour protéger tous les acheteurs." },
@@ -11,13 +17,7 @@ export default function DevenirVendeurPage() {
 
   return (
     <div className="shell">
-      <div className="topbar">
-        <Link href="/" className="brand" style={{ textDecoration: "none" }}>🛒 FasoShop</Link>
-        <div className="topbar-actions">
-          <Link href="/login"><button>Se connecter</button></Link>
-        </div>
-      </div>
-      <div className="woven-strip" />
+      <SiteHeader initialUser={user} categories={categories} />
 
       <div className="content">
         <div className="page-header">
@@ -124,6 +124,7 @@ export default function DevenirVendeurPage() {
       </div>
 
       <Footer />
+      <BottomNav user={user} />
     </div>
   );
 }
