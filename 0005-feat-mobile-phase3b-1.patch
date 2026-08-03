@@ -1,0 +1,1199 @@
+From 17effd86e9fb11b9a770208b70c6f50a0370e246 Mon Sep 17 00:00:00 2001
+From: FasoShop QA Bot <qa@fasoshop.dev>
+Date: Mon, 3 Aug 2026 19:22:04 +0000
+Subject: [PATCH] =?UTF-8?q?feat(mobile):=20rollout=20SiteHeader/BottomNav?=
+ =?UTF-8?q?=20=E2=80=94=20panier,=20favoris,=20commandes=20(Phase=203b-1)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Pattern Server Component + Client wrapper (identique à /shop en Phase 1)
+appliqué à 3 pages supplémentaires :
+
+- app/cart : le panier vit uniquement dans localStorage (jamais côté
+  serveur), donc pas de 'Chargement...' à corriger côté contenu — mais le
+  header est maintenant résolu serveur comme partout ailleurs. Lecture
+  localStorage rendue synchrone au montage pour éviter tout flash, avec
+  resynchronisation post-hydratation.
+- app/favoris : vrai bug SSR/CSR corrigé (fetch client + 'Chargement...').
+  Requête extraite dans lib/queries/favorites.js, réutilisée par
+  /api/favorites. Redirige vers /login côté serveur si non connecté
+  (redirect() de next/navigation) au lieu d'un aller-retour client.
+- app/orders : même chose, requête extraite dans lib/queries/orders.js.
+  Bonus : suppression de useSearchParams+Suspense, devenus inutiles
+  puisque searchParams est résolu côté serveur (Next 15). Suppression du
+  polling unreadCount dupliqué (15s) qui refaisait le travail déjà fait
+  par SiteHeader — une seule source de vérité pour le badge messages.
+
+Validé avec npm run build (compilation propre).
+---
+ app/api/favorites/route.js   |  25 +---
+ app/api/orders/route.js      |  44 +------
+ app/cart/CartClient.js       | 216 +++++++++++++++++++++++++++++++++++
+ app/cart/page.js             | 216 ++---------------------------------
+ app/favoris/FavorisClient.js |  69 +++++++++++
+ app/favoris/page.js          | 114 ++++--------------
+ app/orders/OrdersClient.js   | 126 ++++++++++++++++++++
+ app/orders/page.js           | 185 ++++--------------------------
+ lib/queries/favorites.js     |  22 ++++
+ lib/queries/orders.js        |  47 ++++++++
+ 10 files changed, 538 insertions(+), 526 deletions(-)
+ create mode 100644 app/cart/CartClient.js
+ create mode 100644 app/favoris/FavorisClient.js
+ create mode 100644 app/orders/OrdersClient.js
+ create mode 100644 lib/queries/favorites.js
+ create mode 100644 lib/queries/orders.js
+
+diff --git a/app/api/favorites/route.js b/app/api/favorites/route.js
+index fb5caa7..3e91d68 100644
+--- a/app/api/favorites/route.js
++++ b/app/api/favorites/route.js
+@@ -1,4 +1,4 @@
+-import sql from "@/lib/db";
++import { getFavoriteProducts } from "@/lib/queries/favorites";
+ 
+ // GET /api/favorites
+ // Liste les produits favoris de l'utilisateur connecté.
+@@ -8,27 +8,8 @@ export async function GET(request) {
+     return Response.json({ error: "Connexion requise." }, { status: 401 });
+   }
+ 
+-  const products = await sql`
+-    SELECT p.id, p.name, p.price, p.compare_at_price, p.images, p.condition,
+-           s.name AS shop_name,
+-           COALESCE(r.avg_rating, 0) AS avg_rating, COALESCE(r.review_count, 0) AS review_count
+-    FROM favorites f
+-    JOIN products p ON p.id = f.product_id
+-    JOIN shops s ON s.id = p.shop_id
+-    LEFT JOIN (
+-      SELECT product_id, AVG(rating)::numeric(2,1) AS avg_rating, COUNT(*)::int AS review_count
+-      FROM reviews GROUP BY product_id
+-    ) r ON r.product_id = p.id
+-    WHERE f.user_id = ${userId}
+-    ORDER BY f.created_at DESC
+-  `;
+-
+-  const parsed = products.map((p) => ({
+-    ...p,
+-    images: typeof p.images === "string" ? JSON.parse(p.images) : p.images,
+-  }));
+-
+-  return Response.json({ products: parsed });
++  const products = await getFavoriteProducts(userId);
++  return Response.json({ products });
+ }
+ 
+ // POST /api/favorites
+diff --git a/app/api/orders/route.js b/app/api/orders/route.js
+index 80936ad..1533948 100644
+--- a/app/api/orders/route.js
++++ b/app/api/orders/route.js
+@@ -109,51 +109,13 @@ export async function POST(request) {
+   }
+ }
+ 
++import { getBuyerOrders } from "@/lib/queries/orders";
++
+ // GET /api/orders
+ // Historique des commandes de l'acheteur connecté, avec le détail par boutique
+ // (chaque boutique gère sa propre sous-commande et son propre statut de livraison).
+ export async function GET(request) {
+   const userId = request.headers.get("x-user-id");
+-
+-  const orders = await sql`
+-    SELECT id, status, total, shipping_address, phone, payment_method, created_at
+-    FROM orders
+-    WHERE buyer_id = ${userId}
+-    ORDER BY created_at DESC
+-  `;
+-
+-  for (const order of orders) {
+-    const items = await sql`
+-      SELECT oi.quantity, oi.price_at_purchase, p.name AS product_name,
+-             s.id AS shop_id, s.name AS shop_name,
+-             COALESCE(l.delivery_status, 'preparation') AS delivery_status
+-      FROM order_items oi
+-      JOIN products p ON p.id = oi.product_id
+-      JOIN shops s ON s.id = p.shop_id
+-      LEFT JOIN shop_commission_ledger l ON l.order_id = oi.order_id AND l.shop_id = s.id
+-      WHERE oi.order_id = ${order.id}
+-    `;
+-
+-    // Regroupe les articles par boutique, pour afficher une sous-commande par vendeur
+-    const shopsMap = {};
+-    for (const item of items) {
+-      if (!shopsMap[item.shop_id]) {
+-        shopsMap[item.shop_id] = {
+-          shopId: item.shop_id,
+-          shopName: item.shop_name,
+-          deliveryStatus: item.delivery_status,
+-          items: [],
+-        };
+-      }
+-      shopsMap[item.shop_id].items.push({
+-        productName: item.product_name,
+-        quantity: item.quantity,
+-        priceAtPurchase: item.price_at_purchase,
+-      });
+-    }
+-
+-    order.subOrders = Object.values(shopsMap);
+-  }
+-
++  const orders = await getBuyerOrders(userId);
+   return Response.json({ orders });
+ }
+diff --git a/app/cart/CartClient.js b/app/cart/CartClient.js
+new file mode 100644
+index 0000000..5e76f1a
+--- /dev/null
++++ b/app/cart/CartClient.js
+@@ -0,0 +1,216 @@
++"use client";
++
++import { useState, useEffect } from "react";
++import { useRouter } from "next/navigation";
++import Link from "next/link";
++import { getCart, updateQuantity, clearCart, cartTotal } from "@/lib/cart";
++import SiteHeader from "@/app/components/SiteHeader";
++import BottomNav from "@/app/components/BottomNav";
++
++export default function CartClient({ initialUser, categories }) {
++  const router = useRouter();
++  // Le panier vit uniquement dans localStorage (jamais côté serveur) : lu de
++  // façon synchrone dès le premier rendu, pas de fetch ni de "Chargement...".
++  const [cart, setCart] = useState(() => (typeof window !== "undefined" ? getCart() : []));
++  const [savedAddresses, setSavedAddresses] = useState([]);
++  const [selectedAddressId, setSelectedAddressId] = useState("");
++  const [shippingAddress, setShippingAddress] = useState("");
++  const [phone, setPhone] = useState("");
++  const [paymentMethod, setPaymentMethod] = useState("cod");
++  const [error, setError] = useState("");
++  const [submitting, setSubmitting] = useState(false);
++
++  useEffect(() => {
++    // Resynchronise après hydratation : localStorage n'existe pas côté
++    // serveur, donc le tout premier rendu serveur ne peut pas connaître le
++    // panier. Évite un mismatch d'hydratation React.
++    setCart(getCart());
++  }, []);
++
++  useEffect(() => {
++    if (!initialUser) return; // pas connecté — le champ adresse reste libre
++    fetch("/api/addresses").then(async (res) => {
++      if (!res.ok) return;
++      const data = await res.json();
++      const addresses = data.addresses || [];
++      setSavedAddresses(addresses);
++
++      const defaultAddress = addresses.find((a) => a.par_defaut) || addresses[0];
++      if (defaultAddress) {
++        setSelectedAddressId(String(defaultAddress.id));
++        setShippingAddress(defaultAddress.adresse_texte);
++        if (defaultAddress.phone) setPhone(defaultAddress.phone);
++      }
++    });
++  }, [initialUser]);
++
++  function changeQty(productId, qty) {
++    updateQuantity(productId, qty);
++    setCart(getCart());
++  }
++
++  function handleAddressSelect(value) {
++    setSelectedAddressId(value);
++    if (value === "custom") {
++      setShippingAddress("");
++      return;
++    }
++    const addr = savedAddresses.find((a) => String(a.id) === value);
++    if (addr) {
++      setShippingAddress(addr.adresse_texte);
++      if (addr.phone) setPhone(addr.phone);
++    }
++  }
++
++  async function handleCheckout(e) {
++    e.preventDefault();
++    setError("");
++
++    const meRes = await fetch("/api/auth/me");
++    const me = await meRes.json();
++    if (!me.user) {
++      router.push("/login");
++      return;
++    }
++
++    setSubmitting(true);
++    const res = await fetch("/api/orders", {
++      method: "POST",
++      headers: { "Content-Type": "application/json" },
++      body: JSON.stringify({
++        items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
++        shippingAddress,
++        phone,
++        paymentMethod,
++      }),
++    });
++    const data = await res.json();
++
++    if (!res.ok) {
++      setError(data.error || "Erreur lors de la commande.");
++      setSubmitting(false);
++      return;
++    }
++
++    clearCart();
++    router.push(`/orders?confirmed=${data.order.id}&method=${paymentMethod}`);
++  }
++
++  const total = cartTotal(cart);
++
++  return (
++    <div className="shell">
++      <SiteHeader initialUser={initialUser} categories={categories} />
++
++      <div className="content">
++        <div className="page-header">
++          <h1>Mon panier</h1>
++        </div>
++
++        {error && <div className="error-box">{error}</div>}
++
++        {cart.length === 0 ? (
++          <div className="empty-state">
++            <div className="glyph">🛒</div>
++            <p>Votre panier est vide.</p>
++            <Link href="/shop"><button className="btn btn-primary" style={{ marginTop: 10 }}>Voir le catalogue</button></Link>
++          </div>
++        ) : (
++          <>
++            <div className="panel">
++              {cart.map((item) => (
++                <div className="cart-item" key={item.productId}>
++                  <div>
++                    <div style={{ fontWeight: 600 }}>{item.name}</div>
++                    <div style={{ fontSize: "0.8rem", color: "var(--ink-400)" }}>{item.shopName}</div>
++                  </div>
++                  <div className="qty-stepper">
++                    <button onClick={() => changeQty(item.productId, item.quantity - 1)}>−</button>
++                    <span>{item.quantity}</span>
++                    <button onClick={() => changeQty(item.productId, item.quantity + 1)}>+</button>
++                  </div>
++                  <div style={{ fontFamily: "var(--font-mono)", minWidth: 90, textAlign: "right" }}>
++                    {(item.price * item.quantity).toLocaleString("fr-FR")} FCFA
++                  </div>
++                </div>
++              ))}
++              <div style={{ textAlign: "right", marginTop: 14, fontSize: "1.15rem", fontWeight: 700 }}>
++                Total : {total.toLocaleString("fr-FR")} FCFA
++              </div>
++            </div>
++
++            <div className="panel">
++              <h2>Livraison</h2>
++              <form onSubmit={handleCheckout}>
++                {savedAddresses.length > 0 && (
++                  <>
++                    <label htmlFor="saved-address">Adresse enregistrée</label>
++                    <select
++                      id="saved-address"
++                      value={selectedAddressId}
++                      onChange={(e) => handleAddressSelect(e.target.value)}
++                    >
++                      {savedAddresses.map((a) => (
++                        <option key={a.id} value={a.id}>
++                          {a.libelle}{a.par_defaut ? " (par défaut)" : ""}
++                        </option>
++                      ))}
++                      <option value="custom">Autre adresse...</option>
++                    </select>
++                    <br /><br />
++                  </>
++                )}
++
++                <label htmlFor="address">Adresse de livraison</label>
++                <input
++                  id="address"
++                  required
++                  value={shippingAddress}
++                  onChange={(e) => setShippingAddress(e.target.value)}
++                  placeholder="Ex : Secteur 15, Ouagadougou"
++                />
++                <br /><br />
++                <label htmlFor="phone">Numéro de téléphone</label>
++                <input
++                  id="phone"
++                  required
++                  value={phone}
++                  onChange={(e) => setPhone(e.target.value)}
++                  placeholder="Ex : 70 00 00 00"
++                />
++                <br /><br />
++                <label>Mode de paiement</label>
++                <div className="payment-options">
++                  <label className={`payment-option ${paymentMethod === "cod" ? "selected" : ""}`}>
++                    <input
++                      type="radio"
++                      name="paymentMethod"
++                      value="cod"
++                      checked={paymentMethod === "cod"}
++                      onChange={() => setPaymentMethod("cod")}
++                    />
++                    <div>
++                      <div className="payment-option-title">💵 Payer à la livraison</div>
++                      <div className="payment-option-desc">Vous réglez en espèces au moment de recevoir votre commande.</div>
++                    </div>
++                  </label>
++                  <label className="payment-option" style={{ opacity: 0.5, cursor: "not-allowed" }}>
++                    <input type="radio" name="paymentMethod" value="mobile_money" disabled />
++                    <div>
++                      <div className="payment-option-title">📱 Payer maintenant (Orange Money / Moov Money)</div>
++                      <div className="payment-option-desc">Bientôt disponible — revenez rapidement !</div>
++                    </div>
++                  </label>
++                </div>
++                <button type="submit" className="btn btn-primary" disabled={submitting}>
++                  {submitting ? "Validation..." : "Valider la commande"}
++                </button>
++              </form>
++            </div>
++          </>
++        )}
++      </div>
++      <BottomNav user={initialUser} />
++    </div>
++  );
++}
+diff --git a/app/cart/page.js b/app/cart/page.js
+index e672c47..3326338 100644
+--- a/app/cart/page.js
++++ b/app/cart/page.js
+@@ -1,210 +1,12 @@
+-"use client";
++import { getCurrentUser } from "@/lib/session";
++import { getCategoriesTree } from "@/lib/queries/categories";
++import CartClient from "@/app/cart/CartClient";
+ 
+-import { useState, useEffect } from "react";
+-import { useRouter } from "next/navigation";
+-import Link from "next/link";
+-import { getCart, updateQuantity, clearCart, cartTotal } from "@/lib/cart";
++export const metadata = {
++  title: "Mon panier",
++};
+ 
+-export default function CartPage() {
+-  const router = useRouter();
+-  const [cart, setCart] = useState([]);
+-  const [savedAddresses, setSavedAddresses] = useState([]);
+-  const [selectedAddressId, setSelectedAddressId] = useState("");
+-  const [shippingAddress, setShippingAddress] = useState("");
+-  const [phone, setPhone] = useState("");
+-  const [paymentMethod, setPaymentMethod] = useState("cod");
+-  const [error, setError] = useState("");
+-  const [submitting, setSubmitting] = useState(false);
+-
+-  useEffect(() => {
+-    setCart(getCart());
+-
+-    fetch("/api/addresses").then(async (res) => {
+-      if (!res.ok) return; // pas connecté, ou pas d'adresse — on laisse le champ libre
+-      const data = await res.json();
+-      const addresses = data.addresses || [];
+-      setSavedAddresses(addresses);
+-
+-      const defaultAddress = addresses.find((a) => a.par_defaut) || addresses[0];
+-      if (defaultAddress) {
+-        setSelectedAddressId(String(defaultAddress.id));
+-        setShippingAddress(defaultAddress.adresse_texte);
+-        if (defaultAddress.phone) setPhone(defaultAddress.phone);
+-      }
+-    });
+-  }, []);
+-
+-  function changeQty(productId, qty) {
+-    updateQuantity(productId, qty);
+-    setCart(getCart());
+-  }
+-
+-  function handleAddressSelect(value) {
+-    setSelectedAddressId(value);
+-    if (value === "custom") {
+-      setShippingAddress("");
+-      return;
+-    }
+-    const addr = savedAddresses.find((a) => String(a.id) === value);
+-    if (addr) {
+-      setShippingAddress(addr.adresse_texte);
+-      if (addr.phone) setPhone(addr.phone);
+-    }
+-  }
+-
+-  async function handleCheckout(e) {
+-    e.preventDefault();
+-    setError("");
+-
+-    const meRes = await fetch("/api/auth/me");
+-    const me = await meRes.json();
+-    if (!me.user) {
+-      router.push("/login");
+-      return;
+-    }
+-
+-    setSubmitting(true);
+-    const res = await fetch("/api/orders", {
+-      method: "POST",
+-      headers: { "Content-Type": "application/json" },
+-      body: JSON.stringify({
+-        items: cart.map((i) => ({ productId: i.productId, quantity: i.quantity })),
+-        shippingAddress,
+-        phone,
+-        paymentMethod,
+-      }),
+-    });
+-    const data = await res.json();
+-
+-    if (!res.ok) {
+-      setError(data.error || "Erreur lors de la commande.");
+-      setSubmitting(false);
+-      return;
+-    }
+-
+-    clearCart();
+-    router.push(`/orders?confirmed=${data.order.id}&method=${paymentMethod}`);
+-  }
+-
+-  const total = cartTotal(cart);
+-
+-  return (
+-    <div className="shell">
+-      <div className="topbar">
+-        <Link href="/shop" className="brand" style={{ textDecoration: "none" }}>
+-          🛒 FasoShop
+-        </Link>
+-      </div>
+-      <div className="woven-strip" />
+-
+-      <div className="content">
+-        <div className="page-header">
+-          <h1>Mon panier</h1>
+-        </div>
+-
+-        {error && <div className="error-box">{error}</div>}
+-
+-        {cart.length === 0 ? (
+-          <div className="empty-state">
+-            <div className="glyph">🛒</div>
+-            <p>Votre panier est vide.</p>
+-            <Link href="/shop"><button className="btn btn-primary" style={{ marginTop: 10 }}>Voir le catalogue</button></Link>
+-          </div>
+-        ) : (
+-          <>
+-            <div className="panel">
+-              {cart.map((item) => (
+-                <div className="cart-item" key={item.productId}>
+-                  <div>
+-                    <div style={{ fontWeight: 600 }}>{item.name}</div>
+-                    <div style={{ fontSize: "0.8rem", color: "var(--ink-400)" }}>{item.shopName}</div>
+-                  </div>
+-                  <div className="qty-stepper">
+-                    <button onClick={() => changeQty(item.productId, item.quantity - 1)}>−</button>
+-                    <span>{item.quantity}</span>
+-                    <button onClick={() => changeQty(item.productId, item.quantity + 1)}>+</button>
+-                  </div>
+-                  <div style={{ fontFamily: "var(--font-mono)", minWidth: 90, textAlign: "right" }}>
+-                    {(item.price * item.quantity).toLocaleString("fr-FR")} FCFA
+-                  </div>
+-                </div>
+-              ))}
+-              <div style={{ textAlign: "right", marginTop: 14, fontSize: "1.15rem", fontWeight: 700 }}>
+-                Total : {total.toLocaleString("fr-FR")} FCFA
+-              </div>
+-            </div>
+-
+-            <div className="panel">
+-              <h2>Livraison</h2>
+-              <form onSubmit={handleCheckout}>
+-                {savedAddresses.length > 0 && (
+-                  <>
+-                    <label htmlFor="saved-address">Adresse enregistrée</label>
+-                    <select
+-                      id="saved-address"
+-                      value={selectedAddressId}
+-                      onChange={(e) => handleAddressSelect(e.target.value)}
+-                    >
+-                      {savedAddresses.map((a) => (
+-                        <option key={a.id} value={a.id}>
+-                          {a.libelle}{a.par_defaut ? " (par défaut)" : ""}
+-                        </option>
+-                      ))}
+-                      <option value="custom">Autre adresse...</option>
+-                    </select>
+-                    <br /><br />
+-                  </>
+-                )}
+-
+-                <label htmlFor="address">Adresse de livraison</label>
+-                <input
+-                  id="address"
+-                  required
+-                  value={shippingAddress}
+-                  onChange={(e) => setShippingAddress(e.target.value)}
+-                  placeholder="Ex : Secteur 15, Ouagadougou"
+-                />
+-                <br /><br />
+-                <label htmlFor="phone">Numéro de téléphone</label>
+-                <input
+-                  id="phone"
+-                  required
+-                  value={phone}
+-                  onChange={(e) => setPhone(e.target.value)}
+-                  placeholder="Ex : 70 00 00 00"
+-                />
+-                <br /><br />
+-                <label>Mode de paiement</label>
+-                <div className="payment-options">
+-                  <label className={`payment-option ${paymentMethod === "cod" ? "selected" : ""}`}>
+-                    <input
+-                      type="radio"
+-                      name="paymentMethod"
+-                      value="cod"
+-                      checked={paymentMethod === "cod"}
+-                      onChange={() => setPaymentMethod("cod")}
+-                    />
+-                    <div>
+-                      <div className="payment-option-title">💵 Payer à la livraison</div>
+-                      <div className="payment-option-desc">Vous réglez en espèces au moment de recevoir votre commande.</div>
+-                    </div>
+-                  </label>
+-                  <label className="payment-option" style={{ opacity: 0.5, cursor: "not-allowed" }}>
+-                    <input type="radio" name="paymentMethod" value="mobile_money" disabled />
+-                    <div>
+-                      <div className="payment-option-title">📱 Payer maintenant (Orange Money / Moov Money)</div>
+-                      <div className="payment-option-desc">Bientôt disponible — revenez rapidement !</div>
+-                    </div>
+-                  </label>
+-                </div>
+-                <button type="submit" className="btn btn-primary" disabled={submitting}>
+-                  {submitting ? "Validation..." : "Valider la commande"}
+-                </button>
+-              </form>
+-            </div>
+-          </>
+-        )}
+-      </div>
+-    </div>
+-  );
++export default async function CartPage() {
++  const [user, categories] = await Promise.all([getCurrentUser(), getCategoriesTree()]);
++  return <CartClient initialUser={user} categories={categories} />;
+ }
+diff --git a/app/favoris/FavorisClient.js b/app/favoris/FavorisClient.js
+new file mode 100644
+index 0000000..5392724
+--- /dev/null
++++ b/app/favoris/FavorisClient.js
+@@ -0,0 +1,69 @@
++"use client";
++
++import { useState } from "react";
++import Link from "next/link";
++import Footer from "@/app/components/Footer";
++import SiteHeader from "@/app/components/SiteHeader";
++import BottomNav from "@/app/components/BottomNav";
++import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
++
++const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
++
++export default function FavorisClient({ initialUser, categories, initialProducts }) {
++  const [products, setProducts] = useState(initialProducts);
++
++  async function handleRemove(productId) {
++    await fetch(`/api/favorites/${productId}`, { method: "DELETE" });
++    setProducts((prev) => prev.filter((p) => p.id !== productId));
++  }
++
++  return (
++    <div className="shell">
++      <SiteHeader initialUser={initialUser} categories={categories} />
++
++      <div className="content">
++        <div className="page-header">
++          <h1>Mes favoris</h1>
++        </div>
++
++        {products.length === 0 ? (
++          <div className="empty-state">
++            <div className="glyph">♡</div>
++            <p>Aucun favori pour l'instant.</p>
++            <Link href="/shop"><button className="btn btn-primary" style={{ marginTop: 10 }}>Parcourir le catalogue</button></Link>
++          </div>
++        ) : (
++          <div className="product-grid">
++            {products.map((p) => (
++              <div className="product-card" key={p.id}>
++                {hasDiscount(p) && <span className="badge-discount">-{discountPercent(p)}%</span>}
++                <Link href={`/shop/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
++                  {p.images && p.images.length > 0 ? (
++                    <img
++                      src={p.images[0]}
++                      alt={p.name}
++                      style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", borderRadius: 6, marginBottom: 8 }}
++                    />
++                  ) : (
++                    <div style={{ width: "100%", aspectRatio: "1 / 1", background: "var(--sand-100)", borderRadius: 6, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>
++                      🛍️
++                    </div>
++                  )}
++                  <div className="name">{p.name}</div>
++                </Link>
++                <div className="shop">{p.shop_name} · {CONDITION_LABELS[p.condition] || "Neuf"}</div>
++                <PriceDisplay product={p} />
++                <button className="btn btn-ghost" onClick={() => handleRemove(p.id)}>
++                  Retirer des favoris
++                </button>
++              </div>
++            ))}
++          </div>
++        )}
++      </div>
++
++      <Footer />
++      <BottomNav user={initialUser} />
++    </div>
++  );
++}
+diff --git a/app/favoris/page.js b/app/favoris/page.js
+index 733977a..7c7b840 100644
+--- a/app/favoris/page.js
++++ b/app/favoris/page.js
+@@ -1,95 +1,21 @@
+-"use client";
+-
+-import { useState, useEffect } from "react";
+-import { useRouter } from "next/navigation";
+-import Link from "next/link";
+-import Footer from "@/app/components/Footer";
+-import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
+-
+-const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
+-
+-export default function FavorisPage() {
+-  const router = useRouter();
+-  const [products, setProducts] = useState([]);
+-  const [loading, setLoading] = useState(true);
+-
+-  function load() {
+-    fetch("/api/favorites")
+-      .then((res) => {
+-        if (res.status === 401) {
+-          router.push("/login");
+-          return null;
+-        }
+-        return res.json();
+-      })
+-      .then((data) => {
+-        if (!data) return;
+-        setProducts(data.products || []);
+-        setLoading(false);
+-      });
+-  }
+-
+-  useEffect(load, [router]);
+-
+-  async function handleRemove(productId) {
+-    await fetch(`/api/favorites/${productId}`, { method: "DELETE" });
+-    setProducts((prev) => prev.filter((p) => p.id !== productId));
+-  }
+-
+-  return (
+-    <div className="shell">
+-      <div className="topbar">
+-        <Link href="/shop" className="brand" style={{ textDecoration: "none" }}>🛒 FasoShop</Link>
+-        <div className="topbar-actions">
+-          <Link href="/shop"><button>Catalogue</button></Link>
+-        </div>
+-      </div>
+-      <div className="woven-strip" />
+-
+-      <div className="content">
+-        <div className="page-header">
+-          <h1>Mes favoris</h1>
+-        </div>
+-
+-        {loading ? (
+-          <p>Chargement...</p>
+-        ) : products.length === 0 ? (
+-          <div className="empty-state">
+-            <div className="glyph">♡</div>
+-            <p>Aucun favori pour l'instant.</p>
+-            <Link href="/shop"><button className="btn btn-primary" style={{ marginTop: 10 }}>Parcourir le catalogue</button></Link>
+-          </div>
+-        ) : (
+-          <div className="product-grid">
+-            {products.map((p) => (
+-              <div className="product-card" key={p.id}>
+-                {hasDiscount(p) && <span className="badge-discount">-{discountPercent(p)}%</span>}
+-                <Link href={`/shop/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
+-                  {p.images && p.images.length > 0 ? (
+-                    <img
+-                      src={p.images[0]}
+-                      alt={p.name}
+-                      style={{ width: "100%", aspectRatio: "1 / 1", objectFit: "cover", borderRadius: 6, marginBottom: 8 }}
+-                    />
+-                  ) : (
+-                    <div style={{ width: "100%", aspectRatio: "1 / 1", background: "var(--sand-100)", borderRadius: 6, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>
+-                      🛍️
+-                    </div>
+-                  )}
+-                  <div className="name">{p.name}</div>
+-                </Link>
+-                <div className="shop">{p.shop_name} · {CONDITION_LABELS[p.condition] || "Neuf"}</div>
+-                <PriceDisplay product={p} />
+-                <button className="btn btn-ghost" onClick={() => handleRemove(p.id)}>
+-                  Retirer des favoris
+-                </button>
+-              </div>
+-            ))}
+-          </div>
+-        )}
+-      </div>
+-
+-      <Footer />
+-    </div>
+-  );
++import { redirect } from "next/navigation";
++import { getCurrentUser } from "@/lib/session";
++import { getCategoriesTree } from "@/lib/queries/categories";
++import { getFavoriteProducts } from "@/lib/queries/favorites";
++import FavorisClient from "@/app/favoris/FavorisClient";
++
++export const metadata = {
++  title: "Mes favoris",
++};
++
++export default async function FavorisPage() {
++  const user = await getCurrentUser();
++  if (!user) redirect("/login");
++
++  const [categories, products] = await Promise.all([
++    getCategoriesTree(),
++    getFavoriteProducts(user.id),
++  ]);
++
++  return <FavorisClient initialUser={user} categories={categories} initialProducts={products} />;
+ }
+diff --git a/app/orders/OrdersClient.js b/app/orders/OrdersClient.js
+new file mode 100644
+index 0000000..0e4b8a0
+--- /dev/null
++++ b/app/orders/OrdersClient.js
+@@ -0,0 +1,126 @@
++"use client";
++
++import { useState } from "react";
++import { useRouter } from "next/navigation";
++import Link from "next/link";
++import SiteHeader from "@/app/components/SiteHeader";
++import BottomNav from "@/app/components/BottomNav";
++
++const STATUS_LABELS = {
++  preparation: "En préparation",
++  shipped: "Expédiée",
++  delivered: "Livrée",
++  cancelled: "Annulée",
++};
++
++export default function OrdersClient({ initialUser, categories, initialOrders, confirmedId, confirmedMethod }) {
++  const router = useRouter();
++  const [orders, setOrders] = useState(initialOrders);
++  const [contactingKey, setContactingKey] = useState(null);
++  const [error, setError] = useState("");
++
++  async function handleContact(orderId, shopId) {
++    const key = `${orderId}-${shopId}`;
++    setError("");
++    setContactingKey(key);
++
++    const res = await fetch("/api/conversations", {
++      method: "POST",
++      headers: { "Content-Type": "application/json" },
++      body: JSON.stringify({ orderId, shopId }),
++    });
++    const data = await res.json();
++    setContactingKey(null);
++
++    if (!res.ok) {
++      setError(data.error || "Erreur lors de l'ouverture de la conversation.");
++      return;
++    }
++
++    router.push(`/messages/${data.conversationId}`);
++  }
++
++  return (
++    <div className="shell">
++      <SiteHeader initialUser={initialUser} categories={categories} />
++      <div className="content">
++        <div className="page-header">
++          <h1>Mes commandes</h1>
++        </div>
++        {confirmedId && (
++          <div className="success-box">
++            ✅ Commande #{confirmedId} confirmée !{" "}
++            {confirmedMethod === "mobile_money"
++              ? "La boutique va vous contacter au numéro fourni pour finaliser le paiement Mobile Money."
++              : "Paiement à la livraison — vous serez contacté au numéro fourni."}
++          </div>
++        )}
++        {error && <div className="error-box">{error}</div>}
++        {orders.length === 0 ? (
++          <div className="empty-state">
++            <div className="glyph">📦</div>
++            <p>Vous n'avez pas encore passé de commande.</p>
++            <Link href="/shop"><button className="btn btn-primary" style={{ marginTop: 10 }}>Voir le catalogue</button></Link>
++          </div>
++        ) : (
++          orders.map((order) => (
++            <div className="order-card" key={order.id}>
++              <div className="order-head">
++                <strong>Commande #{order.id}</strong>
++                <span style={{ fontSize: "0.85rem", color: "var(--ink-400)" }}>
++                  {new Date(order.created_at).toLocaleDateString("fr-FR")}
++                </span>
++              </div>
++              <div style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginBottom: 12 }}>
++                Livraison : {order.shipping_address}
++                {" · "}{order.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 À la livraison"}
++              </div>
++
++              {/* Une sous-commande par boutique, chacune avec son propre statut de livraison */}
++              {order.subOrders.map((sub) => {
++                const key = `${order.id}-${sub.shopId}`;
++                return (
++                  <div
++                    key={sub.shopId}
++                    style={{
++                      border: "1px solid var(--sand-200)",
++                      borderRadius: 8,
++                      padding: 12,
++                      marginBottom: 10,
++                    }}
++                  >
++                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
++                      <strong style={{ fontSize: "0.9rem" }}>{sub.shopName}</strong>
++                      <span className={`status-pill status-${sub.deliveryStatus}`}>
++                        {STATUS_LABELS[sub.deliveryStatus] || sub.deliveryStatus}
++                      </span>
++                    </div>
++                    {sub.items.map((item, idx) => (
++                      <div key={idx} style={{ fontSize: "0.9rem", display: "flex", justifyContent: "space-between" }}>
++                        <span>{item.quantity} × {item.productName}</span>
++                        <span>{Number(item.priceAtPurchase * item.quantity).toLocaleString("fr-FR")} FCFA</span>
++                      </div>
++                    ))}
++                    <button
++                      className="btn btn-ghost"
++                      style={{ marginTop: 8, fontSize: "0.8rem" }}
++                      onClick={() => handleContact(order.id, sub.shopId)}
++                      disabled={contactingKey === key}
++                    >
++                      💬 {contactingKey === key ? "Ouverture..." : "Contacter le vendeur"}
++                    </button>
++                  </div>
++                );
++              })}
++
++              <div style={{ textAlign: "right", fontWeight: 700, marginTop: 8 }}>
++                Total : {Number(order.total).toLocaleString("fr-FR")} FCFA
++              </div>
++            </div>
++          ))
++        )}
++      </div>
++      <BottomNav user={initialUser} />
++    </div>
++  );
++}
+diff --git a/app/orders/page.js b/app/orders/page.js
+index 221455a..7342632 100644
+--- a/app/orders/page.js
++++ b/app/orders/page.js
+@@ -1,169 +1,30 @@
+-"use client";
+-
+-import { useState, useEffect, Suspense } from "react";
+-import { useRouter, useSearchParams } from "next/navigation";
+-import Link from "next/link";
+-
+-const STATUS_LABELS = {
+-  preparation: "En préparation",
+-  shipped: "Expédiée",
+-  delivered: "Livrée",
+-  cancelled: "Annulée",
++import { redirect } from "next/navigation";
++import { getCurrentUser } from "@/lib/session";
++import { getCategoriesTree } from "@/lib/queries/categories";
++import { getBuyerOrders } from "@/lib/queries/orders";
++import OrdersClient from "@/app/orders/OrdersClient";
++
++export const metadata = {
++  title: "Mes commandes",
+ };
+ 
+-function OrdersContent() {
+-  const router = useRouter();
+-  const searchParams = useSearchParams();
+-  const confirmedId = searchParams.get("confirmed");
+-  const confirmedMethod = searchParams.get("method");
+-  const [orders, setOrders] = useState([]);
+-  const [loading, setLoading] = useState(true);
+-  const [contactingKey, setContactingKey] = useState(null);
+-  const [error, setError] = useState("");
+-  const [unreadCount, setUnreadCount] = useState(0);
+-
+-  useEffect(() => {
+-    fetch("/api/orders").then(async (res) => {
+-      if (res.status === 401) {
+-        router.push("/login");
+-        return;
+-      }
+-      const data = await res.json();
+-      setOrders(data.orders || []);
+-      setLoading(false);
+-    });
+-  }, [router]);
+-
+-  useEffect(() => {
+-    function loadUnread() {
+-      fetch("/api/conversations/unread-count")
+-        .then((r) => r.json())
+-        .then((d) => setUnreadCount(d.unread || 0));
+-    }
+-    loadUnread();
+-    const timer = setInterval(loadUnread, 15000);
+-    return () => clearInterval(timer);
+-  }, []);
+-
+-  async function handleContact(orderId, shopId) {
+-    const key = `${orderId}-${shopId}`;
+-    setError("");
+-    setContactingKey(key);
+-
+-    const res = await fetch("/api/conversations", {
+-      method: "POST",
+-      headers: { "Content-Type": "application/json" },
+-      body: JSON.stringify({ orderId, shopId }),
+-    });
+-    const data = await res.json();
+-    setContactingKey(null);
+-
+-    if (!res.ok) {
+-      setError(data.error || "Erreur lors de l'ouverture de la conversation.");
+-      return;
+-    }
++export default async function OrdersPage({ searchParams }) {
++  const user = await getCurrentUser();
++  if (!user) redirect("/login");
+ 
+-    router.push(`/messages/${data.conversationId}`);
+-  }
+-
+-  return (
+-    <div className="shell">
+-      <div className="topbar">
+-        <Link href="/shop" className="brand" style={{ textDecoration: "none" }}>
+-          🛒 FasoShop
+-        </Link>
+-        <div className="topbar-actions">
+-          <Link href="/messages"><button>Messages {unreadCount > 0 ? `(${unreadCount})` : ""}</button></Link>
+-        </div>
+-      </div>
+-      <div className="woven-strip" />
+-      <div className="content">
+-        <div className="page-header">
+-          <h1>Mes commandes</h1>
+-        </div>
+-        {confirmedId && (
+-          <div className="success-box">
+-            ✅ Commande #{confirmedId} confirmée !{" "}
+-            {confirmedMethod === "mobile_money"
+-              ? "La boutique va vous contacter au numéro fourni pour finaliser le paiement Mobile Money."
+-              : "Paiement à la livraison — vous serez contacté au numéro fourni."}
+-          </div>
+-        )}
+-        {error && <div className="error-box">{error}</div>}
+-        {loading ? (
+-          <p>Chargement...</p>
+-        ) : orders.length === 0 ? (
+-          <div className="empty-state">
+-            <div className="glyph">📦</div>
+-            <p>Vous n'avez pas encore passé de commande.</p>
+-            <Link href="/shop"><button className="btn btn-primary" style={{ marginTop: 10 }}>Voir le catalogue</button></Link>
+-          </div>
+-        ) : (
+-          orders.map((order) => (
+-            <div className="order-card" key={order.id}>
+-              <div className="order-head">
+-                <strong>Commande #{order.id}</strong>
+-                <span style={{ fontSize: "0.85rem", color: "var(--ink-400)" }}>
+-                  {new Date(order.created_at).toLocaleDateString("fr-FR")}
+-                </span>
+-              </div>
+-              <div style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginBottom: 12 }}>
+-                Livraison : {order.shipping_address}
+-                {" · "}{order.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 À la livraison"}
+-              </div>
+-
+-              {/* Une sous-commande par boutique, chacune avec son propre statut de livraison */}
+-              {order.subOrders.map((sub) => {
+-                const key = `${order.id}-${sub.shopId}`;
+-                return (
+-                  <div
+-                    key={sub.shopId}
+-                    style={{
+-                      border: "1px solid var(--sand-200)",
+-                      borderRadius: 8,
+-                      padding: 12,
+-                      marginBottom: 10,
+-                    }}
+-                  >
+-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+-                      <strong style={{ fontSize: "0.9rem" }}>{sub.shopName}</strong>
+-                      <span className={`status-pill status-${sub.deliveryStatus}`}>
+-                        {STATUS_LABELS[sub.deliveryStatus] || sub.deliveryStatus}
+-                      </span>
+-                    </div>
+-                    {sub.items.map((item, idx) => (
+-                      <div key={idx} style={{ fontSize: "0.9rem", display: "flex", justifyContent: "space-between" }}>
+-                        <span>{item.quantity} × {item.productName}</span>
+-                        <span>{Number(item.priceAtPurchase * item.quantity).toLocaleString("fr-FR")} FCFA</span>
+-                      </div>
+-                    ))}
+-                    <button
+-                      className="btn btn-ghost"
+-                      style={{ marginTop: 8, fontSize: "0.8rem" }}
+-                      onClick={() => handleContact(order.id, sub.shopId)}
+-                      disabled={contactingKey === key}
+-                    >
+-                      💬 {contactingKey === key ? "Ouverture..." : "Contacter le vendeur"}
+-                    </button>
+-                  </div>
+-                );
+-              })}
+-
+-              <div style={{ textAlign: "right", fontWeight: 700, marginTop: 8 }}>
+-                Total : {Number(order.total).toLocaleString("fr-FR")} FCFA
+-              </div>
+-            </div>
+-          ))
+-        )}
+-      </div>
+-    </div>
+-  );
+-}
++  const sp = await searchParams;
++  const [categories, orders] = await Promise.all([
++    getCategoriesTree(),
++    getBuyerOrders(user.id),
++  ]);
+ 
+-export default function OrdersPage() {
+   return (
+-    <Suspense fallback={<div className="shell"><div className="content"><p>Chargement...</p></div></div>}>
+-      <OrdersContent />
+-    </Suspense>
++    <OrdersClient
++      initialUser={user}
++      categories={categories}
++      initialOrders={orders}
++      confirmedId={sp?.confirmed || null}
++      confirmedMethod={sp?.method || null}
++    />
+   );
+ }
+diff --git a/lib/queries/favorites.js b/lib/queries/favorites.js
+new file mode 100644
+index 0000000..1a4b560
+--- /dev/null
++++ b/lib/queries/favorites.js
+@@ -0,0 +1,22 @@
++import sql from "@/lib/db";
++import { parseImages } from "@/lib/queries/products";
++
++// Produits favoris de l'utilisateur, du plus récent au plus ancien.
++export async function getFavoriteProducts(userId) {
++  const products = await sql`
++    SELECT p.id, p.name, p.price, p.compare_at_price, p.images, p.condition,
++           s.name AS shop_name,
++           COALESCE(r.avg_rating, 0) AS avg_rating, COALESCE(r.review_count, 0) AS review_count
++    FROM favorites f
++    JOIN products p ON p.id = f.product_id
++    JOIN shops s ON s.id = p.shop_id
++    LEFT JOIN (
++      SELECT product_id, AVG(rating)::numeric(2,1) AS avg_rating, COUNT(*)::int AS review_count
++      FROM reviews GROUP BY product_id
++    ) r ON r.product_id = p.id
++    WHERE f.user_id = ${userId}
++    ORDER BY f.created_at DESC
++  `;
++
++  return products.map((p) => ({ ...p, images: parseImages(p.images) }));
++}
+diff --git a/lib/queries/orders.js b/lib/queries/orders.js
+new file mode 100644
+index 0000000..1171983
+--- /dev/null
++++ b/lib/queries/orders.js
+@@ -0,0 +1,47 @@
++import sql from "@/lib/db";
++
++// Historique des commandes de l'acheteur connecté, avec le détail par
++// boutique (chaque boutique gère sa propre sous-commande et son propre
++// statut de livraison).
++export async function getBuyerOrders(userId) {
++  const orders = await sql`
++    SELECT id, status, total, shipping_address, phone, payment_method, created_at
++    FROM orders
++    WHERE buyer_id = ${userId}
++    ORDER BY created_at DESC
++  `;
++
++  for (const order of orders) {
++    const items = await sql`
++      SELECT oi.quantity, oi.price_at_purchase, p.name AS product_name,
++             s.id AS shop_id, s.name AS shop_name,
++             COALESCE(l.delivery_status, 'preparation') AS delivery_status
++      FROM order_items oi
++      JOIN products p ON p.id = oi.product_id
++      JOIN shops s ON s.id = p.shop_id
++      LEFT JOIN shop_commission_ledger l ON l.order_id = oi.order_id AND l.shop_id = s.id
++      WHERE oi.order_id = ${order.id}
++    `;
++
++    const shopsMap = {};
++    for (const item of items) {
++      if (!shopsMap[item.shop_id]) {
++        shopsMap[item.shop_id] = {
++          shopId: item.shop_id,
++          shopName: item.shop_name,
++          deliveryStatus: item.delivery_status,
++          items: [],
++        };
++      }
++      shopsMap[item.shop_id].items.push({
++        productName: item.product_name,
++        quantity: item.quantity,
++        priceAtPurchase: item.price_at_purchase,
++      });
++    }
++
++    order.subOrders = Object.values(shopsMap);
++  }
++
++  return orders;
++}
+-- 
+2.43.0
+
