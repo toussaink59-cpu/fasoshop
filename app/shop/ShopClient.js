@@ -3,117 +3,19 @@
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { addToCart, getCart, cartCount } from "@/lib/cart";
-import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
+import { getCart, cartCount } from "@/lib/cart";
 import Footer from "@/app/components/Footer";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
+import ProductCard from "@/app/components/ProductCard";
 
 const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
-const CONDITION_COLORS = { neuf: "var(--gold-600)", quasi_neuf: "#6b7280", occasion: "var(--bissap-600)" };
 const SORT_OPTIONS = [
   { value: "newest", label: "Nouveautés" },
   { value: "price_asc", label: "Prix croissant" },
   { value: "price_desc", label: "Prix décroissant" },
   { value: "rating", label: "Mieux notés" },
 ];
-
-function Stars({ rating }) {
-  const rounded = Math.round(Number(rating) || 0);
-  return (
-    <span className="stars" aria-label={`${rating} sur 5`}>
-      {"★".repeat(rounded)}
-      {"☆".repeat(5 - rounded)}
-    </span>
-  );
-}
-
-function ProductCard({ p, onAdd, justAdded, user, router }) {
-  const [favorited, setFavorited] = useState(Boolean(p.is_favorited));
-  const [favBusy, setFavBusy] = useState(false);
-
-  async function handleFav(e) {
-    e.preventDefault();
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-    setFavBusy(true);
-    if (favorited) {
-      await fetch(`/api/favorites/${p.id}`, { method: "DELETE" });
-      setFavorited(false);
-    } else {
-      await fetch("/api/favorites", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ productId: p.id }),
-      });
-      setFavorited(true);
-    }
-    setFavBusy(false);
-  }
-
-  return (
-    <div className="product-card shop-card">
-      <button
-        className={`shop-card-fav ${favorited ? "shop-card-fav-active" : ""}`}
-        onClick={handleFav}
-        disabled={favBusy}
-        aria-label={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
-        title={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
-      >
-        {favorited ? "♥" : "♡"}
-      </button>
-
-      <Link href={`/shop/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
-        <div className="shop-card-image-wrap">
-          {hasDiscount(p) && <span className="badge-discount">-{discountPercent(p)}%</span>}
-          {p.is_sponsored ? (
-            <span className="shop-card-badge-sponsored">Sponsorisé</span>
-          ) : p.isNew ? (
-            <span className="shop-card-badge-new">Nouveau</span>
-          ) : null}
-          {p.images && p.images.length > 0 ? (
-            <img src={p.images[0]} alt={p.name} className="shop-card-image" />
-          ) : (
-            <div className="shop-card-image shop-card-image-placeholder">🛍️</div>
-          )}
-        </div>
-        <div className="name shop-card-name">{p.name}</div>
-      </Link>
-
-      <span
-        className="shop-card-condition"
-        style={{ background: CONDITION_COLORS[p.condition] || "var(--gold-600)" }}
-      >
-        {CONDITION_LABELS[p.condition] || "Neuf"}
-      </span>
-
-      <div className="shop">{p.shop_name}</div>
-
-      {Number(p.review_count) > 0 && (
-        <div className="shop-card-rating">
-          <Stars rating={p.avg_rating} />
-          <span className="shop-card-rating-count">({p.review_count})</span>
-        </div>
-      )}
-
-      <PriceDisplay product={p} />
-
-      <button
-        className="btn btn-primary"
-        onClick={() => onAdd(p)}
-        disabled={p.stock_quantity <= 0}
-      >
-        {p.stock_quantity <= 0
-          ? "Rupture de stock"
-          : justAdded === p.id
-          ? "Ajouté ✓"
-          : "Ajouter au panier"}
-      </button>
-    </div>
-  );
-}
 
 function FilterSidebar({
   categories,
@@ -306,7 +208,6 @@ function ShopContent({
   const [cities] = useState(initialCities);
   const [loading, setLoading] = useState(false);
   const [count, setCount] = useState(0);
-  const [justAdded, setJustAdded] = useState(null);
   const [user, setUser] = useState(initialUser);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
@@ -366,13 +267,6 @@ function ShopContent({
   function handleSearchSubmit(e) {
     e.preventDefault();
     updateParams({ q: searchInput });
-  }
-
-  function handleAdd(product) {
-    addToCart(product);
-    setCount(cartCount(getCart()));
-    setJustAdded(product.id);
-    setTimeout(() => setJustAdded(null), 1200);
   }
 
   const sidebarProps = {
@@ -472,7 +366,7 @@ function ShopContent({
           ) : (
             <div className="shop-grid">
               {products.map((p) => (
-                <ProductCard key={p.id} p={p} onAdd={handleAdd} justAdded={justAdded} user={user} router={router} />
+                <ProductCard key={p.id} p={p} user={user} />
               ))}
             </div>
           )}

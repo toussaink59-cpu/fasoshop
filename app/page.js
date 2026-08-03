@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { getCategoriesTree } from "@/lib/queries/categories";
 import { getCurrentUser } from "@/lib/session";
+import { getActiveFlashSales } from "@/lib/queries/flashSales";
+import { getBestSellers, getNewArrivals, getTopRated } from "@/lib/queries/homepage";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
 import BannerCarousel from "@/app/components/BannerCarousel";
 import WhyFasoShop from "@/app/components/WhyFasoShop";
 import Footer from "@/app/components/Footer";
 import FlashSaleSection from "@/app/components/FlashSaleSection";
+import HorizontalProductSection from "@/app/components/HorizontalProductSection";
 
 export const metadata = {
   title: "Accueil",
@@ -19,9 +22,13 @@ export const metadata = {
 // rendu, contenu indexable par les moteurs de recherche, pas de flash
 // visuel sur l'état de connexion).
 export default async function HomePage() {
-  const [categories, user] = await Promise.all([
+  const [categories, user, flashSales, bestSellers, newArrivals, topRated] = await Promise.all([
     getCategoriesTree(),
     getCurrentUser(),
+    getActiveFlashSales(),
+    getBestSellers(),
+    getNewArrivals(),
+    getTopRated(),
   ]);
 
   return (
@@ -33,15 +40,69 @@ export default async function HomePage() {
       <BannerCarousel />
 
       <div className="trust-strip">
-        <div className="trust-item"><span className="trust-icon">📱</span> Paiement Mobile Money</div>
-        <div className="trust-item"><span className="trust-icon">🏪</span> Boutiques vérifiées</div>
-        <div className="trust-item"><span className="trust-icon">🚚</span> Livraison partout au pays</div>
-        <div className="trust-item"><span className="trust-icon">↩️</span> Support client réactif</div>
+        <div className="trust-card">
+          <span className="trust-icon">📱</span>
+          <div>
+            <p className="trust-card-title">Mobile Money</p>
+            <p className="trust-card-desc">Paiement rapide et sécurisé</p>
+          </div>
+        </div>
+        <div className="trust-card">
+          <span className="trust-icon">🏪</span>
+          <div>
+            <p className="trust-card-title">Boutiques vérifiées</p>
+            <p className="trust-card-desc">Vendeurs contrôlés par FasoShop</p>
+          </div>
+        </div>
+        <div className="trust-card">
+          <span className="trust-icon">🚚</span>
+          <div>
+            <p className="trust-card-title">Livraison rapide</p>
+            <p className="trust-card-desc">Partout au Burkina Faso</p>
+          </div>
+        </div>
+        <div className="trust-card">
+          <span className="trust-icon">↩️</span>
+          <div>
+            <p className="trust-card-title">Support 24/7</p>
+            <p className="trust-card-desc">Une équipe à votre écoute</p>
+          </div>
+        </div>
       </div>
 
       <WhyFasoShop />
 
-      <FlashSaleSection />
+      <FlashSaleSection initialProducts={flashSales} />
+
+      <HorizontalProductSection
+        title="Nouveautés"
+        icon="✨"
+        seeAllHref="/shop?sort=newest"
+        products={newArrivals}
+        user={user}
+      />
+
+      <HorizontalProductSection
+        title="Meilleures ventes"
+        icon="🏆"
+        seeAllHref="/shop"
+        products={bestSellers}
+        user={user}
+      />
+
+      <HorizontalProductSection
+        title="Produits populaires"
+        icon="⭐"
+        seeAllHref="/shop?sort=rating"
+        products={topRated}
+        user={user}
+      />
+
+      {/* Section "Recommandés" volontairement absente : FasoShop n'a pas
+          encore de moteur de recommandation personnalisé (basé sur
+          l'historique d'achat/navigation). Afficher des produits au hasard
+          sous ce nom serait trompeur. À construire comme un vrai chantier
+          data si tu veux cette fonctionnalité. */}
 
       <div className="home-section" style={{ textAlign: "center" }}>
         <Link href="/shop">

@@ -14,20 +14,10 @@ function formatCountdown(ms) {
   return `${pad(hours)}h : ${pad(minutes)}m : ${pad(seconds)}s`;
 }
 
-export default function FlashSaleSection() {
-  const [products, setProducts] = useState([]);
+export default function FlashSaleSection({ initialProducts = [] }) {
+  const [products] = useState(initialProducts);
   const [now, setNow] = useState(Date.now());
-  const [loaded, setLoaded] = useState(false);
   const scrollRef = useRef(null);
-
-  useEffect(() => {
-    fetch("/api/flash-sales")
-      .then((r) => r.json())
-      .then((d) => {
-        setProducts(d.products || []);
-        setLoaded(true);
-      });
-  }, []);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -38,7 +28,7 @@ export default function FlashSaleSection() {
     scrollRef.current?.scrollBy({ left: amount, behavior: "smooth" });
   }
 
-  if (!loaded || products.length === 0) return null;
+  if (products.length === 0) return null;
 
   const soonestEnd = Math.min(...products.map((p) => new Date(p.flash_sale_ends_at).getTime()));
   const remaining = soonestEnd - now;
@@ -53,6 +43,7 @@ export default function FlashSaleSection() {
         <div className="flash-timer">
           Termine dans <strong>{formatCountdown(remaining)}</strong>
         </div>
+        <Link href="/shop?sort=newest" className="section-see-all flash-see-all">Voir tout →</Link>
       </div>
 
       <div className="flash-scroll-wrap">
