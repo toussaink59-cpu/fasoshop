@@ -60,39 +60,14 @@ export async function POST(request) {
   }
 }
 
+import { getUserConversations } from "@/lib/queries/conversations";
+
 // GET /api/conversations
 // Liste les conversations de l'utilisateur connecté (acheteur ou vendeur),
 // avec le dernier message et le nombre de messages non lus.
 export async function GET(request) {
   const userId = request.headers.get("x-user-id");
   const userRole = request.headers.get("x-user-role");
-
-  let conversations;
-
-  if (userRole === "vendor") {
-    conversations = await sql`
-      SELECT c.id, c.order_id, c.shop_id, c.last_message_at,
-             u.full_name AS other_party_name, s.name AS shop_name,
-             (SELECT body FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) AS last_message,
-             (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND sender_role = 'buyer' AND read_at IS NULL)::int AS unread_count
-      FROM conversations c
-      JOIN shops s ON s.id = c.shop_id
-      JOIN users u ON u.id = c.buyer_id
-      WHERE s.vendor_id = ${userId}
-      ORDER BY c.last_message_at DESC
-    `;
-  } else {
-    conversations = await sql`
-      SELECT c.id, c.order_id, c.shop_id, c.last_message_at,
-             s.name AS other_party_name, s.name AS shop_name,
-             (SELECT body FROM messages WHERE conversation_id = c.id ORDER BY created_at DESC LIMIT 1) AS last_message,
-             (SELECT COUNT(*) FROM messages WHERE conversation_id = c.id AND sender_role = 'vendor' AND read_at IS NULL)::int AS unread_count
-      FROM conversations c
-      JOIN shops s ON s.id = c.shop_id
-      WHERE c.buyer_id = ${userId}
-      ORDER BY c.last_message_at DESC
-    `;
-  }
-
+  const conversations = await getUserConversations(userId, userRole);
   return Response.json({ conversations });
 }

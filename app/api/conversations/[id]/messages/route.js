@@ -1,20 +1,5 @@
 import sql from "@/lib/db";
-
-async function getConversationAccess(conversationId, userId) {
-  const [conversation] = await sql`
-    SELECT c.id, c.order_id, c.buyer_id, s.vendor_id, s.name AS shop_name
-    FROM conversations c
-    JOIN shops s ON s.id = c.shop_id
-    WHERE c.id = ${conversationId}
-  `;
-  if (!conversation) return null;
-
-  const isBuyer = String(conversation.buyer_id) === String(userId);
-  const isVendor = String(conversation.vendor_id) === String(userId);
-  if (!isBuyer && !isVendor) return null;
-
-  return { conversation, role: isBuyer ? "buyer" : "vendor" };
-}
+import { getConversationAccess, getConversationThread } from "@/lib/queries/conversationThread";
 
 // GET /api/conversations/[id]/messages
 // Renvoie les messages d'une conversation et marque comme lus ceux envoyés
@@ -23,30 +8,12 @@ export async function GET(request, { params }) {
   const userId = request.headers.get("x-user-id");
   const { id } = await params;
 
-  const access = await getConversationAccess(id, userId);
-  if (!access) {
+  const thread = await getConversationThread(id, userId);
+  if (!thread) {
     return Response.json({ error: "Accès non autorisé." }, { status: 403 });
   }
 
-  const messages = await sql`
-    SELECT id, sender_id, sender_role, body, created_at
-    FROM messages
-    WHERE conversation_id = ${id}
-    ORDER BY created_at ASC
-  `;
-
-  const otherRole = access.role === "buyer" ? "vendor" : "buyer";
-  await sql`
-    UPDATE messages SET read_at = NOW()
-    WHERE conversation_id = ${id} AND sender_role = ${otherRole} AND read_at IS NULL
-  `;
-
-  return Response.json({
-    messages,
-    myRole: access.role,
-    shopName: access.conversation.shop_name,
-    orderId: access.conversation.order_id,
-  });
+  return Response.json(thread);
 }
 
 // POST /api/conversations/[id]/messages
