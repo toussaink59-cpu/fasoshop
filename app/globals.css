@@ -3384,3 +3384,21 @@ tbody tr:hover {
 .shop-card-compact .shop-card-name {
   font-size: 0.85rem;
 }
+
+/* ============================================
+   CORRECTIF — débordement horizontal des tableaux back-office
+   (admin/vendeur) sur mobile. Les tableaux à 5-6 colonnes (Boutiques,
+   Avis clients, Détail produits...) n'avaient aucune protection : sur un
+   écran de 360-375px, ils forçaient toute la page à déborder. Le panel
+   défile maintenant horizontalement, contenant le scroll au tableau
+   plutôt qu'à la page entière. Aucune largeur minimale forcée sur
+   desktop (les panels y sont déjà plus larges que 640px).
+   ============================================ */
+.panel {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.panel table {
+  min-width: 640px;
+}
