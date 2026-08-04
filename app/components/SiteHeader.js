@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getCart, cartCount } from "@/lib/cart";
@@ -23,6 +23,14 @@ export default function SiteHeader({ initialUser, categories = [], searchValue =
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartCountValue, setCartCountValue] = useState(0);
   const [unread, setUnread] = useState(0);
+  const hamburgerRef = useRef(null);
+
+  function closeMenu() {
+    setMenuOpen(false);
+    // Restitue le focus clavier au bouton qui a ouvert le menu — sans ça,
+    // le focus reste "perdu" sur un élément désormais inerte.
+    hamburgerRef.current?.focus();
+  }
 
   useEffect(() => {
     const update = () => setCartCountValue(cartCount(getCart()));
@@ -57,9 +65,12 @@ export default function SiteHeader({ initialUser, categories = [], searchValue =
       <header className="site-header">
         <div className="site-header-row">
           <button
+            ref={hamburgerRef}
             className="site-header-icon-btn site-header-hamburger"
             onClick={() => setMenuOpen(true)}
             aria-label="Ouvrir le menu"
+            aria-expanded={menuOpen}
+            aria-haspopup="dialog"
           >
             ☰
           </button>
@@ -104,7 +115,7 @@ export default function SiteHeader({ initialUser, categories = [], searchValue =
 
       <SideMenu
         open={menuOpen}
-        onClose={() => setMenuOpen(false)}
+        onClose={closeMenu}
         user={user}
         categories={categories}
         onLogout={() => setUser(null)}
