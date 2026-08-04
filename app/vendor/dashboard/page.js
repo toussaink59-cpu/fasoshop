@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import VendorBottomNav from "@/app/components/VendorBottomNav";
 
 const DOC_LABELS = { cni: "CNI", passeport: "Passeport", permis: "Permis de conduire" };
 
@@ -587,7 +588,7 @@ export default function VendorDashboard() {
         {error && <div className="error-box">{error}</div>}
         {success && <div className="success-box">{success}</div>}
 
-        <div className="panel">
+        <div className="panel" id="revenus">
           <h2>Revenus</h2>
           <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
             Une commission de 5,5% est prélevée par FasoShop sur chaque vente confirmée.
@@ -647,7 +648,7 @@ export default function VendorDashboard() {
           )}
         </div>
 
-        <div className="panel">
+        <div className="panel" id="compte">
           <h2>Reversements — Mobile Money</h2>
           <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
             Le numéro renseigné ici recevra automatiquement votre part des ventes payées en ligne, dès que le paiement en ligne sera activé.
@@ -703,7 +704,7 @@ export default function VendorDashboard() {
           </form>
         </div>
 
-        <div className="stat-row">
+        <div className="stat-row" id="produits">
           <div className="stat-card">
             <div className="label">Produits</div>
             <div className="value">{products.length}</div>
@@ -1064,6 +1065,7 @@ export default function VendorDashboard() {
           )}
         </div>
       </div>
+      <VendorBottomNav newOrdersCount={newOrdersCount} unreadMessages={unreadMessages} />
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import VendorBottomNav from "@/app/components/VendorBottomNav";
 
 const STATUS_LABELS = {
   preparation: "En préparation",
@@ -169,6 +170,7 @@ export default function VendorOrdersPage() {
           </div>
         )}
       </div>
+      <VendorBottomNav unreadMessages={unreadCount} />
     </div>
   );
 }
