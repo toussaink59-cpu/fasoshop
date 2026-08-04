@@ -7,35 +7,6 @@ import VendorBottomNav from "@/app/components/VendorBottomNav";
 
 const DOC_LABELS = { cni: "CNI", passeport: "Passeport", permis: "Permis de conduire" };
 
-function SalesSparkline({ data }) {
-  const width = 600;
-  const height = 90;
-  const max = Math.max(...data.map((d) => d.gross), 1);
-  const stepX = width / (data.length - 1 || 1);
-
-  const points = data.map((d, i) => {
-    const x = i * stepX;
-    const y = height - (d.gross / max) * (height - 10) - 5;
-    return `${x},${y}`;
-  });
-
-  const areaPoints = `0,${height} ${points.join(" ")} ${width},${height}`;
-
-  return (
-    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: 90, display: "block" }}>
-      <polygon points={areaPoints} fill="var(--orange-100)" />
-      <polyline
-        points={points.join(" ")}
-        fill="none"
-        stroke="var(--orange-500)"
-        strokeWidth="2"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-      />
-    </svg>
-  );
-}
-
 export default function VendorDashboard() {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -48,17 +19,10 @@ export default function VendorDashboard() {
   const [discountInputs, setDiscountInputs] = useState({});
   const [flashSaleInputs, setFlashSaleInputs] = useState({});
   const [shop, setShop] = useState(null);
-  const [mmNumber, setMmNumber] = useState("");
-  const [mmOperator, setMmOperator] = useState("orange_money");
-  const [mmSaved, setMmSaved] = useState(false);
-  const [mmError, setMmError] = useState("");
-  const [revenue, setRevenue] = useState(null);
   const [lowStockAlertDismissed, setLowStockAlertDismissed] = useState(false);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [newOrdersAlertDismissed, setNewOrdersAlertDismissed] = useState(false);
   const [unreadMessages, setUnreadMessages] = useState(0);
-  const [cityInput, setCityInput] = useState("");
-  const [citySaved, setCitySaved] = useState(false);
   const [sponsorRequests, setSponsorRequests] = useState({});
   const [sponsorBusy, setSponsorBusy] = useState(null);
 
@@ -117,14 +81,6 @@ export default function VendorDashboard() {
     setLoading(false);
   }, [router]);
 
-  const loadRevenue = useCallback(async () => {
-    const res = await fetch("/api/vendor/revenue");
-    if (res.ok) {
-      const data = await res.json();
-      setRevenue(data.revenue || null);
-    }
-  }, []);
-
   const loadNewOrdersCount = useCallback(async () => {
     const res = await fetch("/api/vendor/orders");
     if (res.ok) {
@@ -147,7 +103,6 @@ export default function VendorDashboard() {
         }
         setUser(data.user);
         loadStock();
-        loadRevenue();
         loadNewOrdersCount();
 
         fetch("/api/vendor/shop")
@@ -155,15 +110,12 @@ export default function VendorDashboard() {
           .then((d) => {
             if (d.shop) {
               setShop(d.shop);
-              setMmNumber(d.shop.mobile_money_number || "");
-              setMmOperator(d.shop.mobile_money_operator || "orange_money");
               setResubmitDocType(d.shop.id_document_type || "cni");
               setResubmitDocNumber(d.shop.id_document_number || "");
-              setCityInput(d.shop.city || "");
             }
           });
       });
-  }, [loadStock, loadRevenue, loadNewOrdersCount, router]);
+  }, [loadStock, loadNewOrdersCount, router]);
 
   function handleFileSelect(e) {
     const files = Array.from(e.target.files).slice(0, 5); // 5 photos max, comme Jumia
@@ -349,28 +301,6 @@ export default function VendorDashboard() {
     loadStock();
   }
 
-  async function handleSaveMobileMoney(e) {
-    e.preventDefault();
-    setMmError("");
-    setMmSaved(false);
-
-    const res = await fetch("/api/vendor/shop", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mobileMoneyNumber: mmNumber, mobileMoneyOperator: mmOperator }),
-    });
-    const data = await res.json();
-
-    if (!res.ok) {
-      setMmError(data.error || "Erreur lors de l'enregistrement.");
-      return;
-    }
-
-    setShop(data.shop);
-    setMmSaved(true);
-    setTimeout(() => setMmSaved(false), 2500);
-  }
-
   async function handleResubmitDocuments(e) {
     e.preventDefault();
     setResubmitError("");
@@ -409,24 +339,6 @@ export default function VendorDashboard() {
 
     setSuccess(`Produit "${data.name}" supprimé.`);
     loadStock();
-  }
-
-  async function handleSaveCity(e) {
-    e.preventDefault();
-    setCitySaved(false);
-
-    const res = await fetch("/api/vendor/shop", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ city: cityInput }),
-    });
-    const data = await res.json();
-
-    if (res.ok) {
-      setShop(data.shop);
-      setCitySaved(true);
-      setTimeout(() => setCitySaved(false), 2500);
-    }
   }
 
   async function handleRequestSponsor(productId) {
@@ -588,120 +500,15 @@ export default function VendorDashboard() {
         {error && <div className="error-box">{error}</div>}
         {success && <div className="success-box">{success}</div>}
 
-        <div className="panel" id="revenus">
-          <h2>Revenus</h2>
-          <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
-            Une commission de 5,5% est prélevée par FasoShop sur chaque vente confirmée.
-          </p>
-
-          {!revenue ? (
-            <p>Chargement...</p>
-          ) : (
-            <>
-              <div className="stat-row">
-                <div className="stat-card">
-                  <div className="label">Ventes aujourd'hui</div>
-                  <div className="value">{Number(revenue.todaySales).toLocaleString("fr-FR")} FCFA</div>
-                  <div style={{ fontSize: "0.78rem", color: "var(--ink-400)", marginTop: 2 }}>
-                    {revenue.todayOrderCount} commande{revenue.todayOrderCount > 1 ? "s" : ""}
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <div className="label">Ventes ce mois-ci</div>
-                  <div className="value">{Number(revenue.monthSales).toLocaleString("fr-FR")} FCFA</div>
-                  <div style={{ fontSize: "0.78rem", color: "var(--ink-400)", marginTop: 2 }}>
-                    {revenue.monthOrderCount} commande{revenue.monthOrderCount > 1 ? "s" : ""}
-                  </div>
-                </div>
-              </div>
-
-              {revenue.dailySeries && revenue.dailySeries.some((d) => d.gross > 0) && (
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: "0.78rem", color: "var(--ink-400)", marginBottom: 8 }}>
-                    Ventes des 30 derniers jours
-                  </div>
-                  <SalesSparkline data={revenue.dailySeries} />
-                </div>
-              )}
-
-              <div className="stat-row">
-                <div className="stat-card">
-                  <div className="label">Ventes brutes</div>
-                  <div className="value">{Number(revenue.grossSales).toLocaleString("fr-FR")} FCFA</div>
-                </div>
-                <div className="stat-card">
-                  <div className="label">Commission FasoShop</div>
-                  <div className="value">{Number(revenue.totalCommission).toLocaleString("fr-FR")} FCFA</div>
-                </div>
-                <div className="stat-card">
-                  <div className="label">Solde à recevoir</div>
-                  <div className="value" style={{ color: "var(--bissap-600)" }}>
-                    {Number(revenue.netAmountDue).toLocaleString("fr-FR")} FCFA
-                  </div>
-                </div>
-                <div className="stat-card">
-                  <div className="label">Déjà versé</div>
-                  <div className="value">{Number(revenue.netAmountSettled).toLocaleString("fr-FR")} FCFA</div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
-        <div className="panel" id="compte">
-          <h2>Reversements — Mobile Money</h2>
-          <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
-            Le numéro renseigné ici recevra automatiquement votre part des ventes payées en ligne, dès que le paiement en ligne sera activé.
-          </p>
-
-          {mmError && <div className="error-box">{mmError}</div>}
-          {mmSaved && <div className="success-box">Numéro Mobile Money enregistré.</div>}
-
-          <form onSubmit={handleSaveMobileMoney}>
-            <div className="form-row">
-              <div>
-                <label htmlFor="mm-operator">Opérateur</label>
-                <select
-                  id="mm-operator"
-                  value={mmOperator}
-                  onChange={(e) => setMmOperator(e.target.value)}
-                >
-                  <option value="orange_money">Orange Money</option>
-                  <option value="moov_money">Moov Money</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="mm-number">Numéro Mobile Money</label>
-                <input
-                  id="mm-number"
-                  required
-                  value={mmNumber}
-                  onChange={(e) => setMmNumber(e.target.value)}
-                  placeholder="Ex : 70 00 00 00"
-                />
-              </div>
-            </div>
-            <button type="submit" className="btn btn-primary">
-              {shop?.mobile_money_number ? "Mettre à jour" : "Enregistrer"}
-            </button>
-          </form>
-        </div>
-
-        <div className="panel">
-          <h2>Ville de la boutique</h2>
-          <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
-            Utilisée pour le filtre "Ville" du catalogue, afin d'aider les acheteurs à trouver des boutiques proches d'eux.
-          </p>
-          {citySaved && <div className="success-box">Ville enregistrée.</div>}
-          <form onSubmit={handleSaveCity} style={{ display: "flex", gap: 8 }}>
-            <input
-              value={cityInput}
-              onChange={(e) => setCityInput(e.target.value)}
-              placeholder="Ex : Ouagadougou"
-              style={{ flex: 1 }}
-            />
-            <button type="submit" className="btn btn-primary">Enregistrer</button>
-          </form>
+        <div className="quick-links-row" style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
+          <Link href="/vendor/revenue" className="panel" style={{ flex: 1, minWidth: 200, textDecoration: "none", color: "inherit" }}>
+            💰 <strong>Revenus</strong>
+            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--ink-400)" }}>Ventes, commission, solde à recevoir</p>
+          </Link>
+          <Link href="/vendor/account" className="panel" style={{ flex: 1, minWidth: 200, textDecoration: "none", color: "inherit" }}>
+            🏪 <strong>Mon compte</strong>
+            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--ink-400)" }}>Mobile Money, ville de la boutique</p>
+          </Link>
         </div>
 
         <div className="stat-row" id="produits">
