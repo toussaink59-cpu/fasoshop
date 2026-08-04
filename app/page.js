@@ -3,6 +3,7 @@ import { getCategoriesTree } from "@/lib/queries/categories";
 import { getCurrentUser } from "@/lib/session";
 import { getActiveFlashSales } from "@/lib/queries/flashSales";
 import { getBestSellers, getNewArrivals, getTopRated } from "@/lib/queries/homepage";
+import { getRecommendedProducts } from "@/lib/queries/recommendations";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
 import BannerCarousel from "@/app/components/BannerCarousel";
@@ -30,6 +31,10 @@ export default async function HomePage() {
     getNewArrivals(),
     getTopRated(),
   ]);
+
+  // Recommandations : dépendent de l'utilisateur résolu ci-dessus (besoin de
+  // son id), donc requête séparée plutôt que dans le premier Promise.all.
+  const recommended = await getRecommendedProducts(user?.id ?? null);
 
   return (
     <div className="shell">
@@ -98,11 +103,15 @@ export default async function HomePage() {
         user={user}
       />
 
-      {/* Section "Recommandés" volontairement absente : FasoShop n'a pas
-          encore de moteur de recommandation personnalisé (basé sur
-          l'historique d'achat/navigation). Afficher des produits au hasard
-          sous ce nom serait trompeur. À construire comme un vrai chantier
-          data si tu veux cette fonctionnalité. */}
+      <HorizontalProductSection
+        title="Recommandés pour vous"
+        icon="🎯"
+        seeAllHref={null}
+        products={recommended}
+        user={user}
+      />
+      {/* Pas de "Voir tout" ici : ce n'est pas une catégorie ou un tri du
+          catalogue, juste une sélection personnalisée sur cette page. */}
 
       <div className="home-section" style={{ textAlign: "center" }}>
         <Link href="/shop">
