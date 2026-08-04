@@ -1,54 +1,34 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getCurrentUser } from "@/lib/session";
+import { getCategoriesTree } from "@/lib/queries/categories";
+import { getUserConversations } from "@/lib/queries/conversations";
+import SiteHeader from "@/app/components/SiteHeader";
+import BottomNav from "@/app/components/BottomNav";
 
-export default function MessagesListPage() {
-  const router = useRouter();
-  const [user, setUser] = useState(null);
-  const [conversations, setConversations] = useState([]);
-  const [loading, setLoading] = useState(true);
+export const metadata = {
+  title: "Messages",
+};
 
-  useEffect(() => {
-    fetch("/api/auth/me")
-      .then((r) => r.json())
-      .then((d) => {
-        if (!d.user) {
-          router.push("/login");
-          return;
-        }
-        setUser(d.user);
-        fetch("/api/conversations")
-          .then((r) => r.json())
-          .then((data) => {
-            setConversations(data.conversations || []);
-            setLoading(false);
-          });
-      });
-  }, [router]);
+export default async function MessagesListPage() {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
 
-  const backLink = user?.role === "vendor" ? "/vendor/dashboard" : "/orders";
-  const backLabel = user?.role === "vendor" ? "Retour au tableau de bord" : "Retour à mes commandes";
+  const [categories, conversations] = await Promise.all([
+    getCategoriesTree(),
+    getUserConversations(user.id, user.role),
+  ]);
 
   return (
     <div className="shell">
-      <div className="topbar">
-        <Link href="/" className="brand" style={{ textDecoration: "none" }}>🛒 FasoShop</Link>
-        <div className="topbar-actions">
-          <Link href={backLink}><button>{backLabel}</button></Link>
-        </div>
-      </div>
-      <div className="woven-strip" />
+      <SiteHeader initialUser={user} categories={categories} />
 
       <div className="content" style={{ maxWidth: 720, margin: "0 auto" }}>
         <div className="page-header">
           <h1>Messages</h1>
         </div>
 
-        {loading ? (
-          <p>Chargement...</p>
-        ) : conversations.length === 0 ? (
+        {conversations.length === 0 ? (
           <div className="empty-state">
             <div className="glyph">💬</div>
             <p>Aucune conversation pour l'instant.</p>
@@ -79,6 +59,8 @@ export default function MessagesListPage() {
           </div>
         )}
       </div>
+
+      <BottomNav user={user} />
     </div>
   );
 }
