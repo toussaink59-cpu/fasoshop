@@ -23,12 +23,20 @@
   box-sizing: border-box;
 }
 
+html {
+  overflow-x: hidden;
+  max-width: 100%;
+}
+
 body {
   margin: 0;
   background: var(--sand-50);
   color: var(--ink-900);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+  overflow-wrap: break-word;
+  max-width: 100%;
 }
 
 h1, h2, h3 {
