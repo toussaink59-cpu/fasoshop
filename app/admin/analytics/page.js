@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import AdminBottomNav from "@/app/components/AdminBottomNav";
 
 function Sparkline({ data, valueKey }) {
   const width = 900;
@@ -245,6 +246,7 @@ export default function AdminAnalyticsPage() {
           </>
         )}
       </div>
+      <AdminBottomNav />
     </div>
   );
 }
