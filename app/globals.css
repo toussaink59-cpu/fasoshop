@@ -3526,3 +3526,8 @@ tbody tr:hover {
   /* Bouton Supprimer pleine largeur en bas de carte */
   table td:nth-child(10) .btn { width: 100%; }
 }
+/* ===== Annule la largeur minimale forcée des tableaux sur mobile ===== */
+@media (max-width: 720px) {
+  .panel { overflow-x: visible; }
+  .panel table { min-width: 0; }
+}
