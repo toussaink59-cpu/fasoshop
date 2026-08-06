@@ -3861,3 +3861,45 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 /* Sections et bandes décoratives serrées */
 .home-section { padding: 10px 12px !important; }
 .woven-strip { height: 4px !important; }
+/* ===== FICHE PRODUIT : conversion maximale ===== */
+.pd-flash {
+  margin-top: 12px;
+  background: var(--bissap-600, #a3153c);
+  color: #fff;
+  font-weight: 800;
+  text-align: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-size: .9rem;
+}
+.pd-stock-low {
+  margin-top: 10px;
+  background: #fff3e0;
+  border: 1px solid #ffb74d;
+  color: #b26a00;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-size: .85rem;
+}
+.pd-stock-ok {
+  margin-top: 10px;
+  color: var(--millet-600, #2f7a3d);
+  font-weight: 600;
+  font-size: .85rem;
+}
+.pd-trust {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 14px;
+  padding: 10px 12px;
+  background: var(--sand-100, #f3ede4);
+  border-radius: 10px;
+  font-size: .78rem;
+  font-weight: 600;
+  color: var(--ink-700, #4a3f38);
+}
+/* Prix en géant sur la fiche produit */
+.content .price-display { font-size: 1.6rem !important; font-weight: 900 !important; }
