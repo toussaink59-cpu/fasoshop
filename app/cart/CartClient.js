@@ -3,12 +3,14 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getCart, updateQuantity, clearCart, cartTotal, removeFromCart } from "@/lib/cart";
+import { getCart, updateQuantity, clearCart, cartTotal } from "@/lib/cart";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
 
 export default function CartClient({ initialUser, categories }) {
   const router = useRouter();
+  // Le panier vit uniquement dans localStorage (jamais côté serveur) : lu de
+  // façon synchrone dès le premier rendu, pas de fetch ni de "Chargement...".
   const [cart, setCart] = useState(() => (typeof window !== "undefined" ? getCart() : []));
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
@@ -19,11 +21,14 @@ export default function CartClient({ initialUser, categories }) {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
+    // Resynchronise après hydratation : localStorage n'existe pas côté
+    // serveur, donc le tout premier rendu serveur ne peut pas connaître le
+    // panier. Évite un mismatch d'hydratation React.
     setCart(getCart());
   }, []);
 
   useEffect(() => {
-    if (!initialUser) return;
+    if (!initialUser) return; // pas connecté — le champ adresse reste libre
     fetch("/api/addresses").then(async (res) => {
       if (!res.ok) return;
       const data = await res.json();
@@ -40,16 +45,12 @@ export default function CartClient({ initialUser, categories }) {
   }, [initialUser]);
 
   function changeQty(productId, qty) {
-    if (qty <= 0) {
-      removeFromCart(productId);
-    } else {
-      updateQuantity(productId, qty);
-    }
+    updateQuantity(productId, qty);
     setCart(getCart());
   }
 
   function removeItem(productId) {
-    removeFromCart(productId);
+    updateQuantity(productId, 0); // 0 = supprime l'article (logique déjà présente dans lib/cart)
     setCart(getCart());
   }
 
