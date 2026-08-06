@@ -8,7 +8,7 @@ import VendorBottomNav from "@/app/components/VendorBottomNav";
 const DOC_LABELS = { cni: "CNI", passeport: "Passeport", permis: "Permis de conduire" };
 const STATUS_CONFIG = {
   pending: { label: "En attente de vérification", color: "#f59e0b", icon: "⏳" },
-  approved: { label: "Boutique vérifiée", color: "var(--millet-600, #2f7a3d)", icon: "✅" },
+  active: { label: "Boutique vérifiée", color: "var(--millet-600, #2f7a3d)", icon: "✅" },
   suspended: { label: "Boutique suspendue", color: "#dc2626", icon: "🚫" },
   rejected: { label: "Demande non validée", color: "var(--bissap-600, #b91c3c)", icon: "❌" },
 };
@@ -174,7 +174,7 @@ export default function VendorAccountPage() {
             <h2>{statusConfig.label}</h2>
             <p>{user ? `Bienvenue, ${user.full_name}` : "Compte vendeur"}</p>
           </div>
-          {shop?.shop_name && <div className="vendor-shop-name">{shop.shop_name}</div>}
+          {shop?.shop_name && <div className="vendor-shop-name">{shop.name}</div>}
         </div>
 
         {/* Grille de paramètres */}
