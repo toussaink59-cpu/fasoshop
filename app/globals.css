@@ -3531,3 +3531,44 @@ tbody tr:hover {
   .panel { overflow-x: visible; }
   .panel table { min-width: 0; }
 }
+/* ===== COMPACT : cartes vendeur plus courtes (mobile) ===== */
+@media (max-width: 720px) {
+
+  /* Cible uniquement le tableau à 10 colonnes (celui des produits vendeur) */
+  table:has(td:nth-child(10)) tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+  }
+
+  table:has(td:nth-child(10)) td { padding: 3px 0; box-sizing: border-box; }
+
+  /* Ligne 1 : nom du produit (pleine largeur) */
+  table:has(td:nth-child(10)) td:nth-child(1) { order: 1; width: 100%; font-size: .98rem; }
+
+  /* Ligne 2 : SKU | État */
+  table:has(td:nth-child(10)) td:nth-child(2) { order: 2; width: 55%; justify-content: flex-start; gap: 6px; border-bottom: 0; }
+  table:has(td:nth-child(10)) td:nth-child(3) { order: 3; width: 45%; justify-content: flex-end; border-bottom: 0; }
+
+  /* Ligne 3 : Prix | Stock */
+  table:has(td:nth-child(10)) td:nth-child(4) { order: 4; width: 55%; }
+  table:has(td:nth-child(10)) td:nth-child(7) { order: 5; width: 45%; justify-content: flex-end; border-bottom: 0; }
+
+  /* Lignes 4-5 : prix barré + vente flash, plus serrées */
+  table:has(td:nth-child(10)) td:nth-child(5) { order: 6; width: 100%; padding: 4px 0; }
+  table:has(td:nth-child(10)) td:nth-child(6) { order: 7; width: 100%; padding: 4px 0; }
+
+  /* Ligne 6 : ajuster le stock */
+  table:has(td:nth-child(10)) td:nth-child(8) { order: 8; width: 100%; padding: 4px 0; }
+
+  /* Ligne 7 : Sponsoring | Supprimer côte à côte */
+  table:has(td:nth-child(10)) td:nth-child(9) { order: 9; width: 50%; border-bottom: 0; }
+  table:has(td:nth-child(10)) td:nth-child(10) { order: 10; width: 50%; border-bottom: 0; }
+  table:has(td:nth-child(10)) td:nth-child(10) .btn { width: 100%; }
+
+  /* Textes et boutons plus serrés */
+  table:has(td:nth-child(10)) td::before { font-size: .62rem; }
+  table:has(td:nth-child(10)) td .btn { font-size: .78rem; padding: 7px 10px; min-height: 40px; }
+  table:has(td:nth-child(10)) td .stock-adjust { gap: 6px; }
+}
