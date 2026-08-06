@@ -3,14 +3,12 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getCart, updateQuantity, clearCart, cartTotal } from "@/lib/cart";
+import { getCart, updateQuantity, clearCart, cartTotal, removeFromCart } from "@/lib/cart";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
 
 export default function CartClient({ initialUser, categories }) {
   const router = useRouter();
-  // Le panier vit uniquement dans localStorage (jamais côté serveur) : lu de
-  // façon synchrone dès le premier rendu, pas de fetch ni de "Chargement...".
   const [cart, setCart] = useState(() => (typeof window !== "undefined" ? getCart() : []));
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
@@ -21,14 +19,11 @@ export default function CartClient({ initialUser, categories }) {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // Resynchronise après hydratation : localStorage n'existe pas côté
-    // serveur, donc le tout premier rendu serveur ne peut pas connaître le
-    // panier. Évite un mismatch d'hydratation React.
     setCart(getCart());
   }, []);
 
   useEffect(() => {
-    if (!initialUser) return; // pas connecté — le champ adresse reste libre
+    if (!initialUser) return;
     fetch("/api/addresses").then(async (res) => {
       if (!res.ok) return;
       const data = await res.json();
@@ -45,7 +40,16 @@ export default function CartClient({ initialUser, categories }) {
   }, [initialUser]);
 
   function changeQty(productId, qty) {
-    updateQuantity(productId, qty);
+    if (qty <= 0) {
+      removeFromCart(productId);
+    } else {
+      updateQuantity(productId, qty);
+    }
+    setCart(getCart());
+  }
+
+  function removeItem(productId) {
+    removeFromCart(productId);
     setCart(getCart());
   }
 
@@ -102,9 +106,10 @@ export default function CartClient({ initialUser, categories }) {
     <div className="shell">
       <SiteHeader initialUser={initialUser} categories={categories} />
 
-      <div className="content">
-        <div className="page-header">
+      <div className="cart-wrap">
+        <div className="cart-header">
           <h1>Mon panier</h1>
+          <span className="cart-count">{cart.length} article{cart.length > 1 ? "s" : ""}</span>
         </div>
 
         {error && <div className="error-box">{error}</div>}
@@ -113,37 +118,58 @@ export default function CartClient({ initialUser, categories }) {
           <div className="empty-state">
             <div className="glyph">🛒</div>
             <p>Votre panier est vide.</p>
-            <Link href="/shop"><button className="btn btn-primary" style={{ marginTop: 10 }}>Voir le catalogue</button></Link>
+            <Link href="/shop">
+              <button className="btn btn-primary" style={{ marginTop: 10 }}>Voir le catalogue</button>
+            </Link>
           </div>
         ) : (
           <>
-            <div className="panel">
+            {/* Liste des articles */}
+            <div className="cart-items-list">
               {cart.map((item) => (
-                <div className="cart-item" key={item.productId}>
-                  <div>
-                    <div style={{ fontWeight: 600 }}>{item.name}</div>
-                    <div style={{ fontSize: "0.8rem", color: "var(--ink-400)" }}>{item.shopName}</div>
+                <div className="cart-item-card" key={item.productId}>
+                  <div className="cart-item-image">
+                    {item.image ? (
+                      <img src={item.image} alt={item.name} />
+                    ) : (
+                      <div className="cart-item-placeholder">📦</div>
+                    )}
                   </div>
-                  <div className="qty-stepper">
-                    <button onClick={() => changeQty(item.productId, item.quantity - 1)}>−</button>
-                    <span>{item.quantity}</span>
-                    <button onClick={() => changeQty(item.productId, item.quantity + 1)}>+</button>
+                  <div className="cart-item-details">
+                    <Link href={`/shop/${item.productId}`} className="cart-item-name">
+                      {item.name}
+                    </Link>
+                    <div className="cart-item-shop">{item.shopName}</div>
+                    <div className="cart-item-price">
+                      {item.price.toLocaleString("fr-FR")} FCFA
+                    </div>
+                    <div className="cart-item-actions">
+                      <div className="qty-stepper">
+                        <button onClick={() => changeQty(item.productId, item.quantity - 1)}>−</button>
+                        <span>{item.quantity}</span>
+                        <button onClick={() => changeQty(item.productId, item.quantity + 1)}>+</button>
+                      </div>
+                      <button
+                        className="cart-item-remove"
+                        onClick={() => removeItem(item.productId)}
+                      >
+                        🗑️ Supprimer
+                      </button>
+                    </div>
                   </div>
-                  <div style={{ fontFamily: "var(--font-mono)", minWidth: 90, textAlign: "right" }}>
+                  <div className="cart-item-subtotal">
                     {(item.price * item.quantity).toLocaleString("fr-FR")} FCFA
                   </div>
                 </div>
               ))}
-              <div style={{ textAlign: "right", marginTop: 14, fontSize: "1.15rem", fontWeight: 700 }}>
-                Total : {total.toLocaleString("fr-FR")} FCFA
-              </div>
             </div>
 
-            <div className="panel">
-              <h2>Livraison</h2>
+            {/* Formulaire de livraison */}
+            <div className="cart-checkout-section">
+              <h2>Livraison et paiement</h2>
               <form onSubmit={handleCheckout}>
                 {savedAddresses.length > 0 && (
-                  <>
+                  <div className="form-group">
                     <label htmlFor="saved-address">Adresse enregistrée</label>
                     <select
                       id="saved-address"
@@ -157,55 +183,73 @@ export default function CartClient({ initialUser, categories }) {
                       ))}
                       <option value="custom">Autre adresse...</option>
                     </select>
-                    <br /><br />
-                  </>
+                  </div>
                 )}
 
-                <label htmlFor="address">Adresse de livraison</label>
-                <input
-                  id="address"
-                  required
-                  value={shippingAddress}
-                  onChange={(e) => setShippingAddress(e.target.value)}
-                  placeholder="Ex : Secteur 15, Ouagadougou"
-                />
-                <br /><br />
-                <label htmlFor="phone">Numéro de téléphone</label>
-                <input
-                  id="phone"
-                  required
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Ex : 70 00 00 00"
-                />
-                <br /><br />
-                <label>Mode de paiement</label>
-                <div className="payment-options">
-                  <label className={`payment-option ${paymentMethod === "cod" ? "selected" : ""}`}>
-                    <input
-                      type="radio"
-                      name="paymentMethod"
-                      value="cod"
-                      checked={paymentMethod === "cod"}
-                      onChange={() => setPaymentMethod("cod")}
-                    />
-                    <div>
-                      <div className="payment-option-title">💵 Payer à la livraison</div>
-                      <div className="payment-option-desc">Vous réglez en espèces au moment de recevoir votre commande.</div>
-                    </div>
-                  </label>
-                  <label className="payment-option" style={{ opacity: 0.5, cursor: "not-allowed" }}>
-                    <input type="radio" name="paymentMethod" value="mobile_money" disabled />
-                    <div>
-                      <div className="payment-option-title">📱 Payer maintenant (Orange Money / Moov Money)</div>
-                      <div className="payment-option-desc">Bientôt disponible — revenez rapidement !</div>
-                    </div>
-                  </label>
+                <div className="form-group">
+                  <label htmlFor="address">Adresse de livraison</label>
+                  <input
+                    id="address"
+                    required
+                    value={shippingAddress}
+                    onChange={(e) => setShippingAddress(e.target.value)}
+                    placeholder="Ex : Secteur 15, Ouagadougou"
+                  />
                 </div>
-                <button type="submit" className="btn btn-primary" disabled={submitting}>
-                  {submitting ? "Validation..." : "Valider la commande"}
+
+                <div className="form-group">
+                  <label htmlFor="phone">Numéro de téléphone</label>
+                  <input
+                    id="phone"
+                    required
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Ex : 70 00 00 00"
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Mode de paiement</label>
+                  <div className="payment-options">
+                    <label className={`payment-option ${paymentMethod === "cod" ? "selected" : ""}`}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="cod"
+                        checked={paymentMethod === "cod"}
+                        onChange={() => setPaymentMethod("cod")}
+                      />
+                      <div>
+                        <div className="payment-option-title">💵 Payer à la livraison</div>
+                        <div className="payment-option-desc">Vous réglez en espèces au moment de recevoir votre commande.</div>
+                      </div>
+                    </label>
+                    <label className="payment-option" style={{ opacity: 0.5, cursor: "not-allowed" }}>
+                      <input type="radio" name="paymentMethod" value="mobile_money" disabled />
+                      <div>
+                        <div className="payment-option-title">📱 Payer maintenant (Orange Money / Moov Money)</div>
+                        <div className="payment-option-desc">Bientôt disponible — revenez rapidement !</div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+
+                <button type="submit" className="btn btn-primary cart-checkout-btn" disabled={submitting}>
+                  {submitting ? "Validation..." : `Valider la commande (${total.toLocaleString("fr-FR")} FCFA)`}
                 </button>
               </form>
+            </div>
+
+            {/* Total sticky mobile */}
+            <div className="cart-sticky-total">
+              <div className="cart-sticky-label">Total</div>
+              <div className="cart-sticky-price">{total.toLocaleString("fr-FR")} FCFA</div>
+              <button
+                className="btn btn-primary"
+                onClick={() => window.scrollTo({ top: document.querySelector(".cart-checkout-section").offsetTop, behavior: "smooth" })}
+              >
+                Commander
+              </button>
             </div>
           </>
         )}
