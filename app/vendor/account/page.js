@@ -174,7 +174,7 @@ export default function VendorAccountPage() {
             <h2>{statusConfig.label}</h2>
             <p>{user ? `Bienvenue, ${user.full_name}` : "Compte vendeur"}</p>
           </div>
-          {shop?.shop_name && <div className="vendor-shop-name">{shop.name}</div>}
+          {shop?.name && <div className="vendor-shop-name">{shop.name}</div>}
         </div>
 
         {/* Grille de paramètres */}
