@@ -3820,3 +3820,44 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 
 /* Marges globales réduites */
 .shell > * { margin-top: 8px; margin-bottom: 8px; }
+/* ===== COMPRESSION v2 — PRIORITÉ MAXIMALE (tous écrans) ===== */
+
+/* Cartes de confiance : grille 2x2 mobile / 4 en ligne desktop */
+.trust-strip {
+  display: grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap: 8px !important;
+  padding: 8px 12px !important;
+  overflow: visible !important;
+}
+.trust-card {
+  min-width: 0 !important;
+  flex: none !important;
+  padding: 8px 10px !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
+  gap: 4px !important;
+}
+.trust-card .trust-icon { font-size: 1.1rem !important; }
+.trust-card-title { font-size: 0.75rem !important; }
+.trust-card-desc { font-size: 0.65rem !important; }
+
+@media (min-width: 768px) {
+  .trust-strip { grid-template-columns: repeat(4, 1fr) !important; }
+}
+
+/* Barre de recherche ultra-compacte */
+.site-header-search-row { padding: 4px 8px 6px !important; }
+.search-bar-standalone { padding: 7px 12px !important; }
+.search-bar-standalone input { font-size: 0.85rem !important; }
+
+/* Pilules : titre masqué + tout compact */
+.pill-bar-head { display: none !important; }
+.pill-bar { padding: 6px 0 2px !important; }
+.pill-bar-track { padding: 2px 12px 6px !important; gap: 8px !important; }
+.pill { padding: 6px 14px !important; font-size: 0.78rem !important; }
+
+/* Sections et bandes décoratives serrées */
+.home-section { padding: 10px 12px !important; }
+.woven-strip { height: 4px !important; }
