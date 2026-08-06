@@ -12,9 +12,8 @@ function RegisterForm() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [shopName, setShopName] = useState("");
-  const [idDocumentType, setIdDocumentType] = useState("cni");
-  const [idDocumentNumber, setIdDocumentNumber] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -27,6 +26,12 @@ function RegisterForm() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError("");
+
+    if (password !== confirmPassword) {
+      setError("Les deux mots de passe ne correspondent pas.");
+      return;
+    }
+
     setSubmitting(true);
 
     const res = await fetch("/api/auth/register", {
@@ -39,8 +44,6 @@ function RegisterForm() {
         phone: phone || undefined,
         role,
         shopName: role === "vendor" ? shopName : undefined,
-        idDocumentType: role === "vendor" ? idDocumentType : undefined,
-        idDocumentNumber: role === "vendor" ? idDocumentNumber : undefined,
       }),
     });
     const data = await res.json();
@@ -66,14 +69,27 @@ function RegisterForm() {
           {error && <div className="error-box">{error}</div>}
 
           <form onSubmit={handleSubmit}>
-            <div className="form-row">
-              <div>
-                <label htmlFor="r-role">Type de compte</label>
-                <select id="r-role" value={role} onChange={(e) => setRole(e.target.value)}>
-                  <option value="buyer">Acheteur</option>
-                  <option value="vendor">Vendeur</option>
-                </select>
-              </div>
+            <div className="account-type-choice" role="radiogroup" aria-label="Type de compte">
+              <button
+                type="button"
+                className={`account-type-card ${role === "buyer" ? "is-selected" : ""}`}
+                onClick={() => setRole("buyer")}
+                role="radio"
+                aria-checked={role === "buyer"}
+              >
+                <strong>🛍️ Acheteur</strong>
+                <span>Achetez des produits en toute simplicité.</span>
+              </button>
+              <button
+                type="button"
+                className={`account-type-card ${role === "vendor" ? "is-selected" : ""}`}
+                onClick={() => setRole("vendor")}
+                role="radio"
+                aria-checked={role === "vendor"}
+              >
+                <strong>🏪 Vendeur</strong>
+                <span>Ouvrez votre boutique et vendez après validation de votre identité.</span>
+              </button>
             </div>
 
             <div className="form-row">
@@ -125,13 +141,25 @@ function RegisterForm() {
                   placeholder="6 caractères minimum"
                 />
               </div>
+              <div>
+                <label htmlFor="r-password-confirm">Confirmer le mot de passe</label>
+                <input
+                  id="r-password-confirm"
+                  type="password"
+                  required
+                  minLength={6}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Retapez le mot de passe"
+                />
+              </div>
             </div>
 
             {role === "vendor" && (
               <>
                 <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: 4, marginBottom: 12 }}>
-                  Pour valider votre boutique, notre équipe vérifie l'identité de chaque vendeur.
-                  Renseignez le type et le numéro de votre pièce d'identité — pas besoin de photo.
+                  Une fois votre compte créé, une dernière étape vous permettra de vérifier votre
+                  identité pour activer votre boutique — pas besoin de le faire maintenant.
                 </p>
                 <div className="form-row">
                   <div>
@@ -142,30 +170,6 @@ function RegisterForm() {
                       value={shopName}
                       onChange={(e) => setShopName(e.target.value)}
                       placeholder="Ex : Boutique Aïcha Mode"
-                    />
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div>
-                    <label htmlFor="r-doc-type">Type de pièce</label>
-                    <select
-                      id="r-doc-type"
-                      value={idDocumentType}
-                      onChange={(e) => setIdDocumentType(e.target.value)}
-                    >
-                      <option value="cni">Carte Nationale d'Identité (CNI)</option>
-                      <option value="passeport">Passeport</option>
-                      <option value="permis">Permis de conduire</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label htmlFor="r-doc-number">Numéro de la pièce</label>
-                    <input
-                      id="r-doc-number"
-                      required
-                      value={idDocumentNumber}
-                      onChange={(e) => setIdDocumentNumber(e.target.value)}
-                      placeholder="Ex : B01234567"
                     />
                   </div>
                 </div>

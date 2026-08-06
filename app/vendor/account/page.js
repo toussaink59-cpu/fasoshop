@@ -159,7 +159,49 @@ export default function VendorAccountPage() {
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
 
-        {shop && shop.status === "pending" && (
+        {shop && shop.status === "pending" && !shop.id_document_type && (
+          <div className="panel" style={{ borderLeft: "4px solid var(--gold-600)" }}>
+            <strong>🪪 Vérifiez votre identité pour activer votre boutique</strong>
+            <p style={{ fontSize: "0.9rem", color: "var(--ink-400)", marginTop: 6, marginBottom: 16 }}>
+              Votre compte vendeur est créé ! Il ne manque plus qu'une vérification d'identité pour
+              commencer à vendre. Renseignez le type et le numéro de votre pièce — pas besoin de photo.
+            </p>
+
+            {resubmitError && <div className="error-box">{resubmitError}</div>}
+
+            <form onSubmit={handleResubmitDocuments}>
+              <div className="form-row">
+                <div>
+                  <label htmlFor="verify-doc-type">Type de pièce</label>
+                  <select
+                    id="verify-doc-type"
+                    value={resubmitDocType}
+                    onChange={(e) => setResubmitDocType(e.target.value)}
+                  >
+                    <option value="cni">Carte Nationale d'Identité (CNI)</option>
+                    <option value="passeport">Passeport</option>
+                    <option value="permis">Permis de conduire</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="verify-doc-number">Numéro de la pièce</label>
+                  <input
+                    id="verify-doc-number"
+                    required
+                    value={resubmitDocNumber}
+                    onChange={(e) => setResubmitDocNumber(e.target.value)}
+                    placeholder="Ex : B01234567"
+                  />
+                </div>
+              </div>
+              <button type="submit" className="btn btn-primary" disabled={resubmitting}>
+                {resubmitting ? "Envoi..." : "Soumettre pour vérification"}
+              </button>
+            </form>
+          </div>
+        )}
+
+        {shop && shop.status === "pending" && shop.id_document_type && (
           <div className="panel" style={{ borderLeft: "4px solid var(--gold-600)" }}>
             <strong>⏳ Boutique en attente de vérification</strong>
             <p style={{ fontSize: "0.9rem", color: "var(--ink-400)", marginTop: 6, marginBottom: 0 }}>
