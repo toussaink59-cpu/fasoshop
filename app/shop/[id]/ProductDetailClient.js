@@ -18,6 +18,7 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
   const [reviewError, setReviewError] = useState("");
   const [reviewSuccess, setReviewSuccess] = useState("");
   const [now, setNow] = useState(() => new Date());
+  const [mainImg, setMainImg] = useState(0); // Galerie interactive
 
   // Tic chaque seconde pour le compte à rebours vente flash
   useEffect(() => {
@@ -57,7 +58,7 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
 
   const user = initialUser;
 
-  // Compte à rebours vente flash (ne s'affiche que si une flash sale est active)
+  // Compte à rebours vente flash
   const flashEnds = product.flash_sale_ends_at ? new Date(product.flash_sale_ends_at) : null;
   const flashActive = flashEnds && flashEnds > now;
   const flashDiff = flashActive ? flashEnds - now : 0;
@@ -65,102 +66,121 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
   const fm = Math.floor((flashDiff % 3600000) / 60000);
   const fs = Math.floor((flashDiff % 60000) / 1000);
 
+  const images = product.images && product.images.length > 0 ? product.images : [];
+
   return (
     <div className="shell">
       <SiteHeader initialUser={initialUser} categories={categories} />
 
       <div className="content">
-        <Link href="/shop" style={{ fontSize: "0.85rem", color: "var(--gold-600)" }}>
-          ← Retour au catalogue
-        </Link>
+        <Link href="/shop" className="pdp-back">← Retour au catalogue</Link>
 
-        <div className="panel" style={{ marginTop: 16 }}>
-          {hasDiscount(product) && (
-            <span className="badge-discount">-{discountPercent(product)}%</span>
-          )}
+        {/* === LAYOUT 2 COLONNES PC / 1 COL MOBILE === */}
+        <div className="pdp-main">
 
-          {product.images && product.images.length > 0 && (
-            <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
-              {product.images.map((url, idx) => (
-                <img
-                  key={idx}
-                  src={url}
-                  alt={`${product.name} - photo ${idx + 1}`}
-                  style={{ width: 140, height: 140, objectFit: "cover", borderRadius: 8, border: "1px solid var(--sand-200)" }}
-                />
-              ))}
+          {/* === COLONNE GAUCHE : galerie photo === */}
+          <div className="pdp-gallery">
+            <div className="pdp-main-image">
+              {hasDiscount(product) && (
+                <span className="pdp-discount-badge">-{discountPercent(product)}%</span>
+              )}
+              {images.length > 0 ? (
+                <img src={images[mainImg]} alt={product.name} />
+              ) : (
+                <div className="pdp-main-image-placeholder">📦</div>
+              )}
             </div>
-          )}
-
-          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <h1 style={{ margin: 0 }}>{product.name}</h1>
-            <span
-              style={{
-                fontSize: "0.8rem",
-                fontWeight: 700,
-                color: "white",
-                background: CONDITION_COLORS[product.condition] || "var(--gold-600)",
-                borderRadius: 999,
-                padding: "3px 12px",
-              }}
-            >
-              {CONDITION_LABELS[product.condition] || "Neuf"}
-            </span>
+            {images.length > 1 && (
+              <div className="pdp-thumbs">
+                {images.map((url, idx) => (
+                  <button
+                    key={idx}
+                    className={`pdp-thumb ${idx === mainImg ? "is-active" : ""}`}
+                    onClick={() => setMainImg(idx)}
+                    type="button"
+                  >
+                    <img src={url} alt={`Miniature ${idx + 1}`} />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <p style={{ color: "var(--ink-400)" }}>{product.shop_name}</p>
-          {product.category_name && (
-            <p style={{ fontSize: "0.85rem", color: "var(--ink-400)" }}>
-              Catégorie : {product.category_name}
-            </p>
-          )}
 
-          {product.review_count > 0 && (
-            <p>⭐ {product.avg_rating.toFixed(1)} / 5 ({product.review_count} avis)</p>
-          )}
-
-          <PriceDisplay product={product} />
-
-          {/* ⚡ NOUVEAU : compte à rebours vente flash */}
-          {flashActive && (
-            <div className="pd-flash">
-              ⚡ Vente flash : se termine dans {fh}h {fm}m {fs}s
+          {/* === COLONNE DROITE : encadré achat === */}
+          <div className="pdp-buy-box">
+            <div className="pdp-title-row">
+              <h1>{product.name}</h1>
+              <span
+                className="pdp-condition"
+                style={{ background: CONDITION_COLORS[product.condition] || "var(--gold-600)" }}
+              >
+                {CONDITION_LABELS[product.condition] || "Neuf"}
+              </span>
             </div>
-          )}
 
-          {/* 🔥 NOUVEAU : urgence stock */}
-          {product.stock_quantity > 0 && product.stock_quantity <= 5 ? (
-            <div className="pd-stock-low">
-              🔥 Plus que {product.stock_quantity} en stock — commandez vite !
+            <p className="pdp-shop-name">{product.shop_name}</p>
+
+            {product.category_name && (
+              <p className="pdp-category">📂 {product.category_name}</p>
+            )}
+
+            {product.review_count > 0 && (
+              <div className="pdp-rating">
+                ⭐ {product.avg_rating.toFixed(1)} / 5
+                <span className="pdp-rating-count">({product.review_count} avis)</span>
+              </div>
+            )}
+
+            <div className="pdp-price-block">
+              <PriceDisplay product={product} />
             </div>
-          ) : product.stock_quantity > 5 ? (
-            <div className="pd-stock-ok">✅ En stock : {product.stock_quantity} disponibles</div>
-          ) : null}
 
-          {product.description && (
-            <p style={{ marginTop: 12 }}>{product.description}</p>
-          )}
+            {/* ⚡ Vente flash */}
+            {flashActive && (
+              <div className="pdp-flash">
+                ⚡ <strong>Vente flash :</strong> se termine dans {fh}h {fm}m {fs}s
+              </div>
+            )}
 
-          <button
-            className="btn btn-primary"
-            onClick={handleAdd}
-            disabled={product.stock_quantity <= 0}
-            style={{ marginTop: 16 }}
-          >
-            {product.stock_quantity <= 0
-              ? "Rupture de stock"
-              : justAdded
-              ? "Ajouté ✓"
-              : "Ajouter au panier"}
-          </button>
+            {/* 🔥 Stock faible */}
+            {product.stock_quantity > 0 && product.stock_quantity <= 5 ? (
+              <div className="pdp-stock-low">
+                🔥 Plus que <strong>{product.stock_quantity}</strong> en stock — commandez vite !
+              </div>
+            ) : product.stock_quantity > 5 ? (
+              <div className="pdp-stock-ok">✅ En stock : {product.stock_quantity} disponibles</div>
+            ) : null}
 
-          {/* 🛡️ NOUVEAU : réassurance juste sous le bouton d'achat */}
-          <div className="pd-trust">
-            <span>🚚 Livraison rapide</span>
-            <span>📱 Mobile Money</span>
-            <span>↩️ Retours 7 jours</span>
+            <button
+              className="btn btn-primary pdp-add-btn"
+              onClick={handleAdd}
+              disabled={product.stock_quantity <= 0}
+            >
+              {product.stock_quantity <= 0
+                ? "Rupture de stock"
+                : justAdded
+                ? "Ajouté ✓"
+                : "Ajouter au panier"}
+            </button>
+
+            {/* 🛡️ Réassurance compacte */}
+            <div className="pdp-trust">
+              <span>🚚 Livraison rapide</span>
+              <span>📱 Mobile Money</span>
+              <span>↩️ 7 jours</span>
+            </div>
           </div>
         </div>
 
+        {/* === DESCRIPTION (pleine largeur) === */}
+        {product.description && (
+          <div className="panel pdp-description">
+            <h2>Description</h2>
+            <p>{product.description}</p>
+          </div>
+        )}
+
+        {/* === AVIS CLIENTS (pleine largeur) === */}
         <div className="panel">
           <h2>Avis clients</h2>
 
@@ -169,17 +189,17 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
           ) : (
             <div>
               {reviews.map((r) => (
-                <div key={r.id} style={{ borderBottom: "1px solid var(--sand-200)", padding: "10px 0" }}>
-                  <div>{"⭐".repeat(r.rating)}</div>
-                  <div style={{ fontWeight: 600 }}>{r.buyer_name}</div>
-                  {r.comment && <p>{r.comment}</p>}
+                <div key={r.id} className="pdp-review">
+                  <div className="pdp-review-stars">{"⭐".repeat(r.rating)}</div>
+                  <div className="pdp-review-author">{r.buyer_name}</div>
+                  {r.comment && <p className="pdp-review-comment">{r.comment}</p>}
                 </div>
               ))}
             </div>
           )}
 
           {user && user.role === "buyer" && (
-            <form onSubmit={handleSubmitReview} style={{ marginTop: 20 }}>
+            <form onSubmit={handleSubmitReview} className="pdp-review-form">
               <h3>Laisser un avis</h3>
               {reviewError && <div className="error-box">{reviewError}</div>}
               {reviewSuccess && <div className="success-box">{reviewSuccess}</div>}
