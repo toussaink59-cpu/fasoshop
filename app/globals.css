@@ -3572,3 +3572,84 @@ tbody tr:hover {
   table:has(td:nth-child(10)) td .btn { font-size: .78rem; padding: 7px 10px; min-height: 40px; }
   table:has(td:nth-child(10)) td .stock-adjust { gap: 6px; }
 }
+/* ============================================
+   TABLETTE & DESKTOP : tableau produits → grille de cartes
+   (supprime le scroll horizontal sur PC)
+   ============================================ */
+@media (min-width: 721px) {
+
+  .panel table:has(td:nth-child(10)) { min-width: 0; border: 0; }
+  .panel table:has(td:nth-child(10)) thead { display: none; }
+  .panel table:has(td:nth-child(10)),
+  .panel table:has(td:nth-child(10)) tbody,
+  .panel table:has(td:nth-child(10)) tr,
+  .panel table:has(td:nth-child(10)) td { display: block; width: 100%; }
+
+  /* Grille de cartes : 2 colonnes sur tablette */
+  .panel table:has(td:nth-child(10)) tbody {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+  }
+
+  .panel table:has(td:nth-child(10)) tbody tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: flex-start;
+    background: #fff;
+    border: 1px solid #e8e2da;
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 6px rgba(0,0,0,.06);
+  }
+
+  .panel table:has(td:nth-child(10)) td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 5px 0;
+    border: 0;
+    border-bottom: 1px dashed #eee7df;
+    box-sizing: border-box;
+  }
+  .panel table:has(td:nth-child(10)) tr td:last-child { border-bottom: 0; }
+
+  /* Étiquettes (remplacent les en-têtes de colonnes) */
+  .panel table:has(td:nth-child(10)) td::before {
+    font-size: .68rem; font-weight: 800; text-transform: uppercase;
+    letter-spacing: .5px; color: #8a7f75;
+  }
+  .panel table:has(td:nth-child(10)) td:nth-child(2)::before { content: "SKU"; }
+  .panel table:has(td:nth-child(10)) td:nth-child(3)::before { content: "État"; }
+  .panel table:has(td:nth-child(10)) td:nth-child(4)::before { content: "Prix"; }
+  .panel table:has(td:nth-child(10)) td:nth-child(5)::before { content: "Prix barré"; }
+  .panel table:has(td:nth-child(10)) td:nth-child(6)::before { content: "Vente flash"; }
+  .panel table:has(td:nth-child(10)) td:nth-child(7)::before { content: "Stock"; }
+  .panel table:has(td:nth-child(10)) td:nth-child(8)::before { content: "Ajuster le stock"; }
+  .panel table:has(td:nth-child(10)) td:nth-child(9)::before { content: "Sponsoring"; }
+
+  /* Disposition compacte (identique au mobile) */
+  .panel table:has(td:nth-child(10)) td:nth-child(1) { order: 1; width: 100%; font-size: 1.05rem; font-weight: 800; justify-content: flex-start; }
+  .panel table:has(td:nth-child(10)) td:nth-child(2) { order: 2; width: 55%; justify-content: flex-start; gap: 6px; border-bottom: 0; }
+  .panel table:has(td:nth-child(10)) td:nth-child(3) { order: 3; width: 45%; justify-content: flex-end; border-bottom: 0; }
+  .panel table:has(td:nth-child(10)) td:nth-child(4) { order: 4; width: 55%; }
+  .panel table:has(td:nth-child(10)) td:nth-child(7) { order: 5; width: 45%; justify-content: flex-end; border-bottom: 0; }
+  .panel table:has(td:nth-child(10)) td:nth-child(5) { order: 6; width: 100%; flex-direction: column; align-items: stretch; }
+  .panel table:has(td:nth-child(10)) td:nth-child(6) { order: 7; width: 100%; flex-direction: column; align-items: stretch; }
+  .panel table:has(td:nth-child(10)) td:nth-child(8) { order: 8; width: 100%; flex-direction: column; align-items: stretch; }
+  .panel table:has(td:nth-child(10)) td:nth-child(9) { order: 9; width: 50%; border-bottom: 0; }
+  .panel table:has(td:nth-child(10)) td:nth-child(10) { order: 10; width: 50%; border-bottom: 0; }
+  .panel table:has(td:nth-child(10)) td:nth-child(10) .btn { width: 100%; }
+
+  .panel table:has(td:nth-child(10)) td .stock-adjust {
+    width: 100%; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;
+  }
+  .panel table:has(td:nth-child(10)) td .stock-adjust input { flex: 1; min-width: 0; }
+}
+
+/* Grand écran (≥1200px) : 3 colonnes */
+@media (min-width: 1200px) {
+  .panel table:has(td:nth-child(10)) tbody { grid-template-columns: repeat(3, 1fr); }
+}
