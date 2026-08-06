@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { addToCart } from "@/lib/cart";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
@@ -17,6 +17,13 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
   const [comment, setComment] = useState("");
   const [reviewError, setReviewError] = useState("");
   const [reviewSuccess, setReviewSuccess] = useState("");
+  const [now, setNow] = useState(() => new Date());
+
+  // Tic chaque seconde pour le compte à rebours vente flash
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   function handleAdd() {
     addToCart(product);
@@ -49,6 +56,14 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
   }
 
   const user = initialUser;
+
+  // Compte à rebours vente flash (ne s'affiche que si une flash sale est active)
+  const flashEnds = product.flash_sale_ends_at ? new Date(product.flash_sale_ends_at) : null;
+  const flashActive = flashEnds && flashEnds > now;
+  const flashDiff = flashActive ? flashEnds - now : 0;
+  const fh = Math.floor(flashDiff / 3600000);
+  const fm = Math.floor((flashDiff % 3600000) / 60000);
+  const fs = Math.floor((flashDiff % 60000) / 1000);
 
   return (
     <div className="shell">
@@ -105,6 +120,22 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
 
           <PriceDisplay product={product} />
 
+          {/* ⚡ NOUVEAU : compte à rebours vente flash */}
+          {flashActive && (
+            <div className="pd-flash">
+              ⚡ Vente flash : se termine dans {fh}h {fm}m {fs}s
+            </div>
+          )}
+
+          {/* 🔥 NOUVEAU : urgence stock */}
+          {product.stock_quantity > 0 && product.stock_quantity <= 5 ? (
+            <div className="pd-stock-low">
+              🔥 Plus que {product.stock_quantity} en stock — commandez vite !
+            </div>
+          ) : product.stock_quantity > 5 ? (
+            <div className="pd-stock-ok">✅ En stock : {product.stock_quantity} disponibles</div>
+          ) : null}
+
           {product.description && (
             <p style={{ marginTop: 12 }}>{product.description}</p>
           )}
@@ -121,6 +152,13 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
               ? "Ajouté ✓"
               : "Ajouter au panier"}
           </button>
+
+          {/* 🛡️ NOUVEAU : réassurance juste sous le bouton d'achat */}
+          <div className="pd-trust">
+            <span>🚚 Livraison rapide</span>
+            <span>📱 Mobile Money</span>
+            <span>↩️ Retours 7 jours</span>
+          </div>
         </div>
 
         <div className="panel">
