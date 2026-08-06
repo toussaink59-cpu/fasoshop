@@ -7,7 +7,6 @@ import { getRecommendedProducts } from "@/lib/queries/recommendations";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
 import BannerCarousel from "@/app/components/BannerCarousel";
-import WhyFasoShop from "@/app/components/WhyFasoShop";
 import Footer from "@/app/components/Footer";
 import FlashSaleSection from "@/app/components/FlashSaleSection";
 import HorizontalProductSection from "@/app/components/HorizontalProductSection";
@@ -44,39 +43,6 @@ export default async function HomePage() {
       <div className="woven-strip" />
 
       <BannerCarousel />
-
-      <div className="trust-strip">
-        <div className="trust-card">
-          <span className="trust-icon">📱</span>
-          <div>
-            <p className="trust-card-title">Mobile Money</p>
-            <p className="trust-card-desc">Paiement rapide et sécurisé</p>
-          </div>
-        </div>
-        <div className="trust-card">
-          <span className="trust-icon">🏪</span>
-          <div>
-            <p className="trust-card-title">Boutiques vérifiées</p>
-            <p className="trust-card-desc">Vendeurs contrôlés par FasoShop</p>
-          </div>
-        </div>
-        <div className="trust-card">
-          <span className="trust-icon">🚚</span>
-          <div>
-            <p className="trust-card-title">Livraison rapide</p>
-            <p className="trust-card-desc">Partout au Burkina Faso</p>
-          </div>
-        </div>
-        <div className="trust-card">
-          <span className="trust-icon">↩️</span>
-          <div>
-            <p className="trust-card-title">Support 24/7</p>
-            <p className="trust-card-desc">Une équipe à votre écoute</p>
-          </div>
-        </div>
-      </div>
-
-      <WhyFasoShop />
 
       <FlashSaleSection initialProducts={flashSales} />
 
