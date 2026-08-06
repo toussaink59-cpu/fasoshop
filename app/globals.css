@@ -4056,3 +4056,284 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   .pdp-main { gap: 18px; }
   .pdp-title-row h1 { font-size: 1.25rem; }
 }
+/* ===== FICHE PRODUIT PRO : 2 colonnes PC, compact mobile ===== */
+
+.pdp-back {
+  display: inline-block;
+  padding: 8px 0;
+  color: var(--millet-600, #2f7a3d);
+  text-decoration: none;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.pdp-back:hover { text-decoration: underline; }
+
+/* Layout 2 colonnes PC / 1 colonne mobile */
+.pdp-main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+  margin: 12px 0;
+}
+
+@media (max-width: 767px) {
+  .pdp-main { grid-template-columns: 1fr; gap: 16px; }
+}
+
+/* === GALERIE PHOTO === */
+.pdp-gallery { display: flex; flex-direction: column; gap: 12px; }
+.pdp-main-image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: var(--sand-100, #f5f0e8);
+  border-radius: 12px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pdp-main-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pdp-main-image-placeholder {
+  font-size: 4rem;
+  opacity: 0.3;
+}
+
+/* Badge discount rouge qui tape à l'œil */
+.pdp-discount-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--bissap-600, #c81e2e);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 6px 12px;
+  border-radius: 6px;
+  z-index: 2;
+  box-shadow: 0 4px 12px rgba(200, 30, 46, 0.4);
+}
+
+/* Miniatures */
+.pdp-thumbs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0;
+}
+.pdp-thumb {
+  flex: 0 0 60px;
+  height: 60px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  background: var(--sand-100);
+  padding: 0;
+  transition: border-color 0.2s;
+}
+.pdp-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.pdp-thumb.is-active {
+  border-color: var(--millet-600, #2f7a3d);
+}
+.pdp-thumb:hover { border-color: var(--millet-600); }
+
+/* === ENCADRÉ ACHAT === */
+.pdp-buy-box {
+  background: #fff;
+  border: 1px solid var(--border, #e5ddd3);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pdp-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+.pdp-title-row h1 {
+  font-size: 1.3rem;
+  line-height: 1.3;
+  margin: 0;
+  flex: 1;
+}
+.pdp-condition {
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+
+.pdp-shop-name {
+  font-size: 0.85rem;
+  color: var(--ink-400, #8a7f75);
+  margin: 0;
+}
+
+.pdp-category {
+  font-size: 0.85rem;
+  color: var(--ink-700, #4a3f38);
+  margin: 0;
+}
+
+.pdp-rating {
+  font-size: 0.95rem;
+  color: var(--gold-600, #e8a33d);
+  margin: 0;
+}
+.pdp-rating-count {
+  color: var(--ink-400);
+  font-size: 0.8rem;
+  margin-left: 6px;
+}
+
+.pdp-price-block {
+  padding: 12px 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+
+.pdp-flash {
+  background: var(--gold-100, #fff4e6);
+  color: var(--gold-700, #b5651d);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.pdp-stock-low {
+  background: var(--bissap-100, #ffe5e5);
+  color: var(--bissap-700, #8b0000);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+}
+
+.pdp-stock-ok {
+  color: var(--millet-600);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.pdp-add-btn {
+  width: 100%;
+  padding: 14px 20px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+.pdp-add-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Réassurance compacte : 3 éléments sur 1 ligne */
+.pdp-trust {
+  display: flex;
+  justify-content: space-around;
+  gap: 8px;
+  padding: 12px 0 4px;
+  border-top: 1px solid var(--border);
+  font-size: 0.78rem;
+  color: var(--ink-700);
+}
+.pdp-trust span {
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .pdp-buy-box { padding: 16px; }
+  .pdp-title-row h1 { font-size: 1.15rem; }
+  .pdp-trust { font-size: 0.72rem; }
+}
+
+/* === DESCRIPTION ET AVIS === */
+.pdp-description {
+  margin: 24px 0;
+}
+.pdp-description h2 {
+  font-size: 1.1rem;
+  margin: 0 0 12px;
+}
+.pdp-description p {
+  line-height: 1.6;
+  color: var(--ink-700);
+}
+
+.pdp-review {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.pdp-review:last-child { border-bottom: 0; }
+.pdp-review-stars {
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+.pdp-review-author {
+  font-weight: 600;
+  font-size: 0.88rem;
+  margin-bottom: 6px;
+}
+.pdp-review-comment {
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--ink-700);
+  margin: 0;
+}
+
+.pdp-review-form {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+.pdp-review-form h3 {
+  font-size: 1rem;
+  margin: 0 0 12px;
+}
+.pdp-review-form label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin: 12px 0 6px;
+}
+.pdp-review-form select,
+.pdp-review-form textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-family: inherit;
+}
+.pdp-review-form textarea { resize: vertical; }
+
+.error-box {
+  background: var(--bissap-100);
+  color: var(--bissap-700);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin: 8px 0;
+}
+.success-box {
+  background: var(--millet-100);
+  color: var(--millet-700);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  margin: 8px 0;
+}
