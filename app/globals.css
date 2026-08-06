@@ -4337,3 +4337,95 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   font-size: 0.85rem;
   margin: 8px 0;
 }
+/* ===== FICHE PRODUIT PRO : 3 corrections finales ===== */
+
+/* 1. Badge "Neuf" collé au titre (plus de flottement à droite) */
+.pdp-title-row {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  align-items: center !important;
+  gap: 10px !important;
+  margin-bottom: 8px !important;
+}
+.pdp-title-row h1 {
+  font-size: 1.4rem !important;
+  margin: 0 !important;
+  flex: 1 1 auto !important;
+}
+.pdp-condition {
+  flex: 0 0 auto !important;
+  padding: 4px 10px !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  border-radius: 6px !important;
+  color: white !important;
+}
+
+/* 2. Ligne de confiance : ne coupe plus "7 jours" */
+.pdp-trust {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  justify-content: center !important;
+  margin-top: 12px !important;
+  padding: 8px !important;
+  background: var(--sand-100, #f5f5f4) !important;
+  border-radius: 8px !important;
+}
+.pdp-trust span {
+  font-size: 0.78rem !important;
+  color: var(--ink-700, #44403c) !important;
+  white-space: nowrap !important;
+}
+
+/* 3. Réduire l'espace en haut (avant "Retour au catalogue") */
+.content {
+  padding: 12px 16px !important;
+}
+.pdp-back {
+  display: inline-block !important;
+  margin-bottom: 12px !important;
+  font-size: 0.85rem !important;
+  color: var(--ink-600, #57534e) !important;
+  text-decoration: none !important;
+}
+.pdp-back:hover {
+  color: var(--orange-500, #f97316) !important;
+}
+
+/* 4. Bonus : galerie photo plus grande sur PC */
+@media (min-width: 768px) {
+  .pdp-main {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 32px !important;
+  }
+  .pdp-gallery { order: 1; }
+  .pdp-buy-box { order: 2; }
+  .pdp-main-image {
+    aspect-ratio: 1/1 !important;
+    border-radius: 12px !important;
+    overflow: hidden !important;
+    background: var(--sand-100, #f5f5f4) !important;
+  }
+  .pdp-main-image img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+  }
+}
+
+/* 5. Bonus : badge de réduction plus visible */
+.pdp-discount-badge {
+  position: absolute !important;
+  top: 12px !important;
+  left: 12px !important;
+  background: #e11d48 !important;
+  color: white !important;
+  padding: 6px 12px !important;
+  border-radius: 6px !important;
+  font-weight: 800 !important;
+  font-size: 0.9rem !important;
+  z-index: 2 !important;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3) !important;
+}
