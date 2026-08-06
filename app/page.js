@@ -11,6 +11,7 @@ import Footer from "@/app/components/Footer";
 import FlashSaleSection from "@/app/components/FlashSaleSection";
 import HorizontalProductSection from "@/app/components/HorizontalProductSection";
 import CategoryPillBar from "@/app/components/CategoryPillBar";
+
 export const metadata = {
   title: "Accueil",
   description:
