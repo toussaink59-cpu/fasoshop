@@ -51,7 +51,7 @@ export default function SiteHeader({ initialUser, categories = [], searchValue =
     if (!user) return "/login";
     if (user.role === "vendor") return "/vendor/dashboard";
     if (user.role === "admin") return "/admin/dashboard";
-    return "/orders";
+    return "/account";
   }
 
   async function handleDesktopLogout() {
