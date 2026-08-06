@@ -39,6 +39,7 @@ export default async function HomePage() {
   return (
     <div className="shell">
       <SiteHeader initialUser={user} categories={categories} />
+      <CategoryPillBar categories={categories} />
 
       <div className="woven-strip" />
 
