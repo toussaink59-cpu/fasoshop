@@ -4480,3 +4480,12 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 @media (max-width: 480px) {
   .vendor-form-row { grid-template-columns: 1fr; }
 }
+/* ===== FIX : champ Ville écrasé par le bouton ===== */
+.vendor-setting-card form[style*="flex"] .btn {
+  width: auto !important;
+  flex-shrink: 0;
+}
+.vendor-setting-card form[style*="flex"] input {
+  flex: 1 !important;
+  min-width: 0;
+}
