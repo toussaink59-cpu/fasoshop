@@ -4429,3 +4429,54 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   z-index: 2 !important;
   box-shadow: 0 4px 12px rgba(225, 29, 72, 0.3) !important;
 }
+/* ===== COMPTE VENDEUR PRO ===== */
+.vendor-account-wrap { max-width: 900px; margin: 0 auto; padding: 16px 14px 80px; }
+
+/* Bannière statut */
+.vendor-status-banner {
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  background: #fff; border: 2px solid; border-radius: 16px;
+  padding: 18px 16px; margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.06);
+}
+.vendor-status-icon {
+  width: 48px; height: 48px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; color: white; flex-shrink: 0;
+}
+.vendor-status-text { flex: 1; min-width: 200px; }
+.vendor-status-text h2 { margin: 0 0 2px; font-size: 1.15rem; color: var(--ink-900); }
+.vendor-status-text p { margin: 0; font-size: .85rem; color: var(--ink-400); }
+.vendor-shop-name {
+  background: var(--sand-100); padding: 6px 14px; border-radius: 999px;
+  font-size: .78rem; font-weight: 700; color: var(--ink-700);
+}
+
+/* Grille paramètres */
+.vendor-settings-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 640px) { .vendor-settings-grid { grid-template-columns: 1fr 1fr; } }
+
+/* Carte paramètre */
+.vendor-setting-card {
+  background: #fff; border: 1px solid var(--border);
+  border-radius: 14px; padding: 16px;
+}
+.vendor-setting-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.vendor-setting-icon { font-size: 1.5rem; }
+.vendor-setting-header h3 { margin: 0; font-size: 1rem; color: var(--ink-900); }
+.vendor-setting-desc { font-size: .82rem; color: var(--ink-600); margin: 0 0 12px; line-height: 1.4; }
+.vendor-setting-hint { font-size: .78rem; color: var(--ink-400); margin: 8px 0 0; font-style: italic; }
+.vendor-alert-card { border-color: #dc2626; background: #fef2f2; }
+
+/* Formulaire */
+.vendor-form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.vendor-form-row label { display: block; font-size: .75rem; font-weight: 600; color: var(--ink-700); margin-bottom: 4px; }
+.vendor-form-row input, .vendor-form-row select {
+  width: 100%; padding: 8px 10px; border: 1px solid var(--border);
+  border-radius: 8px; font-size: .85rem;
+}
+.vendor-setting-card .btn { width: 100%; margin-top: 4px; }
+
+@media (max-width: 480px) {
+  .vendor-form-row { grid-template-columns: 1fr; }
+}
