@@ -3776,3 +3776,47 @@ tbody tr:hover {
   .hero-tag { padding: 3px 8px !important; font-size: .62rem !important; margin-bottom: 6px !important; }
   .hero-cta-primary, .hero-cta-secondary { padding: 8px 14px !important; font-size: .78rem !important; }
 }
+/* ===== COMPRESSION GLOBALE : tous écrans ===== */
+
+/* Barre de recherche compacte */
+.site-header-search-row { padding: 4px 8px 8px; }
+.search-bar-standalone { padding: 8px 14px; }
+.search-bar-standalone input { font-size: 0.85rem; }
+.search-bar-icon { font-size: 0.85rem; }
+
+/* Supprimer "Essentiels FasoShop / Explorez vos centres d'intérêt" */
+.pill-bar-head { display: none; }
+.pill-bar { padding: 8px 0 4px; }
+.pill-bar-track { padding: 4px 12px 8px; gap: 8px; }
+.pill { padding: 6px 14px; font-size: 0.78rem; }
+
+/* Cartes de confiance : grille 2x2 sur mobile, ligne serrée sur desktop */
+.trust-strip { padding: 8px 12px; gap: 8px; }
+.trust-card { padding: 8px 12px; }
+.trust-card .trust-icon { font-size: 1.1rem; }
+.trust-card-title { font-size: 0.78rem; margin: 0; }
+.trust-card-desc { font-size: 0.68rem; margin: 2px 0 0; }
+
+@media (max-width: 767px) {
+  .trust-strip {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .trust-card { flex-direction: column; text-align: center; gap: 4px; }
+}
+
+/* Sections homepage : titres et espacements réduits */
+.home-section { padding: 12px 14px; }
+.home-section h2 { font-size: 1rem; margin: 0 0 8px; }
+.home-hscroll-track { padding-bottom: 4px; gap: 10px; }
+.home-hscroll-item { flex: 0 0 150px; }
+
+/* Footer compact */
+footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
+
+/* Bandes décoratives (woven-strip) : plus fines */
+.woven-strip { height: 4px; margin: 0; }
+
+/* Marges globales réduites */
+.shell > * { margin-top: 8px; margin-bottom: 8px; }
