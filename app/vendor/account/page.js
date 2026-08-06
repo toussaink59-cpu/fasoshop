@@ -6,6 +6,12 @@ import Link from "next/link";
 import VendorBottomNav from "@/app/components/VendorBottomNav";
 
 const DOC_LABELS = { cni: "CNI", passeport: "Passeport", permis: "Permis de conduire" };
+const STATUS_CONFIG = {
+  pending: { label: "En attente de vérification", color: "#f59e0b", icon: "⏳" },
+  approved: { label: "Boutique vérifiée", color: "var(--millet-600, #2f7a3d)", icon: "✅" },
+  suspended: { label: "Boutique suspendue", color: "#dc2626", icon: "🚫" },
+  rejected: { label: "Demande non validée", color: "var(--bissap-600, #b91c3c)", icon: "❌" },
+};
 
 export default function VendorAccountPage() {
   const router = useRouter();
@@ -138,6 +144,11 @@ export default function VendorAccountPage() {
     router.push("/login");
   }
 
+  const status = shop?.status || "pending";
+  const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
+  const needsVerification = status === "pending" && !shop?.id_document_type;
+  const isRejected = status === "rejected";
+
   return (
     <div className="shell">
       <div className="topbar">
@@ -153,167 +164,161 @@ export default function VendorAccountPage() {
       </div>
       <div className="woven-strip" />
 
-      <div className="content">
-        <div className="page-header">
-          <h1>Mon compte</h1>
-          <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
+      <div className="vendor-account-wrap">
+        {/* Bannière statut */}
+        <div className="vendor-status-banner" style={{ borderColor: statusConfig.color }}>
+          <div className="vendor-status-icon" style={{ background: statusConfig.color }}>
+            {statusConfig.icon}
+          </div>
+          <div className="vendor-status-text">
+            <h2>{statusConfig.label}</h2>
+            <p>{user ? `Bienvenue, ${user.full_name}` : "Compte vendeur"}</p>
+          </div>
+          {shop?.shop_name && <div className="vendor-shop-name">{shop.shop_name}</div>}
         </div>
 
-        {shop && shop.status === "pending" && !shop.id_document_type && (
-          <div className="panel" style={{ borderLeft: "4px solid var(--gold-600)" }}>
-            <strong>🪪 Vérifiez votre identité pour activer votre boutique</strong>
-            <p style={{ fontSize: "0.9rem", color: "var(--ink-400)", marginTop: 6, marginBottom: 16 }}>
-              Votre compte vendeur est créé ! Il ne manque plus qu'une vérification d'identité pour
-              commencer à vendre. Renseignez le type et le numéro de votre pièce — pas besoin de photo.
-            </p>
-
-            {resubmitError && <div className="error-box">{resubmitError}</div>}
-
-            <form onSubmit={handleResubmitDocuments}>
-              <div className="form-row">
-                <div>
-                  <label htmlFor="verify-doc-type">Type de pièce</label>
-                  <select
-                    id="verify-doc-type"
-                    value={resubmitDocType}
-                    onChange={(e) => setResubmitDocType(e.target.value)}
-                  >
-                    <option value="cni">Carte Nationale d'Identité (CNI)</option>
-                    <option value="passeport">Passeport</option>
-                    <option value="permis">Permis de conduire</option>
-                  </select>
-                </div>
-                <div>
-                  <label htmlFor="verify-doc-number">Numéro de la pièce</label>
-                  <input
-                    id="verify-doc-number"
-                    required
-                    value={resubmitDocNumber}
-                    onChange={(e) => setResubmitDocNumber(e.target.value)}
-                    placeholder="Ex : B01234567"
-                  />
-                </div>
+        {/* Grille de paramètres */}
+        <div className="vendor-settings-grid">
+          {/* Vérification identité */}
+          {(needsVerification || isRejected) && (
+            <div className="vendor-setting-card">
+              <div className="vendor-setting-header">
+                <span className="vendor-setting-icon">🪪</span>
+                <h3>{isRejected ? "Resoumettre votre identité" : "Vérification d'identité"}</h3>
               </div>
-              <button type="submit" className="btn btn-primary" disabled={resubmitting}>
-                {resubmitting ? "Envoi..." : "Soumettre pour vérification"}
-              </button>
-            </form>
-          </div>
-        )}
-
-        {shop && shop.status === "pending" && shop.id_document_type && (
-          <div className="panel" style={{ borderLeft: "4px solid var(--gold-600)" }}>
-            <strong>⏳ Boutique en attente de vérification</strong>
-            <p style={{ fontSize: "0.9rem", color: "var(--ink-400)", marginTop: 6, marginBottom: 0 }}>
-              Notre équipe vérifie les informations de votre pièce d'identité ({DOC_LABELS[shop.id_document_type] || shop.id_document_type} n° {shop.id_document_number}).
-              Vous pourrez publier des produits dès que votre boutique sera validée.
-            </p>
-          </div>
-        )}
-
-        {shop && shop.status === "suspended" && (
-          <div className="error-box">
-            <strong>🚫 Boutique suspendue.</strong> Contactez le support FasoShop pour plus d'informations.
-          </div>
-        )}
-
-        {shop && shop.status === "rejected" && (
-          <div className="panel" style={{ borderLeft: "4px solid var(--bissap-600)" }}>
-            <strong style={{ color: "var(--bissap-600)" }}>❌ Demande de compte vendeur non validée</strong>
-            <p style={{ fontSize: "0.9rem", marginTop: 6 }}>
-              Motif : {shop.rejection_reason || "Non précisé."}
-            </p>
-            <p style={{ fontSize: "0.9rem", color: "var(--ink-400)" }}>
-              Corrigez les informations de votre pièce d'identité ci-dessous pour une nouvelle vérification.
-            </p>
-
-            {resubmitError && <div className="error-box">{resubmitError}</div>}
-
-            <form onSubmit={handleResubmitDocuments}>
-              <div className="form-row">
-                <div>
-                  <label htmlFor="resubmit-doc-type">Type de pièce</label>
-                  <select
-                    id="resubmit-doc-type"
-                    value={resubmitDocType}
-                    onChange={(e) => setResubmitDocType(e.target.value)}
-                  >
-                    <option value="cni">Carte Nationale d'Identité (CNI)</option>
-                    <option value="passeport">Passeport</option>
-                    <option value="permis">Permis de conduire</option>
-                  </select>
+              {isRejected && (
+                <p className="vendor-setting-desc">
+                  Motif du refus : <strong>{shop?.rejection_reason || "Non précisé"}</strong>
+                </p>
+              )}
+              {needsVerification && (
+                <p className="vendor-setting-desc">
+                  Renseignez votre pièce d'identité pour activer votre boutique et commencer à vendre.
+                </p>
+              )}
+              {resubmitError && <div className="error-box">{resubmitError}</div>}
+              <form onSubmit={handleResubmitDocuments}>
+                <div className="vendor-form-row">
+                  <div>
+                    <label htmlFor="doc-type">Type de pièce</label>
+                    <select
+                      id="doc-type"
+                      value={resubmitDocType}
+                      onChange={(e) => setResubmitDocType(e.target.value)}
+                    >
+                      <option value="cni">CNI</option>
+                      <option value="passeport">Passeport</option>
+                      <option value="permis">Permis de conduire</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="doc-number">Numéro</label>
+                    <input
+                      id="doc-number"
+                      required
+                      value={resubmitDocNumber}
+                      onChange={(e) => setResubmitDocNumber(e.target.value)}
+                      placeholder="Ex : B01234567"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label htmlFor="resubmit-doc-number">Numéro de la pièce</label>
-                  <input
-                    id="resubmit-doc-number"
-                    required
-                    value={resubmitDocNumber}
-                    onChange={(e) => setResubmitDocNumber(e.target.value)}
-                  />
-                </div>
-              </div>
-              <button type="submit" className="btn btn-primary" disabled={resubmitting}>
-                {resubmitting ? "Envoi..." : "Resoumettre pour vérification"}
-              </button>
-            </form>
-          </div>
-        )}
-
-        <div className="panel">
-          <h2>Reversements — Mobile Money</h2>
-          <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
-            Le numéro renseigné ici recevra automatiquement votre part des ventes payées en ligne, dès que le paiement en ligne sera activé.
-          </p>
-
-          {mmError && <div className="error-box">{mmError}</div>}
-          {mmSaved && <div className="success-box">Numéro Mobile Money enregistré.</div>}
-
-          <form onSubmit={handleSaveMobileMoney}>
-            <div className="form-row">
-              <div>
-                <label htmlFor="mm-operator">Opérateur</label>
-                <select
-                  id="mm-operator"
-                  value={mmOperator}
-                  onChange={(e) => setMmOperator(e.target.value)}
-                >
-                  <option value="orange_money">Orange Money</option>
-                  <option value="moov_money">Moov Money</option>
-                </select>
-              </div>
-              <div>
-                <label htmlFor="mm-number">Numéro Mobile Money</label>
-                <input
-                  id="mm-number"
-                  required
-                  value={mmNumber}
-                  onChange={(e) => setMmNumber(e.target.value)}
-                  placeholder="Ex : 70 00 00 00"
-                />
-              </div>
+                <button type="submit" className="btn btn-primary" disabled={resubmitting}>
+                  {resubmitting ? "Envoi..." : isRejected ? "Resoumettre" : "Soumettre"}
+                </button>
+              </form>
             </div>
-            <button type="submit" className="btn btn-primary">
-              {shop?.mobile_money_number ? "Mettre à jour" : "Enregistrer"}
-            </button>
-          </form>
-        </div>
+          )}
 
-        <div className="panel">
-          <h2>Ville de la boutique</h2>
-          <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
-            Utilisée pour le filtre "Ville" du catalogue, afin d'aider les acheteurs à trouver des boutiques proches d'eux.
-          </p>
-          {citySaved && <div className="success-box">Ville enregistrée.</div>}
-          <form onSubmit={handleSaveCity} style={{ display: "flex", gap: 8 }}>
-            <input
-              value={cityInput}
-              onChange={(e) => setCityInput(e.target.value)}
-              placeholder="Ex : Ouagadougou"
-              style={{ flex: 1 }}
-            />
-            <button type="submit" className="btn btn-primary">Enregistrer</button>
-          </form>
+          {/* Statut en attente */}
+          {status === "pending" && shop?.id_document_type && (
+            <div className="vendor-setting-card">
+              <div className="vendor-setting-header">
+                <span className="vendor-setting-icon">⏳</span>
+                <h3>Vérification en cours</h3>
+              </div>
+              <p className="vendor-setting-desc">
+                Notre équipe vérifie votre pièce : <strong>{DOC_LABELS[shop.id_document_type]} n° {shop.id_document_number}</strong>
+              </p>
+              <p className="vendor-setting-hint">
+                Vous pourrez publier des produits dès validation.
+              </p>
+            </div>
+          )}
+
+          {/* Mobile Money */}
+          <div className="vendor-setting-card">
+            <div className="vendor-setting-header">
+              <span className="vendor-setting-icon">📱</span>
+              <h3>Reversements Mobile Money</h3>
+            </div>
+            <p className="vendor-setting-desc">
+              Ce numéro recevra automatiquement votre part des ventes en ligne.
+            </p>
+            {mmError && <div className="error-box">{mmError}</div>}
+            {mmSaved && <div className="success-box">Numéro enregistré avec succès.</div>}
+            <form onSubmit={handleSaveMobileMoney}>
+              <div className="vendor-form-row">
+                <div>
+                  <label htmlFor="mm-operator">Opérateur</label>
+                  <select
+                    id="mm-operator"
+                    value={mmOperator}
+                    onChange={(e) => setMmOperator(e.target.value)}
+                  >
+                    <option value="orange_money">Orange Money</option>
+                    <option value="moov_money">Moov Money</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="mm-number">Numéro</label>
+                  <input
+                    id="mm-number"
+                    required
+                    value={mmNumber}
+                    onChange={(e) => setMmNumber(e.target.value)}
+                    placeholder="70 00 00 00"
+                  />
+                </div>
+              </div>
+              <button type="submit" className="btn btn-primary">
+                {shop?.mobile_money_number ? "Mettre à jour" : "Enregistrer"}
+              </button>
+            </form>
+          </div>
+
+          {/* Ville */}
+          <div className="vendor-setting-card">
+            <div className="vendor-setting-header">
+              <span className="vendor-setting-icon">📍</span>
+              <h3>Ville de la boutique</h3>
+            </div>
+            <p className="vendor-setting-desc">
+              Aide les acheteurs à trouver votre boutique dans le filtre "Ville".
+            </p>
+            {citySaved && <div className="success-box">Ville enregistrée.</div>}
+            <form onSubmit={handleSaveCity} style={{ display: "flex", gap: 8 }}>
+              <input
+                value={cityInput}
+                onChange={(e) => setCityInput(e.target.value)}
+                placeholder="Ex : Ouagadougou"
+                style={{ flex: 1 }}
+              />
+              <button type="submit" className="btn btn-primary">Enregistrer</button>
+            </form>
+          </div>
+
+          {/* Suspendu */}
+          {status === "suspended" && (
+            <div className="vendor-setting-card vendor-alert-card">
+              <div className="vendor-setting-header">
+                <span className="vendor-setting-icon">🚫</span>
+                <h3>Boutique suspendue</h3>
+              </div>
+              <p className="vendor-setting-desc">
+                Votre boutique est temporairement suspendue. Contactez le support FasoShop pour plus d'informations.
+              </p>
+            </div>
+          )}
         </div>
       </div>
       <VendorBottomNav newOrdersCount={newOrdersCount} unreadMessages={unreadMessages} />
