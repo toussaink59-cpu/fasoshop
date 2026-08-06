@@ -3741,3 +3741,38 @@ tbody tr:hover {
   .hero-dots { bottom: 8px; }
   .hero-dot { width: 7px; height: 7px; }
 }
+/* ===== HERO COMPACT v2 — priorité maximale ===== */
+.hero-slide {
+  height: 320px !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0 40px !important;
+}
+.hero-title { font-size: 2rem !important; margin-bottom: 8px !important; }
+.hero-subtitle { font-size: 1rem !important; }
+.hero-description { display: none !important; }
+.hero-slide-icon-panel { max-width: 240px !important; }
+.hero-slide-icon { font-size: 5rem !important; }
+.hero-cta-primary, .hero-cta-secondary { padding: 11px 24px !important; font-size: .88rem !important; }
+
+/* Tablette */
+@media (max-width: 1023px) {
+  .hero-slide { height: 280px !important; padding: 0 32px !important; }
+  .hero-title { font-size: 1.6rem !important; }
+  .hero-slide-icon-panel { max-width: 200px !important; }
+  .hero-slide-icon { font-size: 4rem !important; }
+}
+
+/* Mobile */
+@media (max-width: 767px) {
+  .hero-slide {
+    height: auto !important;
+    min-height: 180px !important;
+    max-height: 220px !important;
+    padding: 16px 14px !important;
+  }
+  .hero-title { font-size: 1.15rem !important; }
+  .hero-subtitle { font-size: .78rem !important; margin-bottom: 10px !important; }
+  .hero-tag { padding: 3px 8px !important; font-size: .62rem !important; margin-bottom: 6px !important; }
+  .hero-cta-primary, .hero-cta-secondary { padding: 8px 14px !important; font-size: .78rem !important; }
+}
