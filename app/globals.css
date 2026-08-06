@@ -3653,3 +3653,51 @@ tbody tr:hover {
 @media (min-width: 1200px) {
   .panel table:has(td:nth-child(10)) tbody { grid-template-columns: repeat(3, 1fr); }
 }
+/* ===== MENU PRINCIPAL STYLE TEMU : pilules de catégories ===== */
+.pill-bar { padding: 20px 0 4px; }
+.pill-bar-head { text-align: center; margin-bottom: 14px; padding: 0 16px; }
+.pill-bar-tag {
+  display: inline-block;
+  color: var(--gold-600, #e8590c);
+  font-size: .8rem;
+  font-weight: 600;
+  font-style: italic;
+  margin-bottom: 4px;
+}
+.pill-bar-title {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--ink-900, #241712);
+}
+.pill-bar-track {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 4px 16px 14px;
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+}
+.pill-bar-track::-webkit-scrollbar { display: none; }
+.pill {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+  background: #fff;
+  border: 1px solid var(--border, #e5ddd3);
+  border-radius: 999px;
+  padding: 9px 18px;
+  font-size: .82rem;
+  color: var(--ink-700, #4a3f38);
+  text-decoration: none;
+  white-space: nowrap;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.pill:hover { border-color: var(--millet-600, #2f7a3d); color: var(--millet-600, #2f7a3d); }
+.pill.is-active {
+  background: var(--millet-600, #2f7a3d);
+  border-color: var(--millet-600, #2f7a3d);
+  color: #fff;
+  font-weight: 700;
+}
