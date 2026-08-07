@@ -4793,3 +4793,39 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   flex-direction: column;
 }
 .home-hscroll-item .shop-card > .btn { margin-top: auto; margin-bottom: 10px; }
+/* ===== FOOTER MARKETPLACE PANAFRICAINE ===== */
+
+/* Fond sombre professionnel */
+.site-footer { background: var(--ink-900, #241712); color: var(--sand-100, #f5f0ea); }
+.site-footer a { color: var(--sand-200, #e8e0d5); }
+.site-footer-brand { color: #fff; }
+
+.footer-brand-block { margin-bottom: 14px; }
+.site-footer-tagline { font-size: 0.85rem; max-width: 460px; }
+
+/* Bandeau confiance */
+.footer-trust {
+  display: flex; flex-wrap: wrap; gap: 8px 16px;
+  padding: 12px 0; margin: 6px 0 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 0.78rem;
+}
+
+/* Colonnes : 2 sur mobile, 4 sur PC */
+.footer-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px 12px; }
+@media (min-width: 768px) { .footer-cols { grid-template-columns: repeat(4, 1fr); } }
+.site-footer-col { display: flex; flex-direction: column; gap: 6px; }
+.site-footer-col h4 { margin: 0 0 4px; font-size: 0.85rem; color: #fff; }
+.site-footer-col a { font-size: 0.8rem; text-decoration: none; }
+.site-footer-col a:hover { color: var(--gold-500, #eab308); }
+.footer-cta-vendor { font-weight: 700; color: var(--gold-500, #eab308) !important; }
+
+/* Pays desservis */
+.footer-countries { margin-top: 16px; font-size: 0.8rem; }
+.footer-countries-soon { opacity: 0.75; }
+
+/* Le bas ne doit pas être caché par la barre de navigation mobile */
+@media (max-width: 767px) {
+  .site-footer-bottom { padding-bottom: 76px; }
+}
