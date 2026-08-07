@@ -57,11 +57,10 @@ export default function Footer() {
             <Link href="/messages">Nous contacter</Link>
           </div>
 
-          <div className="site-footer-col">
+                   <div className="site-footer-col">
             <h4>Vendre sur Kimoxa</h4>
             <Link href="/devenir-vendeur" className="footer-cta-vendor">Devenir vendeur →</Link>
             <Link href="/vendor/dashboard">Espace vendeur</Link>
-            <Link href="/nos-vendeurs">Nos vendeurs</Link>
           </div>
 
           <div className="site-footer-col">
