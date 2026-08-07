@@ -394,7 +394,7 @@ export default function VendorDashboard() {
     <div className="shell">
       <div className="topbar">
         <div className="brand">
-          🛒 FasoShop <span className="role-tag">Vendeur</span>
+          🛒 Kimoxa <span className="role-tag">Vendeur</span>
         </div>
         <div className="topbar-actions">
           <Link href="/messages" style={{ marginRight: 10, color: "var(--sand-50)", fontSize: "0.85rem" }}>
@@ -484,7 +484,7 @@ export default function VendorDashboard() {
 
         {shop && shop.status === "suspended" && (
           <div className="vendor-alert vendor-alert-error">
-            <strong>🚫 Boutique suspendue.</strong> Contactez le support FasoShop pour plus d'informations.
+            <strong>🚫 Boutique suspendue.</strong> Contactez le support Kimoxa pour plus d'informations.
           </div>
         )}
 
