@@ -30,6 +30,9 @@ export default async function MessagesListPage() {
     getUserConversations(user.id, user.role),
   ]);
 
+  // OPTION B : l'acheteur voit "Support Kimoxa", le vendeur voit le nom du client
+  const isBuyer = user.role === "buyer";
+
   return (
     <div className="shell">
       <SiteHeader initialUser={user} categories={categories} />
@@ -45,29 +48,37 @@ export default async function MessagesListPage() {
           <div className="chat-empty">
             <div className="chat-empty-icon">💬</div>
             <p>Aucune conversation pour l'instant.</p>
-            <p className="chat-empty-hint">Contactez un vendeur depuis la fiche d'un produit pour démarrer.</p>
+            <p className="chat-empty-hint">
+              {isBuyer
+                ? "Contactez le support depuis la fiche d'un produit pour démarrer."
+                : "Contactez un client depuis vos commandes reçues pour démarrer."}
+            </p>
           </div>
         ) : (
           <div className="chat-list">
-            {conversations.map((c) => (
-              <Link href={`/messages/${c.id}`} key={c.id} className="chat-row">
-                <div className="chat-row-avatar">{initials(c.other_party_name)}</div>
-                <div className="chat-row-body">
-                  <div className="chat-row-top">
-                    <strong>{c.other_party_name}</strong>
-                    <span className="chat-row-time">{timeAgo(c.updated_at || c.created_at)}</span>
+            {conversations.map((c) => {
+              const displayName = isBuyer ? "Support Kimoxa" : c.other_party_name;
+              const avatarText = isBuyer ? "SK" : initials(c.other_party_name);
+              return (
+                <Link href={`/messages/${c.id}`} key={c.id} className="chat-row">
+                  <div className="chat-row-avatar">{avatarText}</div>
+                  <div className="chat-row-body">
+                    <div className="chat-row-top">
+                      <strong>{displayName}</strong>
+                      <span className="chat-row-time">{timeAgo(c.updated_at || c.created_at)}</span>
+                    </div>
+                    <div className="chat-row-bottom">
+                      <p className="chat-row-preview">
+                        {c.last_message || "Démarrer la conversation..."}
+                      </p>
+                      {c.unread_count > 0 && (
+                        <span className="chat-row-badge">{c.unread_count > 9 ? "9+" : c.unread_count}</span>
+                      )}
+                    </div>
                   </div>
-                  <div className="chat-row-bottom">
-                    <p className="chat-row-preview">
-                      {c.last_message || "Démarrer la conversation..."}
-                    </p>
-                    {c.unread_count > 0 && (
-                      <span className="chat-row-badge">{c.unread_count > 9 ? "9+" : c.unread_count}</span>
-                    )}
-                  </div>
-                </div>
-              </Link>
-            ))}
+                </Link>
+              );
+            })}
           </div>
         )}
       </div>
