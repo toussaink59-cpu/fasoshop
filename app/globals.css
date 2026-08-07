@@ -5540,3 +5540,11 @@ select, input { max-width: 100%; box-sizing: border-box; }
     cursor: pointer !important;
   }
 }
+/* Numéro de commande et date sur 2 lignes (lisibles) */
+.order-head .order-number { display: block; margin-right: 0; }
+.order-head .order-date {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.72rem;
+  color: var(--ink-400);
+}
