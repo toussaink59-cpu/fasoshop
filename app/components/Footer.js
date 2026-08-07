@@ -33,16 +33,16 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* 3. Paiements acceptés */}
+        {/* 3. Paiements acceptés (logos façon Temu) */}
         <div className="temu-footer-payments">
           <span className="temu-footer-payments-title">Paiements acceptés</span>
           <div className="temu-footer-payment-badges">
-            <span>Orange Money</span>
-            <span>Moov Money</span>
-            <span>MTN MoMo</span>
-            <span>M-Pesa</span>
-            <span>Wave</span>
-            <span>💵 À la livraison</span>
+            <span className="pay-logo"><i style={{ background: "#FF7900" }} />Orange Money</span>
+            <span className="pay-logo"><i style={{ background: "#0072BC" }} />Moov Money</span>
+            <span className="pay-logo"><i style={{ background: "#FFCC00" }} />MTN MoMo</span>
+            <span className="pay-logo"><i style={{ background: "#4CAF50" }} />M-Pesa</span>
+            <span className="pay-logo"><i style={{ background: "#00B8E6" }} />Wave</span>
+            <span className="pay-logo"><i style={{ background: "#2f7a3d" }} />💵 À la livraison</span>
           </div>
         </div>
 
