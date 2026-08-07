@@ -90,6 +90,9 @@ export default function ConversationThreadClient({ id, initialThread, initialUse
     if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
+  // OPTION B : l'acheteur voit "Support Kimoxa", le vendeur voit le nom de sa boutique
+  const headerName = myRole === "buyer" ? "Support Kimoxa" : (shopName || "Conversation");
+
   return (
     <div className="shell chat-shell">
       <SiteHeader initialUser={initialUser} categories={categories} />
@@ -99,7 +102,7 @@ export default function ConversationThreadClient({ id, initialThread, initialUse
         <div className="chat-thread-header">
           <Link href="/messages" className="chat-back-btn" aria-label="Retour">←</Link>
           <div className="chat-thread-title">
-            <strong>{shopName || "Conversation"}</strong>
+            <strong>{headerName}</strong>
             {orderId && <span>Commande #{orderId}</span>}
           </div>
         </div>
