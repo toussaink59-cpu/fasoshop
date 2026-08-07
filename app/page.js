@@ -48,7 +48,7 @@ export default async function HomePage() {
       <HorizontalProductSection
         title="Nouveautés"
         icon="✨"
-        seeAllHref="/shop?sort=newest"
+        seeAllHref={null}
         products={newArrivals}
         user={user}
       />
@@ -56,7 +56,7 @@ export default async function HomePage() {
       <HorizontalProductSection
         title="Meilleures ventes"
         icon="🏆"
-        seeAllHref="/shop"
+        seeAllHref={null}
         products={bestSellers}
         user={user}
       />
@@ -64,7 +64,7 @@ export default async function HomePage() {
       <HorizontalProductSection
         title="Produits populaires"
         icon="⭐"
-        seeAllHref="/shop?sort=rating"
+        seeAllHref={null}
         products={topRated}
         user={user}
       />
