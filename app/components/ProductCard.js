@@ -20,8 +20,8 @@ export function Stars({ rating }) {
 }
 
 // Carte produit standard (catalogue + sections horizontales de l'accueil).
-// Gère elle-même le favori et l'ajout au panier — aucun état à faire
-// remonter au parent, pour rester réutilisable telle quelle partout.
+// OPTION B : l'acheteur voit "Kimoxa" partout, le vrai vendeur reste
+// invisible pour lui mais accessible à l'admin et au vendeur lui-même.
 export default function ProductCard({ p, user, compact = false }) {
   const router = useRouter();
   const [favorited, setFavorited] = useState(Boolean(p.is_favorited));
@@ -92,11 +92,10 @@ export default function ProductCard({ p, user, compact = false }) {
         {CONDITION_LABELS[p.condition] || "Neuf"}
       </span>
 
+      {/* OPTION B : anonymisation — l'acheteur ne voit que "Kimoxa" */}
       <div className="shop-card-shop-row">
-        <span className="shop">{p.shop_name}</span>
-        {p.shop_verified && (
-          <span className="shop-card-verified" title="Boutique vérifiée">✓</span>
-        )}
+        <span className="shop">Kimoxa</span>
+        <span className="shop-card-verified" title="Vendeur vérifié">✓</span>
       </div>
 
       {Number(p.review_count) > 0 && (
