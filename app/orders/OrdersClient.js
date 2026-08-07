@@ -18,6 +18,7 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
   const [orders, setOrders] = useState(initialOrders);
   const [contactingKey, setContactingKey] = useState(null);
   const [error, setError] = useState("");
+  const [orderFilter, setOrderFilter] = useState("all");
 
   async function handleContact(orderId, shopId) {
     const key = `${orderId}-${shopId}`;
@@ -40,12 +41,18 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
     router.push(`/messages/${data.conversationId}`);
   }
 
+  // Une commande "contient" un statut si une de ses boutiques l'a
+  const hasStatus = (o, s) => o.subOrders.some((sub) => sub.deliveryStatus === s);
+  const filteredOrders =
+    orderFilter === "all" ? orders : orders.filter((o) => hasStatus(o, orderFilter));
+  const countBy = (s) => orders.filter((o) => hasStatus(o, s)).length;
+
   return (
     <div className="shell">
       <SiteHeader initialUser={initialUser} categories={categories} />
       <div className="orders-wrap">
 
-        {/* 🎉 Grande bannière de confirmation */}
+        {/* 🎉 Bannière de confirmation avec étapes de suivi */}
         {confirmedId && (
           <div className="order-confirm-banner">
             <div className="order-confirm-icon">🎉</div>
@@ -76,9 +83,7 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
 
         <div className="orders-header">
           <h1>Mes commandes</h1>
-          <span className="orders-count">
-            {orders.length} commande{orders.length > 1 ? "s" : ""}
-          </span>
+          <span className="orders-count">{orders.length}</span>
         </div>
 
         {error && <div className="error-box">{error}</div>}
@@ -92,57 +97,88 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
             </Link>
           </div>
         ) : (
-          orders.map((order) => (
-            <div className="order-card" key={order.id}>
-              <div className="order-head">
-                <div>
-                  <strong className="order-number">Commande #{order.id}</strong>
-                  <span className="order-date">
-                    {new Date(order.created_at).toLocaleDateString("fr-FR")}
-                  </span>
-                </div>
-                <span className="order-total">
-                  {Number(order.total).toLocaleString("fr-FR")} FCFA
-                </span>
-              </div>
+          <>
+            {/* Onglets de suivi façon Temu */}
+            <div className="vendor-filters">
+              <button className={`vendor-filter-btn ${orderFilter === "all" ? "active" : ""}`} onClick={() => setOrderFilter("all")}>
+                Toutes ({orders.length})
+              </button>
+              <button className={`vendor-filter-btn ${orderFilter === "preparation" ? "active" : ""}`} onClick={() => setOrderFilter("preparation")}>
+                En préparation ({countBy("preparation")})
+              </button>
+              <button className={`vendor-filter-btn ${orderFilter === "shipped" ? "active" : ""}`} onClick={() => setOrderFilter("shipped")}>
+                Expédiées ({countBy("shipped")})
+              </button>
+              <button className={`vendor-filter-btn ${orderFilter === "delivered" ? "active" : ""}`} onClick={() => setOrderFilter("delivered")}>
+                Livrées ({countBy("delivered")})
+              </button>
+            </div>
 
-              <div className="order-meta">
-                📍 {order.shipping_address}
-                {" · "}
-                {order.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 À la livraison"}
+            {filteredOrders.length === 0 ? (
+              <div className="empty-state">
+                <div className="glyph">🔎</div>
+                <p>Aucune commande pour ce filtre.</p>
               </div>
-
-              {/* Une sous-commande par boutique, avec son propre statut */}
-              {order.subOrders.map((sub) => {
-                const key = `${order.id}-${sub.shopId}`;
-                return (
-                  <div className="order-sub" key={sub.shopId}>
-                    <div className="order-sub-head">
-                      <strong>{sub.shopName}</strong>
-                      <span className={`status-pill status-${sub.deliveryStatus}`}>
-                        {STATUS_LABELS[sub.deliveryStatus] || sub.deliveryStatus}
+            ) : (
+              filteredOrders.map((order) => (
+                <div className="order-card" key={order.id}>
+                  <div className="order-head">
+                    <div>
+                      <strong className="order-number">Commande #{order.id}</strong>
+                      <span className="order-date">
+                        {new Date(order.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "2-digit" })}
                       </span>
                     </div>
-                    <div className="order-sub-items">
-                      {sub.items.map((item, idx) => (
-                        <div key={idx}>
-                          <span>{item.quantity} × {item.productName}</span>
-                          <span>{Number(item.priceAtPurchase * item.quantity).toLocaleString("fr-FR")} FCFA</span>
-                        </div>
-                      ))}
-                    </div>
-                    <button
-                      className="btn btn-ghost order-contact-btn"
-                      onClick={() => handleContact(order.id, sub.shopId)}
-                      disabled={contactingKey === key}
-                    >
-                      💬 {contactingKey === key ? "Ouverture..." : "Contacter le vendeur"}
-                    </button>
+                    <span className="order-total">
+                      {Number(order.total).toLocaleString("fr-FR")} FCFA
+                    </span>
                   </div>
-                );
-              })}
-            </div>
-          ))
+
+                  <div className="order-meta">
+                    📍 {order.shipping_address}
+                    {" · "}
+                    {order.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 À la livraison"}
+                  </div>
+
+                  {/* Une sous-commande par boutique, avec son propre statut */}
+                  {order.subOrders.map((sub) => {
+                    const key = `${order.id}-${sub.shopId}`;
+                    return (
+                      <div className="order-sub" key={sub.shopId}>
+                        <div className="order-sub-head">
+                          <strong>🏪 {sub.shopName}</strong>
+                          <span className={`status-pill status-${sub.deliveryStatus}`}>
+                            {STATUS_LABELS[sub.deliveryStatus] || sub.deliveryStatus}
+                          </span>
+                        </div>
+
+                        <div className="order-items">
+                          {sub.items.map((item, idx) => (
+                            <div className="order-item-row" key={idx}>
+                              <span className="order-item-name">
+                                {item.quantity} × {item.productName}
+                              </span>
+                              <span className="order-item-qty">
+                                {Number(item.priceAtPurchase * item.quantity).toLocaleString("fr-FR")} FCFA
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+
+                        <button
+                          className="btn btn-ghost order-contact-btn"
+                          onClick={() => handleContact(order.id, sub.shopId)}
+                          disabled={contactingKey === key}
+                        >
+                          💬 {contactingKey === key ? "Ouverture..." : "Contacter le vendeur"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))
+            )}
+          </>
         )}
       </div>
       <BottomNav user={initialUser} />
