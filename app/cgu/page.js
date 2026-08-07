@@ -19,7 +19,7 @@ export default async function CGUPage() {
         <div className="panel">
           <h2>1. Objet</h2>
           <p>
-            Les présentes conditions régissent l'accès et l'utilisation du site FasoShop par
+            Les présentes conditions régissent l'accès et l'utilisation du site Kimoxa par
             tout visiteur, acheteur ou vendeur. L'utilisation du site implique l'acceptation
             pleine et entière de ces conditions.
           </p>
@@ -39,20 +39,20 @@ export default async function CGUPage() {
 
           <h2>4. Propriété intellectuelle</h2>
           <p>
-            L'ensemble des éléments du site FasoShop (marque, logo, structure) est protégé.
+            L'ensemble des éléments du site Kimoxa (marque, logo, structure) est protégé.
             Les vendeurs restent responsables des visuels et descriptions qu'ils publient.
           </p>
 
           <h2>5. Responsabilité</h2>
           <p>
-            FasoShop agit comme intermédiaire technique entre vendeurs et acheteurs. La
-            responsabilité de FasoShop ne saurait être engagée pour un litige portant sur
+            Kimoxa agit comme intermédiaire technique entre vendeurs et acheteurs. La
+            responsabilité de Kimoxa ne saurait être engagée pour un litige portant sur
             la qualité ou la conformité d'un produit vendu par un tiers.
           </p>
 
           <h2>6. Modification des conditions</h2>
           <p>
-            FasoShop se réserve le droit de modifier les présentes conditions à tout moment,
+            Kimoxa se réserve le droit de modifier les présentes conditions à tout moment,
             les utilisateurs étant informés des changements substantiels.
           </p>
 
