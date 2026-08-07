@@ -118,7 +118,9 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
               </span>
             </div>
 
-            <p className="pdp-shop-name">{product.shop_name}</p>
+                        <p className="pdp-shop-name">
+              Vendu par <strong>Kimoxa</strong> <span style={{ color: "var(--gold-600)" }}>✓</span>
+            </p>
 
             {product.category_name && (
               <p className="pdp-category">📂 {product.category_name}</p>
