@@ -4839,3 +4839,49 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 }
 .footer-top-row .site-footer-socials { margin: 0 !important; }
 .site-footer-tagline { margin: 0 0 16px; }
+/* ===== FOOTER STYLE TEMU ===== */
+
+/* Rangée haute : appli + sociaux */
+.temu-footer-top {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 14px; flex-wrap: wrap; padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+.temu-footer-app { display: flex; align-items: center; gap: 10px; }
+.temu-footer-app-icon { font-size: 1.6rem; }
+.temu-footer-app strong { display: block; font-size: 0.9rem; color: #fff; }
+.temu-footer-app span { font-size: 0.75rem; opacity: 0.8; }
+.temu-footer-socials-title { display: block; font-size: 0.72rem; opacity: 0.8; margin-bottom: 6px; text-align: right; }
+.temu-footer-socials .site-footer-socials { margin: 0 !important; display: flex; gap: 8px; }
+
+/* Rangée paiements (badges comme les logos Visa/Mastercard de Temu) */
+.temu-footer-payments { padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.15); }
+.temu-footer-payments-title { font-size: 0.72rem; opacity: 0.8; display: block; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.04em; }
+.temu-footer-payment-badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.temu-footer-payment-badges span {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 4px 10px; border-radius: 6px;
+  font-size: 0.72rem; font-weight: 600;
+}
+
+/* Colonnes de liens */
+.temu-footer-cols { padding: 16px 0; }
+@media (min-width: 768px) { .temu-footer-cols { grid-template-columns: repeat(3, 1fr); } }
+
+/* Barre basse : pays + copyright */
+.temu-footer-bottombar {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 8px; flex-wrap: wrap; padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+  font-size: 0.75rem; opacity: 0.9;
+}
+.temu-footer-country {
+  background: rgba(255, 255, 255, 0.12);
+  padding: 4px 12px; border-radius: 999px; font-weight: 700;
+}
+
+/* La barre de navigation mobile ne doit rien cacher */
+@media (max-width: 767px) {
+  .site-footer-inner { padding-bottom: 76px; }
+}
