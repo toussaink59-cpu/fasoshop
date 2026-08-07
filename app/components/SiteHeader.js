@@ -8,12 +8,12 @@ import SideMenu from "@/app/components/SideMenu";
 import SearchBar from "@/app/components/SearchBar";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
 
+// Header style Temu : UNE seule rangée — logo | recherche compacte | icônes.
 export default function SiteHeader({ initialUser, categories = [], searchValue = "" }) {
   const router = useRouter();
   const [user, setUser] = useState(initialUser);
   const [menuOpen, setMenuOpen] = useState(false);
   const [cartCountValue, setCartCountValue] = useState(0);
-  const [unread, setUnread] = useState(0);
   const hamburgerRef = useRef(null);
 
   function closeMenu() {
@@ -27,14 +27,6 @@ export default function SiteHeader({ initialUser, categories = [], searchValue =
     window.addEventListener("fasoshop-cart-updated", update);
     return () => window.removeEventListener("fasoshop-cart-updated", update);
   }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    fetch("/api/conversations/unread-count")
-      .then((r) => (r.ok ? r.json() : { unread: 0 }))
-      .then((d) => setUnread(d.unread || 0))
-      .catch(() => {});
-  }, [user]);
 
   function accountLink() {
     if (!user) return "/login";
@@ -53,21 +45,18 @@ export default function SiteHeader({ initialUser, categories = [], searchValue =
     <>
       <header className="site-header">
         <div className="site-header-row">
-          <button
-            ref={hamburgerRef}
-            className="site-header-icon-btn site-header-hamburger"
-            onClick={() => setMenuOpen(true)}
-            aria-label="Ouvrir le menu"
-            aria-expanded={menuOpen}
-            aria-haspopup="dialog"
-          >
-            ☰
-          </button>
 
+          {/* Logo à gauche */}
           <Link href="/" className="site-header-logo" aria-label="Kimoxa — accueil">
-            <KimoxaLogo size={28} />
+            <KimoxaLogo size={26} />
           </Link>
 
+          {/* Recherche compacte au centre */}
+          <div className="site-header-search-compact">
+            <SearchBar initialValue={searchValue} />
+          </div>
+
+          {/* Actions desktop (PC uniquement) */}
           <div className="site-header-desktop-actions">
             <Link href="/devenir-vendeur"><button className="btn-header-link">Devenir vendeur</button></Link>
             {user ? (
@@ -80,13 +69,20 @@ export default function SiteHeader({ initialUser, categories = [], searchValue =
             )}
           </div>
 
+          {/* 3 icônes à droite, comme Temu */}
           <div className="site-header-actions">
-            <Link href="/favoris" className="site-header-icon-btn" aria-label="Favoris">
-              ♡
-            </Link>
-            <Link href="/messages" className="site-header-icon-btn" aria-label="Messages">
-              💬
-              {unread > 0 && <span className="site-header-badge">{unread > 9 ? "9+" : unread}</span>}
+            <button
+              ref={hamburgerRef}
+              className="site-header-icon-btn site-header-hamburger"
+              onClick={() => setMenuOpen(true)}
+              aria-label="Ouvrir le menu"
+              aria-expanded={menuOpen}
+              aria-haspopup="dialog"
+            >
+              ☰
+            </button>
+            <Link href={accountLink()} className="site-header-icon-btn site-header-account" aria-label="Compte">
+              👤
             </Link>
             <Link href="/cart" className="site-header-icon-btn" aria-label="Panier">
               🛒
@@ -95,10 +91,6 @@ export default function SiteHeader({ initialUser, categories = [], searchValue =
               )}
             </Link>
           </div>
-        </div>
-
-        <div className="site-header-search-row">
-          <SearchBar initialValue={searchValue} />
         </div>
       </header>
 
