@@ -2,10 +2,10 @@ import "./globals.css";
 
 export const metadata = {
   title: {
-    default: "FasoShop — Marketplace multi-vendeur au Burkina Faso",
-    template: "%s | FasoShop",
+    default: "Kimoxa — Marketplace multi-vendeurs pour toute l'Afrique",
+    template: "%s | Kimoxa",
   },
-  description: "Marketplace multi-vendeur au Burkina Faso",
+  description: "Kimoxa, la marketplace multi-vendeurs qui connecte l'Afrique qui vend à l'Afrique qui achète.",
 };
 
 export default function RootLayout({ children }) {
