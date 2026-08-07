@@ -15,7 +15,7 @@ export async function generateMetadata({ params }) {
     title: product.name,
     description: product.description
       ? product.description.slice(0, 160)
-      : `${product.name} — vendu par ${product.shop_name} sur FasoShop.`,
+            : `${product.name} — achetez en toute confiance sur Kimoxa.`,
     openGraph: {
       title: product.name,
       description: product.description || undefined,
