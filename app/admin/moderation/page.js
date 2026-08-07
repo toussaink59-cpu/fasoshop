@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import AdminBottomNav from "@/app/components/AdminBottomNav";
+import KimoxaLogo from "@/app/components/KimoxaLogo";
 
 export default function AdminModerationPage() {
   const router = useRouter();
@@ -94,35 +96,53 @@ export default function AdminModerationPage() {
 
   return (
     <div className="shell">
+      {/* ===== TOPBAR TEMU ===== */}
       <div className="topbar">
         <div className="brand">
-          🛒 Kimoxa <span className="role-tag">Admin</span>
+          <KimoxaLogo light size={20} /> <span className="role-tag">Admin</span>
         </div>
         <div className="topbar-actions">
-          <button onClick={handleLogout}>Déconnexion</button>
+          <Link href="/admin/dashboard" className="topbar-textlink">Tableau de bord</Link>
+          <button className="topbar-logout" onClick={handleLogout}>Déconnexion</button>
         </div>
       </div>
       <div className="woven-strip" />
 
-      <div className="content">
-        <div className="page-header">
+      <div className="vendor-dashboard-wrap">
+        <div className="vendor-dashboard-header">
           <h1>Modération</h1>
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
 
         {error && <div className="error-box">{error}</div>}
 
+        {/* Cartes stats (même style que le dashboard) */}
+        <div className="vendor-stats-grid">
+          <div className="vendor-stat-card">
+            <div className="vendor-stat-icon">🚀</div>
+            <div className="vendor-stat-value" style={{ color: pendingModerationCount > 0 ? "var(--gold-600)" : "inherit" }}>
+              {pendingModerationCount}
+            </div>
+            <div className="vendor-stat-label">Sponsorings en attente</div>
+          </div>
+          <div className="vendor-stat-card">
+            <div className="vendor-stat-icon">⭐</div>
+            <div className="vendor-stat-value">{reviews.length}</div>
+            <div className="vendor-stat-label">Avis clients</div>
+          </div>
+        </div>
+
         {loading ? (
           <p>Chargement...</p>
         ) : (
           <>
-            <div className="panel">
+            <div className="ana-panel">
               <h2>Demandes de sponsoring</h2>
               <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
-                Un vendeur a demandé la mise en avant d'un produit. Vérifiez que le paiement a bien été reçu (par ailleurs, tant que le paiement en ligne n'est pas automatisé) avant de valider.
+                Un vendeur a demandé la mise en avant d'un produit. Vérifiez que le paiement a bien été reçu (tant que le paiement en ligne n'est pas automatisé) avant de valider.
               </p>
 
-              {sponsorships.filter((s) => s.status === "pending").length === 0 ? (
+              {pendingModerationCount === 0 ? (
                 <p style={{ color: "var(--ink-400)" }}>Aucune demande en attente.</p>
               ) : (
                 <table>
@@ -169,7 +189,7 @@ export default function AdminModerationPage() {
               )}
             </div>
 
-            <div className="panel">
+            <div className="ana-panel">
               <h2>Avis clients</h2>
               <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
                 Modérez les avis abusifs, faux ou inappropriés.
