@@ -6,7 +6,7 @@ import ProductCard from "@/app/components/ProductCard";
 const PAGE = 6;
 
 // Flux de produits façon Temu : on reste sur la même page,
-// le bouton "Voir plus" affiche 10 produits supplémentaires.
+// le bouton "Afficher plus" charge 6 produits supplémentaires.
 export default function HomeFeed({ initialProducts = [], user }) {
   const [visibleCount, setVisibleCount] = useState(PAGE);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -17,7 +17,6 @@ export default function HomeFeed({ initialProducts = [], user }) {
 
   function handleLoadMore() {
     setLoadingMore(true);
-    // Petite pause pour l'effet de chargement, comme sur Temu
     setTimeout(() => {
       setVisibleCount((c) => c + PAGE);
       setLoadingMore(false);
@@ -28,10 +27,6 @@ export default function HomeFeed({ initialProducts = [], user }) {
 
   return (
     <div className="home-section">
-      <div className="section-head">
-        <h2>🛍️ Découvrez plus de produits</h2>
-      </div>
-
       <div className="shop-grid">
         {visible.map((p) => (
           <ProductCard key={p.id} p={p} user={user} />
@@ -48,7 +43,7 @@ export default function HomeFeed({ initialProducts = [], user }) {
             {loadingMore ? (
               "Chargement..."
             ) : (
-              <>↓ Voir plus de produits</>
+              <>↓ Afficher plus</>
             )}
           </button>
           <p className="load-more-count">
