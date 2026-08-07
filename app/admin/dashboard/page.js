@@ -4,6 +4,16 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AdminBottomNav from "@/app/components/AdminBottomNav";
+import KimoxaLogo from "@/app/components/KimoxaLogo";
+
+const ORDER_STATUS = {
+  pending: { label: "En attente", cls: "status-pending" },
+  paid: { label: "Payée", cls: "status-paid" },
+  preparation: { label: "En préparation", cls: "status-preparation" },
+  shipped: { label: "Expédiée", cls: "status-shipped" },
+  delivered: { label: "Livrée", cls: "status-delivered" },
+  cancelled: { label: "Annulée", cls: "status-cancelled" },
+};
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -13,6 +23,7 @@ export default function AdminDashboard() {
   const [orderStats, setOrderStats] = useState(null);
   const [pendingShopsCount, setPendingShopsCount] = useState(0);
   const [pendingModerationCount, setPendingModerationCount] = useState(0);
+  const [orderFilter, setOrderFilter] = useState("all");
 
   const loadOrders = useCallback(async () => {
     const res = await fetch("/api/admin/orders");
@@ -28,9 +39,6 @@ export default function AdminDashboard() {
     setLoading(false);
   }, [router]);
 
-  // Compteurs pour les badges de la bottom nav (Boutiques en attente,
-  // demandes de sponsoring en attente) — requêtes légères, indépendantes
-  // des pages Boutiques/Modération elles-mêmes.
   const loadBadgeCounts = useCallback(async () => {
     const [shopsRes, sponsorRes] = await Promise.all([
       fetch("/api/admin/shops"),
@@ -41,7 +49,7 @@ export default function AdminDashboard() {
       setPendingShopsCount((d.shops || []).filter((s) => s.status === "pending").length);
     }
     if (sponsorRes.ok) {
-      const d = await sponsorRes.json();
+      const d = await shopsRes.json && await sponsorRes.json();
       setPendingModerationCount((d.requests || []).filter((s) => s.status === "pending").length);
     }
   }, []);
@@ -65,11 +73,14 @@ export default function AdminDashboard() {
     router.push("/login");
   }
 
+  const filteredOrders = orderFilter === "all" ? orders : orders.filter((o) => o.status === orderFilter);
+  const countBy = (s) => orders.filter((o) => o.status === s).length;
+
   return (
     <div className="shell">
       <div className="topbar">
         <div className="brand">
-          🛒 Kimoxa <span className="role-tag">Admin</span>
+          <KimoxaLogo light size={22} /> <span className="role-tag">Admin</span>
         </div>
         <div className="topbar-actions">
           <Link href="/admin/analytics"><button>Analytics</button></Link>
@@ -78,91 +89,112 @@ export default function AdminDashboard() {
       </div>
       <div className="woven-strip" />
 
-      <div className="content">
-        <div className="page-header">
-          <h1>Tableau de bord</h1>
+      <div className="vendor-dashboard-wrap">
+        <div className="vendor-dashboard-header">
+          <h1>Tableau de bord admin</h1>
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
 
-        <div className="stat-row">
-          <div className="stat-card">
-            <div className="label">Commandes aujourd'hui</div>
-            <div className="value">{orderStats ? orderStats.orders_today : "—"}</div>
+        {/* 4 cartes stats */}
+        <div className="vendor-stats-grid">
+          <div className="vendor-stat-card">
+            <div className="vendor-stat-icon">🛒</div>
+            <div className="vendor-stat-value">{orderStats ? orderStats.orders_today : "—"}</div>
+            <div className="vendor-stat-label">Commandes aujourd'hui</div>
           </div>
-          <div className="stat-card">
-            <div className="label">CA aujourd'hui</div>
-            <div className="value">
-              {orderStats ? `${Number(orderStats.revenue_today).toLocaleString("fr-FR")} FCFA` : "—"}
+          <div className="vendor-stat-card">
+            <div className="vendor-stat-icon">💰</div>
+            <div className="vendor-stat-value" style={{ fontSize: "1.2rem" }}>
+              {orderStats ? `${Number(orderStats.revenue_today).toLocaleString("fr-FR")}` : "—"}
             </div>
+            <div className="vendor-stat-label">FCFA aujourd'hui</div>
           </div>
-          <div className="stat-card">
-            <div className="label">Commandes totales</div>
-            <div className="value">{orderStats ? orderStats.orders_total : "—"}</div>
+          <div className="vendor-stat-card">
+            <div className="vendor-stat-icon">📦</div>
+            <div className="vendor-stat-value">{orderStats ? orderStats.orders_total : "—"}</div>
+            <div className="vendor-stat-label">Commandes totales</div>
           </div>
-          <div className="stat-card">
-            <div className="label">En attente de préparation</div>
-            <div className="value" style={{ color: orderStats?.orders_awaiting > 0 ? "var(--gold-600)" : "inherit" }}>
+          <div className="vendor-stat-card">
+            <div className="vendor-stat-icon">⏳</div>
+            <div className="vendor-stat-value" style={{ color: orderStats?.orders_awaiting > 0 ? "var(--gold-600)" : "inherit" }}>
               {orderStats ? orderStats.orders_awaiting : "—"}
             </div>
+            <div className="vendor-stat-label">À préparer</div>
           </div>
         </div>
 
-        <div className="panel">
-          <h2>Ventes récentes</h2>
-          {loading ? (
-            <p style={{ color: "var(--ink-400)" }}>Chargement...</p>
-          ) : orders.length === 0 ? (
-            <p style={{ color: "var(--ink-400)" }}>Aucune commande pour l'instant.</p>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>N°</th>
-                  <th>Client</th>
-                  <th>Boutiques</th>
-                  <th>Montant</th>
-                  <th>Statut</th>
-                  <th>Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((o) => (
-                  <tr key={o.id}>
-                    <td>#{o.id}</td>
-                    <td>
-                      <div>{o.buyer_name}</div>
-                      <div className="sku">{o.buyer_email}</div>
-                    </td>
-                    <td>{o.shop_count}</td>
-                    <td>{Number(o.total_amount).toLocaleString("fr-FR")} FCFA</td>
-                    <td>
-                      <span className="badge badge-ok">{o.status}</span>
-                    </td>
-                    <td>{new Date(o.created_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+        {/* Liens rapides avec badges */}
+        <div className="vendor-quick-links">
+          <Link href="/admin/shops" className="vendor-quick-link">
+            🏪 <strong>Boutiques</strong>
+            <span>{pendingShopsCount > 0 ? `${pendingShopsCount} en attente de vérification` : "Gestion et vérification"}</span>
+          </Link>
+          <Link href="/admin/moderation" className="vendor-quick-link">
+            🛡️ <strong>Modération</strong>
+            <span>{pendingModerationCount > 0 ? `${pendingModerationCount} demande(s) en attente` : "Avis clients et sponsoring"}</span>
+          </Link>
+          <Link href="/admin/products" className="vendor-quick-link">
+            📦 <strong>Produits</strong>
+            <span>Stock détaillé par boutique</span>
+          </Link>
+          <Link href="/admin/analytics" className="vendor-quick-link">
+            📈 <strong>Analytics</strong>
+            <span>Statistiques détaillées</span>
+          </Link>
         </div>
 
-        <div className="quick-links-row" style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
-          <Link href="/admin/shops" className="panel" style={{ flex: 1, minWidth: 180, textDecoration: "none", color: "inherit" }}>
-            🏪 <strong>Boutiques</strong>
-            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--ink-400)" }}>
-              {pendingShopsCount > 0 ? `${pendingShopsCount} en attente de vérification` : "Gestion et vérification"}
-            </p>
-          </Link>
-          <Link href="/admin/moderation" className="panel" style={{ flex: 1, minWidth: 180, textDecoration: "none", color: "inherit" }}>
-            🛡️ <strong>Modération</strong>
-            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--ink-400)" }}>
-              {pendingModerationCount > 0 ? `${pendingModerationCount} demande(s) de sponsoring en attente` : "Avis clients et sponsoring"}
-            </p>
-          </Link>
-          <Link href="/admin/products" className="panel" style={{ flex: 1, minWidth: 180, textDecoration: "none", color: "inherit" }}>
-            📦 <strong>Produits</strong>
-            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--ink-400)" }}>Stock détaillé par boutique</p>
-          </Link>
+        {/* Onglets de filtrage des commandes */}
+        <div className="vendor-filters">
+          <button className={`vendor-filter-btn ${orderFilter === "all" ? "active" : ""}`} onClick={() => setOrderFilter("all")}>
+            Toutes ({orders.length})
+          </button>
+          <button className={`vendor-filter-btn ${orderFilter === "pending" ? "active" : ""}`} onClick={() => setOrderFilter("pending")}>
+            En attente ({countBy("pending")})
+          </button>
+          <button className={`vendor-filter-btn ${orderFilter === "shipped" ? "active" : ""}`} onClick={() => setOrderFilter("shipped")}>
+            Expédiées ({countBy("shipped")})
+          </button>
+          <button className={`vendor-filter-btn ${orderFilter === "delivered" ? "active" : ""}`} onClick={() => setOrderFilter("delivered")}>
+            Livrées ({countBy("delivered")})
+          </button>
+          <button className={`vendor-filter-btn ${orderFilter === "cancelled" ? "active" : ""}`} onClick={() => setOrderFilter("cancelled")}>
+            Annulées ({countBy("cancelled")})
+          </button>
+        </div>
+
+        {/* Ventes récentes en cartes */}
+        <div className="vendor-products-section">
+          <h2>Ventes récentes ({filteredOrders.length})</h2>
+
+          {loading ? (
+            <p>Chargement...</p>
+          ) : filteredOrders.length === 0 ? (
+            <div className="empty-state">
+              <div className="glyph">🛒</div>
+              <p>Aucune commande {orderFilter !== "all" ? "pour ce filtre" : "pour l'instant"}.</p>
+            </div>
+          ) : (
+            filteredOrders.map((o) => {
+              const st = ORDER_STATUS[o.status] || { label: o.status, cls: "status-pending" };
+              return (
+                <div className="order-card" key={o.id}>
+                  <div className="order-head">
+                    <div>
+                      <strong className="order-number">Commande #{o.id}</strong>
+                      <span className="order-date">
+                        {new Date(o.created_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                      </span>
+                    </div>
+                    <span className="order-total">{Number(o.total_amount).toLocaleString("fr-FR")} FCFA</span>
+                  </div>
+                  <div className="order-meta">
+                    👤 {o.buyer_name} · {o.buyer_email} · 🏪 {o.shop_count} boutique{o.shop_count > 1 ? "s" : ""}
+                  </div>
+                  <span className={`status-pill ${st.cls}`}>{st.label}</span>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
       <AdminBottomNav pendingShopsCount={pendingShopsCount} pendingModerationCount={pendingModerationCount} />
