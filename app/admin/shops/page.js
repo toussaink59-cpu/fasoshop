@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import AdminBottomNav from "@/app/components/AdminBottomNav";
+import KimoxaLogo from "@/app/components/KimoxaLogo";
 
 const DOC_LABELS = { cni: "CNI", passeport: "Passeport", permis: "Permis" };
 const STATUS_LABELS = { active: "Active", pending: "En attente", suspended: "Suspendue", rejected: "Rejetée" };
@@ -86,39 +88,44 @@ export default function AdminShopsPage() {
 
   return (
     <div className="shell">
+      {/* ===== TOPBAR TEMU ===== */}
       <div className="topbar">
         <div className="brand">
-          🛒 Kimoxa <span className="role-tag">Admin</span>
+          <KimoxaLogo light size={20} /> <span className="role-tag">Admin</span>
         </div>
         <div className="topbar-actions">
-          <button onClick={handleLogout}>Déconnexion</button>
+          <Link href="/admin/dashboard" className="topbar-textlink">Tableau de bord</Link>
+          <button className="topbar-logout" onClick={handleLogout}>Déconnexion</button>
         </div>
       </div>
       <div className="woven-strip" />
 
-      <div className="content">
-        <div className="page-header">
+      <div className="vendor-dashboard-wrap">
+        <div className="vendor-dashboard-header">
           <h1>Boutiques</h1>
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
 
         {error && <div className="error-box">{error}</div>}
 
-        <div className="stat-row">
-          <div className="stat-card">
-            <div className="label">Boutiques</div>
-            <div className="value">{shops.length}</div>
+        {/* Cartes stats (même style que le dashboard) */}
+        <div className="vendor-stats-grid">
+          <div className="vendor-stat-card">
+            <div className="vendor-stat-icon">🏪</div>
+            <div className="vendor-stat-value">{shops.length}</div>
+            <div className="vendor-stat-label">Boutiques</div>
           </div>
-          <div className="stat-card">
-            <div className="label">En attente de vérification</div>
-            <div className="value" style={{ color: pendingShopsCount > 0 ? "var(--gold-600)" : "inherit" }}>
+          <div className="vendor-stat-card">
+            <div className="vendor-stat-icon">⏳</div>
+            <div className="vendor-stat-value" style={{ color: pendingShopsCount > 0 ? "var(--gold-600)" : "inherit" }}>
               {pendingShopsCount}
             </div>
+            <div className="vendor-stat-label">En attente de vérification</div>
           </div>
         </div>
 
-        <div className="panel">
-          <h2>Boutiques</h2>
+        <div className="ana-panel">
+          <h2>Vérification des boutiques</h2>
           <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
             Vérifiez le type et le numéro de pièce d'identité renseignés avant de valider une boutique.
           </p>
