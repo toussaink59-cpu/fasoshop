@@ -4891,3 +4891,23 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 .temu-footer-brand .site-footer-tagline {
   margin: 4px 0 0; font-size: 0.8rem; opacity: 0.85; max-width: 460px;
 }
+/* Logos de paiement façon Temu (pastilles blanches + couleur de marque) */
+.temu-footer-payment-badges .pay-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #fff;
+  color: #241712;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+.temu-footer-payment-badges .pay-logo i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+  flex-shrink: 0;
+}
