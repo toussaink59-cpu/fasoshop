@@ -69,7 +69,7 @@ export default function AdminDashboard() {
     <div className="shell">
       <div className="topbar">
         <div className="brand">
-          🛒 FasoShop <span className="role-tag">Admin</span>
+          🛒 Kimoxa <span className="role-tag">Admin</span>
         </div>
         <div className="topbar-actions">
           <Link href="/admin/analytics"><button>Analytics</button></Link>
