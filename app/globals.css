@@ -4960,3 +4960,29 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 /* Statuts admin manquants */
 .status-pending { background: #fef3c7; color: #92400e; }
 .status-paid { background: #e0e7ff; color: #3730a3; }
+/* ===== ANALYTICS STYLE TEMU ===== */
+.vendor-filter-select {
+  padding: 8px 12px; border: 1px solid var(--border); border-radius: 999px;
+  background: #fff; font-size: 0.82rem; font-weight: 600; cursor: pointer;
+}
+.ana-chart-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+.ana-chart-card h2 { margin: 0 0 12px; font-size: 1.1rem; }
+.ana-two-col { display: grid; grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
+@media (min-width: 768px) { .ana-two-col { grid-template-columns: 1fr 1fr; } }
+.ana-panel { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+.ana-panel h2 { margin: 0 0 12px; font-size: 1.05rem; }
+
+/* Classement top produits */
+.ana-rank-list { display: flex; flex-direction: column; gap: 10px; }
+.ana-rank-item { display: flex; align-items: center; gap: 10px; }
+.ana-rank-num {
+  width: 26px; height: 26px; border-radius: 8px;
+  background: var(--sand-100); color: var(--ink-600);
+  font-size: 0.78rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.ana-rank-top { background: var(--gold-600, #d97706); color: #fff; }
+.ana-rank-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ana-rank-text strong { font-size: 0.88rem; }
+.ana-rank-text span { font-size: 0.72rem; color: var(--ink-400); }
+.ana-rank-value { font-size: 0.82rem; font-weight: 700; white-space: nowrap; }
