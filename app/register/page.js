@@ -3,6 +3,7 @@
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import KimoxaLogo from "@/app/components/KimoxaLogo";
 
 function RegisterForm() {
   const router = useRouter();
@@ -31,8 +32,6 @@ function RegisterForm() {
     }
   }, [searchParams]);
 
-  // Catégories pour le sélecteur "Catégorie principale" — chargées une
-  // seule fois, uniquement utiles si l'utilisateur choisit "Vendeur".
   useEffect(() => {
     fetch("/api/categories")
       .then((r) => r.json())
@@ -89,8 +88,8 @@ function RegisterForm() {
   return (
     <div className="shell">
       <div className="content" style={{ maxWidth: 480, margin: "0 auto" }}>
-        <div className="page-header">
-          <h1>🛒 FasoShop</h1>
+        <div className="page-header" style={{ textAlign: "center" }}>
+          <h1><KimoxaLogo size={48} withTagline /></h1>
           <p>Créer un compte</p>
         </div>
 
