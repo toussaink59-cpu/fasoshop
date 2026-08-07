@@ -25,6 +25,8 @@ export default function VendorDashboard() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [sponsorRequests, setSponsorRequests] = useState({});
   const [sponsorBusy, setSponsorBusy] = useState(null);
+  const [activeFilter, setActiveFilter] = useState("all");
+  const [expandedProduct, setExpandedProduct] = useState(null);
 
   useEffect(() => {
     function loadUnread() {
@@ -37,7 +39,6 @@ export default function VendorDashboard() {
     return () => clearInterval(timer);
   }, []);
 
-  // Resoumission de la pièce d'identité après un rejet
   const [resubmitDocType, setResubmitDocType] = useState("cni");
   const [resubmitDocNumber, setResubmitDocNumber] = useState("");
   const [resubmitError, setResubmitError] = useState("");
@@ -118,7 +119,7 @@ export default function VendorDashboard() {
   }, [loadStock, loadNewOrdersCount, router]);
 
   function handleFileSelect(e) {
-    const files = Array.from(e.target.files).slice(0, 5); // 5 photos max, comme Jumia
+    const files = Array.from(e.target.files).slice(0, 5);
     setSelectedFiles(files);
     setPreviewUrls(files.map((f) => URL.createObjectURL(f)));
   }
@@ -367,6 +368,14 @@ export default function VendorDashboard() {
   const lowStockProducts = products.filter((p) => p.stock_quantity <= p.low_stock_threshold);
   const lowStockCount = lowStockProducts.length;
   const isActive = shop?.status === "active";
+  const outOfStockCount = products.filter((p) => p.stock_quantity === 0).length;
+
+  // Filtrage des produits
+  const filteredProducts = products.filter((p) => {
+    if (activeFilter === "low") return p.stock_quantity <= p.low_stock_threshold && p.stock_quantity > 0;
+    if (activeFilter === "out") return p.stock_quantity === 0;
+    return true;
+  });
 
   return (
     <div className="shell">
@@ -404,22 +413,20 @@ export default function VendorDashboard() {
       </div>
       <div className="woven-strip" />
 
-      <div className="content">
-        <div className="page-header">
-          <h1>Mon stock</h1>
-          <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
+      <div className="vendor-dashboard-wrap">
+        <div className="vendor-dashboard-header">
+          <h1>Tableau de bord</h1>
+          <p>{user ? `Bienvenue, ${user.full_name}` : ""}</p>
         </div>
 
         {shop && shop.status === "pending" && !shop.id_document_type && (
-          <div className="panel" style={{ borderLeft: "4px solid var(--gold-600)" }}>
+          <div className="vendor-alert vendor-alert-warning">
             <strong>🪪 Vérifiez votre identité pour activer votre boutique</strong>
-            <p style={{ fontSize: "0.9rem", color: "var(--ink-400)", marginTop: 6, marginBottom: 16 }}>
+            <p>
               Votre compte vendeur est créé ! Il ne manque plus qu'une vérification d'identité pour
-              commencer à vendre. Renseignez le type et le numéro de votre pièce — pas besoin de photo.
+              commencer à vendre.
             </p>
-
             {resubmitError && <div className="error-box">{resubmitError}</div>}
-
             <form onSubmit={handleResubmitDocuments}>
               <div className="form-row">
                 <div>
@@ -453,9 +460,9 @@ export default function VendorDashboard() {
         )}
 
         {shop && shop.status === "pending" && shop.id_document_type && (
-          <div className="panel" style={{ borderLeft: "4px solid var(--gold-600)" }}>
+          <div className="vendor-alert vendor-alert-info">
             <strong>⏳ Boutique en attente de vérification</strong>
-            <p style={{ fontSize: "0.9rem", color: "var(--ink-400)", marginTop: 6, marginBottom: 0 }}>
+            <p>
               Notre équipe vérifie les informations de votre pièce d'identité ({DOC_LABELS[shop.id_document_type] || shop.id_document_type} n° {shop.id_document_number}).
               Vous pourrez publier des produits dès que votre boutique sera validée.
             </p>
@@ -463,23 +470,17 @@ export default function VendorDashboard() {
         )}
 
         {shop && shop.status === "suspended" && (
-          <div className="error-box">
+          <div className="vendor-alert vendor-alert-error">
             <strong>🚫 Boutique suspendue.</strong> Contactez le support FasoShop pour plus d'informations.
           </div>
         )}
 
         {shop && shop.status === "rejected" && (
-          <div className="panel" style={{ borderLeft: "4px solid var(--bissap-600)" }}>
-            <strong style={{ color: "var(--bissap-600)" }}>❌ Demande de compte vendeur non validée</strong>
-            <p style={{ fontSize: "0.9rem", marginTop: 6 }}>
-              Motif : {shop.rejection_reason || "Non précisé."}
-            </p>
-            <p style={{ fontSize: "0.9rem", color: "var(--ink-400)" }}>
-              Corrigez les informations de votre pièce d'identité ci-dessous pour une nouvelle vérification.
-            </p>
-
+          <div className="vendor-alert vendor-alert-error">
+            <strong>❌ Demande de compte vendeur non validée</strong>
+            <p>Motif : {shop.rejection_reason || "Non précisé."}</p>
+            <p>Corrigez les informations de votre pièce d'identité ci-dessous pour une nouvelle vérification.</p>
             {resubmitError && <div className="error-box">{resubmitError}</div>}
-
             <form onSubmit={handleResubmitDocuments}>
               <div className="form-row">
                 <div>
@@ -512,8 +513,8 @@ export default function VendorDashboard() {
         )}
 
         {!loading && newOrdersCount > 0 && !newOrdersAlertDismissed && (
-          <div className="success-box" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12 }}>
-            <div>
+          <div className="vendor-alert vendor-alert-success">
+            <div style={{ flex: 1 }}>
               🛍️ <strong>{newOrdersCount} nouvelle{newOrdersCount > 1 ? "s" : ""} commande{newOrdersCount > 1 ? "s" : ""}</strong> en attente de préparation.{" "}
               <a href="/vendor/orders" style={{ fontWeight: 600 }}>Voir les commandes reçues →</a>
             </div>
@@ -523,74 +524,90 @@ export default function VendorDashboard() {
           </div>
         )}
 
-        {!loading && lowStockCount > 0 && !lowStockAlertDismissed && (
-          <div className="error-box" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-            <div>
-              <strong>⚠️ Stock faible sur {lowStockCount} produit{lowStockCount > 1 ? "s" : ""} :</strong>
-              <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-                {lowStockProducts.map((p) => (
-                  <li key={p.id}>{p.name} — {p.stock_quantity} restant{p.stock_quantity > 1 ? "s" : ""}</li>
-                ))}
-              </ul>
-            </div>
-            <button className="btn btn-ghost" onClick={() => setLowStockAlertDismissed(true)}>
-              Fermer
-            </button>
-          </div>
-        )}
-
         {error && <div className="error-box">{error}</div>}
         {success && <div className="success-box">{success}</div>}
 
-        <div className="quick-links-row" style={{ display: "flex", gap: 12, marginBottom: 20, flexWrap: "wrap" }}>
-          <Link href="/vendor/revenue" className="panel" style={{ flex: 1, minWidth: 200, textDecoration: "none", color: "inherit" }}>
-            💰 <strong>Revenus</strong>
-            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--ink-400)" }}>Ventes, commission, solde à recevoir</p>
-          </Link>
-          <Link href="/vendor/account" className="panel" style={{ flex: 1, minWidth: 200, textDecoration: "none", color: "inherit" }}>
-            🏪 <strong>Mon compte</strong>
-            <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--ink-400)" }}>Mobile Money, ville de la boutique</p>
-          </Link>
-        </div>
-
-        <div className="stat-row" id="produits">
-          <div className="stat-card">
-            <div className="label">Produits</div>
-            <div className="value">{products.length}</div>
+        {/* 4 cartes stats */}
+        <div className="vendor-stats-grid">
+          <div className="vendor-stat-card">
+            <div className="vendor-stat-icon">📦</div>
+            <div className="vendor-stat-value">{products.length}</div>
+            <div className="vendor-stat-label">Produits</div>
           </div>
-          <div className="stat-card">
-            <div className="label">Unités en stock</div>
-            <div className="value">{totalStock}</div>
+          <div className="vendor-stat-card">
+            <div className="vendor-stat-icon">📊</div>
+            <div className="vendor-stat-value">{totalStock}</div>
+            <div className="vendor-stat-label">Unités en stock</div>
           </div>
-          <div className="stat-card">
-            <div className="label">Stock faible</div>
-            <div className="value" style={{ color: lowStockCount > 0 ? "var(--bissap-600)" : "inherit" }}>
+          <div className="vendor-stat-card">
+            <div className="vendor-stat-icon">⚠️</div>
+            <div className="vendor-stat-value" style={{ color: lowStockCount > 0 ? "var(--bissap-600)" : "inherit" }}>
               {lowStockCount}
             </div>
+            <div className="vendor-stat-label">Stock faible</div>
+          </div>
+          <div className="vendor-stat-card">
+            <div className="vendor-stat-icon">❌</div>
+            <div className="vendor-stat-value">{outOfStockCount}</div>
+            <div className="vendor-stat-label">Rupture</div>
           </div>
         </div>
 
-        <div className="panel">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <h2 style={{ marginBottom: 0 }}>Produits</h2>
-            <button
-              className="btn btn-primary"
-              onClick={() => setShowForm((s) => !s)}
-              disabled={!isActive}
-              title={!isActive ? "Boutique non encore validée" : undefined}
-            >
-              {showForm ? "Annuler" : "+ Ajouter un produit"}
-            </button>
-          </div>
+        {/* Liens rapides */}
+        <div className="vendor-quick-links">
+          <Link href="/vendor/revenue" className="vendor-quick-link">
+            💰 <strong>Revenus</strong>
+            <span>Ventes, commission, solde</span>
+          </Link>
+          <Link href="/vendor/account" className="vendor-quick-link">
+            🏪 <strong>Mon compte</strong>
+            <span>Mobile Money, ville</span>
+          </Link>
+        </div>
 
-          {!isActive && (
-            <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: 10 }}>
-              Vous pourrez ajouter des produits dès que votre boutique sera validée par notre équipe.
-            </p>
-          )}
+        {/* Onglets de filtrage */}
+        <div className="vendor-filters">
+          <button
+            className={`vendor-filter-btn ${activeFilter === "all" ? "active" : ""}`}
+            onClick={() => setActiveFilter("all")}
+          >
+            Tous ({products.length})
+          </button>
+          <button
+            className={`vendor-filter-btn ${activeFilter === "low" ? "active" : ""}`}
+            onClick={() => setActiveFilter("low")}
+          >
+            Stock faible ({lowStockCount})
+          </button>
+          <button
+            className={`vendor-filter-btn ${activeFilter === "out" ? "active" : ""}`}
+            onClick={() => setActiveFilter("out")}
+          >
+            Rupture ({outOfStockCount})
+          </button>
+        </div>
 
-          {showForm && isActive && (
-            <form onSubmit={handleCreateProduct} style={{ marginTop: 18 }}>
+        {/* Bouton ajouter produit */}
+        <div className="vendor-actions-bar">
+          <button
+            className="btn btn-primary vendor-add-btn"
+            onClick={() => setShowForm((s) => !s)}
+            disabled={!isActive}
+          >
+            {showForm ? "✕ Annuler" : "+ Ajouter un produit"}
+          </button>
+        </div>
+
+        {!isActive && (
+          <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginBottom: 16 }}>
+            Vous pourrez ajouter des produits dès que votre boutique sera validée par notre équipe.
+          </p>
+        )}
+
+        {showForm && isActive && (
+          <div className="vendor-form-card">
+            <h2>Nouveau produit</h2>
+            <form onSubmit={handleCreateProduct}>
               <div className="form-row">
                 <div>
                   <label htmlFor="p-name">Nom du produit</label>
@@ -612,7 +629,7 @@ export default function VendorDashboard() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="p-brand">Marque (optionnel)</label>
+                  <label htmlFor="p-brand">Marque</label>
                   <input
                     id="p-brand"
                     value={newProduct.brand}
@@ -635,14 +652,14 @@ export default function VendorDashboard() {
                   />
                 </div>
                 <div>
-                  <label htmlFor="p-compare-price">Prix barré (FCFA) — optionnel</label>
+                  <label htmlFor="p-compare-price">Prix barré (FCFA)</label>
                   <input
                     id="p-compare-price"
                     type="number"
                     min="0"
                     value={newProduct.compareAtPrice}
                     onChange={(e) => setNewProduct({ ...newProduct, compareAtPrice: e.target.value })}
-                    placeholder="Ex : 20000 (avant réduction)"
+                    placeholder="Ex : 20000"
                   />
                 </div>
                 <div>
@@ -668,7 +685,7 @@ export default function VendorDashboard() {
                       setNewProduct({ ...newProduct, categoryId: "" });
                     }}
                   >
-                    <option value="">— Choisir une catégorie —</option>
+                    <option value="">— Choisir —</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>
                     ))}
@@ -682,14 +699,14 @@ export default function VendorDashboard() {
                     onChange={(e) => setNewProduct({ ...newProduct, categoryId: e.target.value })}
                     disabled={!selectedParentCat}
                   >
-                    <option value="">— Choisir une sous-catégorie —</option>
+                    <option value="">— Choisir —</option>
                     {subcategoriesForSelectedParent.map((sc) => (
                       <option key={sc.id} value={sc.id}>{sc.name}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="p-condition">État du produit</label>
+                  <label htmlFor="p-condition">État</label>
                   <select
                     id="p-condition"
                     value={newProduct.condition}
@@ -704,7 +721,7 @@ export default function VendorDashboard() {
 
               <div className="form-row">
                 <div>
-                  <label htmlFor="p-images">Photos du produit (jusqu'à 5)</label>
+                  <label htmlFor="p-images">Photos (jusqu'à 5)</label>
                   <input
                     id="p-images"
                     type="file"
@@ -729,7 +746,7 @@ export default function VendorDashboard() {
 
               <div className="form-row">
                 <div>
-                  <label htmlFor="p-image-url">Ou coller une URL d'image (si déjà hébergée ailleurs)</label>
+                  <label htmlFor="p-image-url">Ou coller une URL d'image</label>
                   <div style={{ display: "flex", gap: 8 }}>
                     <input
                       id="p-image-url"
@@ -769,148 +786,154 @@ export default function VendorDashboard() {
                 {uploading ? "Envoi des photos..." : "Enregistrer le produit"}
               </button>
             </form>
-          )}
-        </div>
+          </div>
+        )}
 
-        <div className="panel">
+        {/* Liste des produits */}
+        <div className="vendor-products-section">
+          <h2>Mes produits ({filteredProducts.length})</h2>
+
           {loading ? (
             <p>Chargement...</p>
-          ) : products.length === 0 ? (
+          ) : filteredProducts.length === 0 ? (
             <div className="empty-state">
               <div className="glyph">📦</div>
-              <p>Aucun produit pour l'instant. Ajoutez votre premier produit ci-dessus.</p>
+              <p>Aucun produit {activeFilter !== "all" ? "pour ce filtre" : "pour l'instant"}. Ajoutez votre premier produit ci-dessus.</p>
             </div>
           ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Produit</th>
-                  <th>SKU</th>
-                  <th>État</th>
-                  <th>Prix</th>
-                  <th>Prix barré</th>
-                  <th>Vente Flash</th>
-                  <th>Stock</th>
-                  <th>Ajuster</th>
-                  <th>Sponsoring</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {products.map((p) => {
-                  const isLow = p.stock_quantity <= p.low_stock_threshold;
-                  const isFlashActive = p.flash_sale_ends_at && new Date(p.flash_sale_ends_at) > new Date();
-                  return (
-                    <tr key={p.id}>
-                      <td>{p.name}</td>
-                      <td className="sku">{p.sku || "—"}</td>
-                      <td>
-                        <span className="badge badge-ok">
-                          {p.condition === "occasion" ? "Occasion" : p.condition === "quasi_neuf" ? "Quasi neuf" : "Neuf"}
-                        </span>
-                      </td>
-                      <td>{Number(p.price).toLocaleString("fr-FR")} FCFA</td>
-                      <td>
-                        <div className="stock-adjust">
-                          <input
-                            type="number"
-                            min="0"
-                            placeholder="Aucun"
-                            value={
-                              discountInputs[p.id] !== undefined
-                                ? discountInputs[p.id]
-                                : p.compare_at_price || ""
-                            }
-                            onChange={(e) =>
-                              setDiscountInputs((d) => ({ ...d, [p.id]: e.target.value }))
-                            }
-                            style={{ width: 90 }}
-                          />
-                          <button
-                            className="btn btn-ghost"
-                            onClick={() => handleSaveCompareAtPrice(p.id)}
-                          >
-                            OK
-                          </button>
-                        </div>
-                      </td>
-                      <td>
-                        {isFlashActive ? (
-                          <div className="stock-adjust">
-                            <span className="badge badge-low">
-                              Jusqu'au {new Date(p.flash_sale_ends_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                            </span>
-                            <button className="btn btn-ghost" onClick={() => handleDeactivateFlashSale(p.id)}>
-                              Arrêter
-                            </button>
-                          </div>
+            <div className="vendor-products-grid">
+              {filteredProducts.map((p) => {
+                const isLow = p.stock_quantity <= p.low_stock_threshold;
+                const isFlashActive = p.flash_sale_ends_at && new Date(p.flash_sale_ends_at) > new Date();
+                const isExpanded = expandedProduct === p.id;
+
+                return (
+                  <div key={p.id} className="vendor-product-card">
+                    <div className="vendor-product-header" onClick={() => setExpandedProduct(isExpanded ? null : p.id)}>
+                      <div className="vendor-product-image">
+                        {p.images && p.images.length > 0 ? (
+                          <img src={p.images[0]} alt={p.name} />
                         ) : (
-                          <div className="stock-adjust">
-                            <input
-                              type="datetime-local"
-                              value={flashSaleInputs[p.id] || ""}
-                              onChange={(e) =>
-                                setFlashSaleInputs((f) => ({ ...f, [p.id]: e.target.value }))
-                              }
-                              style={{ width: 160 }}
-                            />
-                            <button className="btn btn-primary" onClick={() => handleActivateFlashSale(p.id)}>
-                              Activer
-                            </button>
-                          </div>
+                          <div className="vendor-product-placeholder">📦</div>
                         )}
-                      </td>
-                      <td>
-                        <span className={`badge ${isLow ? "badge-low" : "badge-ok"}`}>
-                          {p.stock_quantity} {isLow ? "· faible" : ""}
-                        </span>
-                      </td>
-                      <td>
-                        <div className="stock-adjust">
-                          <input
-                            type="number"
-                            min="0"
-                            placeholder="Qté"
-                            value={adjustments[p.id] || ""}
-                            onChange={(e) =>
-                              setAdjustments((a) => ({ ...a, [p.id]: e.target.value }))
-                            }
-                          />
-                          <button className="btn btn-primary" onClick={() => handleAdjust(p.id, "add")}>
-                            + Réappro
-                          </button>
-                          <button className="btn btn-ghost" onClick={() => handleAdjust(p.id, "remove")}>
-                            − Retirer
-                          </button>
+                      </div>
+                      <div className="vendor-product-info">
+                        <strong>{p.name}</strong>
+                        <div className="vendor-product-meta">
+                          <span className="vendor-product-price">{Number(p.price).toLocaleString("fr-FR")} FCFA</span>
+                          {p.compare_at_price && (
+                            <span className="vendor-product-old-price">{Number(p.compare_at_price).toLocaleString("fr-FR")} FCFA</span>
+                          )}
                         </div>
-                      </td>
-                      <td>
-                        {p.is_sponsored && p.sponsored_until && new Date(p.sponsored_until) > new Date() ? (
-                          <span className="badge badge-ok">
-                            Actif jusqu'au {new Date(p.sponsored_until).toLocaleDateString("fr-FR")}
+                        <div className="vendor-product-badges">
+                          <span className={`vendor-badge ${isLow ? "vendor-badge-warning" : "vendor-badge-ok"}`}>
+                            {p.stock_quantity} en stock
                           </span>
-                        ) : sponsorRequests[p.id] === "pending" ? (
-                          <span className="badge badge-low">Demande envoyée</span>
-                        ) : (
-                          <button
-                            className="btn btn-ghost"
-                            onClick={() => handleRequestSponsor(p.id)}
-                            disabled={sponsorBusy === p.id}
-                          >
-                            {sponsorBusy === p.id ? "..." : "🚀 Sponsoriser"}
+                          {isFlashActive && <span className="vendor-badge vendor-badge-flash">⚡ Flash</span>}
+                          {p.is_sponsored && <span className="vendor-badge vendor-badge-sponsored">🚀 Sponsorisé</span>}
+                        </div>
+                      </div>
+                      <div className="vendor-product-expand">{isExpanded ? "▲" : "▼"}</div>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="vendor-product-actions">
+                        <div className="vendor-action-group">
+                          <label>Ajuster le stock</label>
+                          <div className="vendor-action-row">
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="Qté"
+                              value={adjustments[p.id] || ""}
+                              onChange={(e) => setAdjustments((a) => ({ ...a, [p.id]: e.target.value }))}
+                            />
+                            <button className="btn btn-primary" onClick={() => handleAdjust(p.id, "add")}>
+                              + Réappro
+                            </button>
+                            <button className="btn btn-ghost" onClick={() => handleAdjust(p.id, "remove")}>
+                              − Retirer
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="vendor-action-group">
+                          <label>Prix barré (FCFA)</label>
+                          <div className="vendor-action-row">
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="Aucun"
+                              value={discountInputs[p.id] !== undefined ? discountInputs[p.id] : p.compare_at_price || ""}
+                              onChange={(e) => setDiscountInputs((d) => ({ ...d, [p.id]: e.target.value }))}
+                            />
+                            <button className="btn btn-primary" onClick={() => handleSaveCompareAtPrice(p.id)}>
+                              Enregistrer
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="vendor-action-group">
+                          <label>Vente flash</label>
+                          {isFlashActive ? (
+                            <div className="vendor-action-row">
+                              <span className="vendor-flash-active">
+                                Jusqu'au {new Date(p.flash_sale_ends_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                              <button className="btn btn-ghost" onClick={() => handleDeactivateFlashSale(p.id)}>
+                                Arrêter
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="vendor-action-row">
+                              <input
+                                type="datetime-local"
+                                value={flashSaleInputs[p.id] || ""}
+                                onChange={(e) => setFlashSaleInputs((f) => ({ ...f, [p.id]: e.target.value }))}
+                              />
+                              <button className="btn btn-primary" onClick={() => handleActivateFlashSale(p.id)}>
+                                Activer
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="vendor-action-group">
+                          <label>Sponsoring</label>
+                          {p.is_sponsored && p.sponsored_until && new Date(p.sponsored_until) > new Date() ? (
+                            <div className="vendor-action-row">
+                              <span className="vendor-sponsored-active">
+                                Actif jusqu'au {new Date(p.sponsored_until).toLocaleDateString("fr-FR")}
+                              </span>
+                            </div>
+                          ) : sponsorRequests[p.id] === "pending" ? (
+                            <div className="vendor-action-row">
+                              <span className="vendor-sponsored-pending">Demande envoyée</span>
+                            </div>
+                          ) : (
+                            <div className="vendor-action-row">
+                              <button
+                                className="btn btn-ghost"
+                                onClick={() => handleRequestSponsor(p.id)}
+                                disabled={sponsorBusy === p.id}
+                              >
+                                {sponsorBusy === p.id ? "..." : "🚀 Demander le sponsoring"}
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="vendor-action-group">
+                          <button className="btn btn-danger" onClick={() => handleDeleteProduct(p.id, p.name)}>
+                            🗑️ Supprimer le produit
                           </button>
-                        )}
-                      </td>
-                      <td>
-                        <button className="btn btn-danger" onClick={() => handleDeleteProduct(p.id, p.name)}>
-                          Supprimer
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>
