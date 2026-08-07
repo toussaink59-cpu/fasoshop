@@ -4595,66 +4595,6 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   .cart-item-card { grid-template-columns: 100px 1fr auto; }
   .cart-item-image { width: 100px; height: 100px; }
 }
-/* ===== CARTES PRODUITS PRO ===== */
-.product-card.shop-card {
-  display: flex; flex-direction: column; background: #fff;
-  border: 1px solid var(--border, #e7e0d8); border-radius: 12px;
-  overflow: hidden; position: relative; transition: transform .15s, box-shadow .15s;
-}
-.product-card.shop-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(36,23,18,.1); }
-
-/* Bouton favori */
-.shop-card-fav {
-  position: absolute; top: 8px; right: 8px; z-index: 3;
-  width: 32px; height: 32px; border-radius: 50%;
-  background: rgba(255,255,255,.95); border: none;
-  font-size: 1.1rem; cursor: pointer; color: var(--ink-400);
-  display: flex; align-items: center; justify-content: center;
-  transition: color .2s, transform .2s;
-}
-.shop-card-fav:hover { color: var(--bissap-600); transform: scale(1.1); }
-.shop-card-fav-active { color: var(--bissap-600); }
-
-/* Image */
-.shop-card-image-wrap { position: relative; width: 100%; aspect-ratio: 1/1; overflow: hidden; background: var(--sand-100); }
-.shop-card-image { width: 100%; height: 100%; object-fit: cover; }
-.shop-card-image-placeholder { display: flex; align-items: center; justify-content: center; font-size: 3rem; color: var(--ink-300); }
-
-/* Badges */
-.badge-discount {
-  position: absolute; top: 8px; left: 8px; z-index: 2;
-  background: #e11d48; color: white; padding: 4px 10px;
-  border-radius: 6px; font-size: .72rem; font-weight: 800;
-}
-.shop-card-badge-sponsored, .shop-card-badge-new {
-  position: absolute; bottom: 8px; left: 8px; z-index: 2;
-  padding: 4px 10px; border-radius: 6px; font-size: .68rem; font-weight: 700;
-}
-.shop-card-badge-sponsored { background: var(--gold-600); color: white; }
-.shop-card-badge-new { background: var(--millet-600); color: white; }
-
-/* Infos produit */
-.shop-card-info { padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; flex: 1; }
-.shop-card-name { font-size: .88rem; font-weight: 600; line-height: 1.3; color: var(--ink-900); margin: 0 0 4px; }
-.shop-card-condition { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: .68rem; font-weight: 700; color: white; width: fit-content; }
-.shop-card-shop-row { display: flex; align-items: center; gap: 4px; font-size: .75rem; color: var(--ink-500); }
-.shop-card-verified { color: var(--millet-600); font-weight: 700; }
-.shop-card-rating { display: flex; align-items: center; gap: 4px; font-size: .78rem; }
-.stars { color: var(--gold-500); }
-.shop-card-rating-count { font-size: .72rem; color: var(--ink-400); }
-
-/* Bouton ajouter */
-.shop-card-add-btn { margin: 0 12px 12px; padding: 8px; font-size: .82rem; }
-
-/* Mode compact (sections horizontales accueil) */
-.shop-card-compact .shop-card-info { padding: 8px 10px; }
-.shop-card-compact .shop-card-name { font-size: .82rem; }
-.shop-card-compact .shop-card-add-btn { margin: 0 10px 10px; padding: 6px; font-size: .78rem; }
-
-@media (max-width: 767px) {
-  .shop-card-name { font-size: .82rem; }
-  .shop-card-shop-row { font-size: .72rem; }
-}
 
 /* ============================================
    Inscription vendeur â€” case de comprÃ©hension vÃ©rification identitÃ©
