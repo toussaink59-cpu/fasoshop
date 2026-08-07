@@ -14,6 +14,7 @@ const SORT_OPTIONS = [
   { value: "price_desc", label: "Prix décroissant" },
   { value: "rating", label: "Mieux notés" },
 ];
+const ITEMS_PER_PAGE = 20;
 
 function FilterSidebar({
   categories,
@@ -196,9 +197,6 @@ function ShopContent({
   const minPrice = searchParams.get("minPrice") || "";
   const maxPrice = searchParams.get("maxPrice") || "";
 
-  // Données résolues côté serveur (SSR) pour le premier rendu : catalogue déjà
-  // rempli, aucun "Chargement..." initial, contenu indexable par les moteurs
-  // de recherche. Les filtres/tri restent gérés côté client comme avant.
   const [products, setProducts] = useState(initialProducts);
   const [shops] = useState(initialShops);
   const [categories] = useState(initialCategories);
@@ -207,15 +205,14 @@ function ShopContent({
   const [loading, setLoading] = useState(false);
   const [user, setUser] = useState(initialUser);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const lastLoadedRef = useRef(null);
 
   const [searchInput, setSearchInput] = useState(q);
   const [minPriceInput, setMinPriceInput] = useState(minPrice);
   const [maxPriceInput, setMaxPriceInput] = useState(maxPrice);
 
-  // Le premier rendu correspond déjà aux searchParams résolus côté serveur
-  // (voir app/shop/page.js) : on saute le premier passage de cet effet pour
-  // éviter un refetch redondant, et on ne re-fetch qu'au vrai changement de
-  // filtre/tri fait par l'utilisateur.
   const isFirstRun = useRef(true);
   useEffect(() => {
     if (isFirstRun.current) {
@@ -224,6 +221,7 @@ function ShopContent({
     }
 
     setLoading(true);
+    setVisibleCount(ITEMS_PER_PAGE); // Reset pagination quand les filtres changent
     const params = new URLSearchParams();
     if (categorySlug) params.set("category", categorySlug);
     if (q) params.set("q", q);
@@ -259,6 +257,24 @@ function ShopContent({
     updateParams({ q: searchInput });
   }
 
+  function handleLoadMore() {
+    setLoadingMore(true);
+    // Simule un petit délai pour l'UX
+    setTimeout(() => {
+      const newCount = Math.min(visibleCount + ITEMS_PER_PAGE, products.length);
+      setVisibleCount(newCount);
+      setLoadingMore(false);
+      // Scroll vers les nouveaux produits
+      if (lastLoadedRef.current) {
+        lastLoadedRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+    }, 400);
+  }
+
+  const visibleProducts = products.slice(0, visibleCount);
+  const hasMore = visibleCount < products.length;
+  const remaining = products.length - visibleCount;
+
   const sidebarProps = {
     categories,
     shops,
@@ -289,7 +305,6 @@ function ShopContent({
     <div className="shell">
       <SiteHeader initialUser={user} categories={categories} searchValue={q} />
 
-      {/* Catégories en défilement horizontal — filtre rapide propre au catalogue */}
       <div className="shop-mobile-cats">
         <button
           className={`category-pill ${!categorySlug ? "active-pill" : ""}`}
@@ -354,16 +369,53 @@ function ShopContent({
               <p>Aucun produit ne correspond à votre recherche.</p>
             </div>
           ) : (
-            <div className="shop-grid">
-              {products.map((p) => (
-                <ProductCard key={p.id} p={p} user={user} />
-              ))}
-            </div>
+            <>
+              <div className="shop-grid">
+                {visibleProducts.map((p, idx) => (
+                  <div key={p.id} ref={idx === visibleCount - 1 ? lastLoadedRef : null}>
+                    <ProductCard p={p} user={user} />
+                  </div>
+                ))}
+              </div>
+
+              {/* Bouton "Voir plus" style Temu */}
+              {hasMore && (
+                <div className="load-more-wrap">
+                  <button
+                    className="btn btn-load-more"
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                  >
+                    {loadingMore ? (
+                      <>
+                        <span className="load-more-spinner">↓</span>
+                        Chargement...
+                      </>
+                    ) : (
+                      <>
+                        <span className="load-more-icon">↓</span>
+                        Afficher {Math.min(ITEMS_PER_PAGE, remaining)} produit{Math.min(ITEMS_PER_PAGE, remaining) > 1 ? "s" : ""} de plus
+                      </>
+                    )}
+                  </button>
+                  <p className="load-more-count">
+                    {remaining} produit{remaining > 1 ? "s" : ""} restant{remaining > 1 ? "s" : ""}
+                  </p>
+                </div>
+              )}
+
+              {!hasMore && products.length > ITEMS_PER_PAGE && (
+                <div className="load-more-wrap">
+                  <p className="load-more-done">
+                    ✓ Tous les {products.length} produits sont affichés
+                  </p>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
 
-      {/* Panneau de filtres coulissant — mobile uniquement */}
       {mobileFiltersOpen && (
         <div className="shop-filter-overlay" onClick={() => setMobileFiltersOpen(false)}>
           <div className="shop-filter-drawer" onClick={(e) => e.stopPropagation()}>
