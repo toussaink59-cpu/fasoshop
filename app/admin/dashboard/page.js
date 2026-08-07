@@ -48,8 +48,9 @@ export default function AdminDashboard() {
       const d = await shopsRes.json();
       setPendingShopsCount((d.shops || []).filter((s) => s.status === "pending").length);
     }
+    // BUG CORRIGÉ : on lit bien sponsorRes (et non shopsRes une 2e fois)
     if (sponsorRes.ok) {
-      const d = await shopsRes.json && await sponsorRes.json();
+      const d = await sponsorRes.json();
       setPendingModerationCount((d.requests || []).filter((s) => s.status === "pending").length);
     }
   }, []);
@@ -78,13 +79,14 @@ export default function AdminDashboard() {
 
   return (
     <div className="shell">
+      {/* ===== TOPBAR TEMU ===== */}
       <div className="topbar">
         <div className="brand">
-          <KimoxaLogo light size={22} /> <span className="role-tag">Admin</span>
+          <KimoxaLogo light size={20} /> <span className="role-tag">Admin</span>
         </div>
         <div className="topbar-actions">
-          <Link href="/admin/analytics"><button>Analytics</button></Link>
-          <button onClick={handleLogout}>Déconnexion</button>
+          <Link href="/admin/analytics" className="topbar-textlink">Analytics</Link>
+          <button className="topbar-logout" onClick={handleLogout}>Déconnexion</button>
         </div>
       </div>
       <div className="woven-strip" />
