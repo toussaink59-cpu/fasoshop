@@ -5189,3 +5189,36 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   right: 0;
   transform: translateX(30%);
 }
+/* ===== HEADER MOBILE : recherche large comme Temu ===== */
+@media (max-width: 767px) {
+  .site-header-row { gap: 6px; padding: 8px; }
+
+  /* Logo très compact pour libérer l'espace */
+  .site-header-logo { gap: 5px; flex-shrink: 0; }
+  .site-header-logo svg { width: 18px; height: 18px; }
+  .site-header-logo .kimoxa-wordmark { font-size: 0.82rem; letter-spacing: 0.06em; }
+
+  /* Recherche : prend TOUT l'espace restant */
+  .site-header-search-compact { flex: 1 1 auto; min-width: 0; }
+  .site-header-search-compact .search-bar-wrap { width: 100%; }
+  .site-header-search-compact .search-bar-standalone {
+    width: 100%;
+    box-sizing: border-box;
+    height: 36px;
+  }
+
+  /* Icônes resserrées pour laisser respirer la recherche */
+  .site-header-actions { gap: 0; }
+  .site-header-icon-btn { width: 32px; height: 32px; }
+}
+
+/* Écrans minuscules : juste le symbole K */
+@media (max-width: 359px) {
+  .site-header-logo .kimoxa-wordmark { display: none; }
+}
+
+/* Suggestions plus larges que la pilule (pas de texte coupé) */
+.site-header-search-compact .search-suggestions {
+  min-width: 240px;
+  left: 0;
+}
