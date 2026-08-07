@@ -6,9 +6,20 @@ import { getUserConversations } from "@/lib/queries/conversations";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
 
-export const metadata = {
-  title: "Messages",
-};
+export const metadata = { title: "Messages" };
+
+function initials(name) {
+  if (!name) return "?";
+  return name.split(" ").map(p => p[0]).slice(0, 2).join("").toUpperCase();
+}
+
+function timeAgo(date) {
+  const diff = (Date.now() - new Date(date).getTime()) / 1000;
+  if (diff < 60) return "maintenant";
+  if (diff < 3600) return `${Math.floor(diff / 60)} min`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)} h`;
+  return new Date(date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+}
 
 export default async function MessagesListPage() {
   const user = await getCurrentUser();
@@ -23,37 +34,38 @@ export default async function MessagesListPage() {
     <div className="shell">
       <SiteHeader initialUser={user} categories={categories} />
 
-      <div className="content" style={{ maxWidth: 720, margin: "0 auto" }}>
-        <div className="page-header">
+      <div className="chat-list-wrap">
+        <div className="chat-list-header">
+          <Link href="/" className="chat-back-btn" aria-label="Retour">←</Link>
           <h1>Messages</h1>
+          <span className="chat-list-count">{conversations.length}</span>
         </div>
 
         {conversations.length === 0 ? (
-          <div className="empty-state">
-            <div className="glyph">💬</div>
+          <div className="chat-empty">
+            <div className="chat-empty-icon">💬</div>
             <p>Aucune conversation pour l'instant.</p>
+            <p className="chat-empty-hint">Contactez un vendeur depuis la fiche d'un produit pour démarrer.</p>
           </div>
         ) : (
-          <div className="panel" style={{ padding: 0 }}>
-            {conversations.map((c, i) => (
-              <Link
-                href={`/messages/${c.id}`}
-                key={c.id}
-                className="conversation-row"
-                style={{ borderBottom: i < conversations.length - 1 ? "1px solid var(--border)" : "none" }}
-              >
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontWeight: 700 }}>{c.other_party_name}</span>
-                    <span style={{ fontSize: "0.75rem", color: "var(--ink-400)" }}>· Commande #{c.order_id}</span>
+          <div className="chat-list">
+            {conversations.map((c) => (
+              <Link href={`/messages/${c.id}`} key={c.id} className="chat-row">
+                <div className="chat-row-avatar">{initials(c.other_party_name)}</div>
+                <div className="chat-row-body">
+                  <div className="chat-row-top">
+                    <strong>{c.other_party_name}</strong>
+                    <span className="chat-row-time">{timeAgo(c.updated_at || c.created_at)}</span>
                   </div>
-                  <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "var(--ink-400)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {c.last_message || "Démarrer la conversation..."}
-                  </p>
+                  <div className="chat-row-bottom">
+                    <p className="chat-row-preview">
+                      {c.last_message || "Démarrer la conversation..."}
+                    </p>
+                    {c.unread_count > 0 && (
+                      <span className="chat-row-badge">{c.unread_count > 9 ? "9+" : c.unread_count}</span>
+                    )}
+                  </div>
                 </div>
-                {c.unread_count > 0 && (
-                  <span className="conversation-unread-badge">{c.unread_count}</span>
-                )}
               </Link>
             ))}
           </div>
