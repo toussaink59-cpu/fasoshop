@@ -2,8 +2,6 @@ import sql from "@/lib/db";
 import { getConversationAccess, getConversationThread } from "@/lib/queries/conversationThread";
 
 // GET /api/conversations/[id]/messages
-// Renvoie les messages d'une conversation et marque comme lus ceux envoyés
-// par l'autre partie.
 export async function GET(request, { params }) {
   const userId = request.headers.get("x-user-id");
   const { id } = await params;
@@ -17,15 +15,16 @@ export async function GET(request, { params }) {
 }
 
 // POST /api/conversations/[id]/messages
-// Envoie un nouveau message dans la conversation.
-// body: { body }
+// body: { body, imageUrl? } — texte et/ou photo
 export async function POST(request, { params }) {
   const userId = request.headers.get("x-user-id");
   const { id } = await params;
 
   try {
-    const { body } = await request.json();
-    if (!body || !body.trim()) {
+    const { body, imageUrl } = await request.json();
+    const cleanBody = (body || "").trim();
+
+    if (!cleanBody && !imageUrl) {
       return Response.json({ error: "Le message ne peut pas être vide." }, { status: 400 });
     }
 
@@ -34,10 +33,12 @@ export async function POST(request, { params }) {
       return Response.json({ error: "Accès non autorisé." }, { status: 403 });
     }
 
+    const finalBody = cleanBody || "📷 Photo";
+
     const [message] = await sql`
-      INSERT INTO messages (conversation_id, sender_id, sender_role, body)
-      VALUES (${id}, ${userId}, ${access.role}, ${body.trim()})
-      RETURNING id, sender_id, sender_role, body, created_at
+      INSERT INTO messages (conversation_id, sender_id, sender_role, body, image_url)
+      VALUES (${id}, ${userId}, ${access.role}, ${finalBody}, ${imageUrl || null})
+      RETURNING id, sender_id, sender_role, body, image_url, created_at
     `;
 
     await sql`UPDATE conversations SET last_message_at = NOW() WHERE id = ${id}`;
