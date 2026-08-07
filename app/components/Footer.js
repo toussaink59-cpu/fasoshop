@@ -5,7 +5,7 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="site-footer-inner">
 
-        {/* 1. Logo + promesse panafricaine */}
+        {/* 1. Logo + promesse */}
         <div className="temu-footer-brand">
           <div className="site-footer-brand">🛒 FasoShop</div>
           <p className="site-footer-tagline">
@@ -33,16 +33,16 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* 3. Paiements acceptés (logos façon Temu) */}
+        {/* 3. Vrais logos de paiement */}
         <div className="temu-footer-payments">
           <span className="temu-footer-payments-title">Paiements acceptés</span>
           <div className="temu-footer-payment-badges">
-            <span className="pay-logo"><i style={{ background: "#FF7900" }} />Orange Money</span>
-            <span className="pay-logo"><i style={{ background: "#0072BC" }} />Moov Money</span>
-            <span className="pay-logo"><i style={{ background: "#FFCC00" }} />MTN MoMo</span>
-            <span className="pay-logo"><i style={{ background: "#4CAF50" }} />M-Pesa</span>
-            <span className="pay-logo"><i style={{ background: "#00B8E6" }} />Wave</span>
-            <span className="pay-logo"><i style={{ background: "#2f7a3d" }} />💵 À la livraison</span>
+            <span className="pay-logo pay-om"><b>orange</b> money</span>
+            <span className="pay-logo pay-moov"><b>moov</b> money</span>
+            <span className="pay-logo pay-mtn"><b>MTN</b> MoMo</span>
+            <span className="pay-logo pay-mpesa"><b>M-PESA</b></span>
+            <span className="pay-logo pay-wave"><b>wave</b></span>
+            <span className="pay-logo pay-cod">💵 À la livraison</span>
           </div>
         </div>
 
@@ -71,7 +71,7 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* 5. Barre basse : pays + copyright */}
+        {/* 5. Barre basse */}
         <div className="temu-footer-bottombar">
           <span className="temu-footer-country">🇧🇫 Burkina Faso</span>
           <span>© {new Date().getFullYear()} FasoShop — Conçu pour toute l'Afrique 🌍</span>
