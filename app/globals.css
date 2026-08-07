@@ -5416,3 +5416,15 @@ select, input { max-width: 100%; box-sizing: border-box; }
   .chat-composer { bottom: 64px; }
   .chat-shell { padding-bottom: 0; }
 }
+/* ===== COMMANDES STYLE TEMU ===== */
+.order-items {
+  display: flex; flex-direction: column; gap: 6px;
+  margin: 10px 0; padding: 10px 12px;
+  background: var(--sand-50, #faf7f2); border-radius: 10px;
+}
+.order-item-row { display: flex; justify-content: space-between; gap: 10px; font-size: 0.85rem; }
+.order-item-name { flex: 1; min-width: 0; word-break: break-word; }
+.order-item-qty { font-weight: 700; color: var(--ink-400); flex-shrink: 0; }
+.order-payment { font-size: 0.78rem; color: var(--ink-400); margin-top: 6px; }
+.order-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.order-actions .btn { flex: 1; min-width: 140px; }
