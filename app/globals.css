@@ -5444,3 +5444,38 @@ select, input { max-width: 100%; box-sizing: border-box; }
 }
 .order-contact-btn { width: 100%; margin-top: 10px; }
 .order-number, .order-total { word-break: break-word; }
+/* ===== ANTI-DÉBORDEMENT COMMANDES ACHETEUR (mobile) ===== */
+@media (max-width: 767px) {
+  .orders-wrap { padding: 0 10px 90px; }
+
+  /* Cartes : jamais plus larges que l'écran */
+  .order-card { min-width: 0; max-width: 100%; box-sizing: border-box; }
+
+  /* En-tête de carte : le total passe dessous si besoin */
+  .order-head { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; }
+  .order-head > div { min-width: 0; flex: 1 1 auto; }
+  .order-total { flex-shrink: 0; font-size: 0.95rem; }
+
+  /* Adresses et textes longs : retour à la ligne propre */
+  .order-meta, .order-payment { word-break: break-word; }
+
+  /* Boutique + statut : wrap autorisé */
+  .order-sub-head { flex-wrap: wrap; }
+  .order-sub-head strong { min-width: 0; word-break: break-word; }
+
+  /* Lignes d'articles : nom qui se coupe proprement, prix fixe à droite */
+  .order-items { min-width: 0; }
+  .order-item-name { word-break: break-word; }
+  .order-item-qty { white-space: nowrap; }
+
+  /* Étapes de suivi (bannière 🎉) : se replient sur 2 lignes */
+  .order-steps { flex-wrap: wrap; justify-content: center; gap: 6px; }
+  .order-step { font-size: 0.7rem; white-space: normal; text-align: center; }
+  .order-step-line { width: 14px; flex: 0 0 14px; }
+
+  /* Bouton contacter pleine largeur */
+  .order-contact-btn { width: 100%; }
+
+  /* Onglets : défilement interne, pas la page */
+  .vendor-filters { max-width: 100%; overflow-x: auto; }
+}
