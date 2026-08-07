@@ -4595,3 +4595,51 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   .cart-item-card { grid-template-columns: 100px 1fr auto; }
   .cart-item-image { width: 100px; height: 100px; }
 }
+/* ===== PAGE COMMANDES PRO ===== */
+.orders-wrap { max-width: 800px; margin: 0 auto; padding: 16px 14px 80px; }
+
+/* Bannière de confirmation */
+.order-confirm-banner {
+  background: linear-gradient(120deg, var(--millet-600, #2f7a3d), var(--gold-600, #d97706));
+  color: #fff; border-radius: 16px; padding: 20px 16px;
+  text-align: center; margin-bottom: 16px;
+}
+.order-confirm-icon { font-size: 2.4rem; }
+.order-confirm-banner h2 { margin: 6px 0 4px; font-size: 1.25rem; }
+.order-confirm-banner p { margin: 0 0 16px; font-size: .85rem; opacity: .92; }
+.order-steps { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.order-step { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: .7rem; font-weight: 700; opacity: .55; }
+.order-step.is-active { opacity: 1; }
+.order-step-dot {
+  width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.18);
+  display: flex; align-items: center; justify-content: center; font-size: 1.05rem;
+}
+.order-step.is-active .order-step-dot { background: #fff; }
+.order-step-line { width: 26px; height: 2px; background: rgba(255,255,255,.4); margin-bottom: 16px; }
+
+/* En-tête liste */
+.orders-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.orders-header h1 { margin: 0; font-size: 1.3rem; }
+.orders-count { background: var(--sand-100); padding: 4px 12px; border-radius: 999px; font-size: .78rem; font-weight: 600; color: var(--ink-700); }
+
+/* Cartes commandes */
+.order-card { background: #fff; border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 12px; }
+.order-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.order-number { font-size: .95rem; }
+.order-date { font-size: .75rem; color: var(--ink-400); margin-left: 8px; }
+.order-total { font-weight: 800; color: var(--ink-900); white-space: nowrap; }
+.order-meta { font-size: .8rem; color: var(--ink-400); margin: 6px 0 10px; }
+
+/* Sous-commandes par boutique */
+.order-sub { border: 1px solid var(--sand-200); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+.order-sub-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.order-sub-head strong { font-size: .9rem; }
+.order-sub-items div { display: flex; justify-content: space-between; font-size: .86rem; padding: 2px 0; }
+.order-contact-btn { margin-top: 8px; font-size: .8rem; }
+
+/* Statuts colorés */
+.status-pill { padding: 4px 10px; border-radius: 999px; font-size: .72rem; font-weight: 700; }
+.status-preparation { background: #fef3c7; color: #92400e; }
+.status-shipped { background: #dbeafe; color: #1e40af; }
+.status-delivered { background: #dcfce7; color: #166534; }
+.status-cancelled { background: #fee2e2; color: #991b1b; }
