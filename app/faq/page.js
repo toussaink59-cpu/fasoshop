@@ -11,19 +11,19 @@ const FAQS = [
   },
   {
     q: "Comment savoir si une boutique est fiable ?",
-    a: "Toutes les boutiques actives sur FasoShop ont été vérifiées manuellement par notre équipe à partir d'une pièce d'identité officielle avant validation.",
+    a: "Toutes les boutiques actives sur Kimoxa ont été vérifiées manuellement par notre équipe à partir d'une pièce d'identité officielle avant validation.",
   },
   {
     q: "Combien de temps prend la livraison ?",
     a: "Le délai dépend du vendeur et de votre localisation. Il est généralement précisé sur la fiche produit ou communiqué après la commande.",
   },
   {
-    q: "Comment devenir vendeur sur FasoShop ?",
+    q: "Comment devenir vendeur sur Kimoxa ?",
     a: "Rendez-vous sur la page 'Devenir vendeur', créez votre compte avec le nom de votre boutique et votre pièce d'identité, puis attendez la validation de notre équipe.",
   },
   {
     q: "Quels sont les frais pour un vendeur ?",
-    a: "L'inscription est gratuite. FasoShop prélève uniquement une commission de 5,5% sur chaque vente réalisée.",
+    a: "L'inscription est gratuite. Kimoxa prélève uniquement une commission de 5,5% sur chaque vente réalisée.",
   },
   {
     q: "Que faire si mon produit n'arrive pas ?",
