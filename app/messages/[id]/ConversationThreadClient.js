@@ -7,6 +7,13 @@ import BottomNav from "@/app/components/BottomNav";
 
 const POLL_MS = 4000;
 
+function formatTime(date) {
+  return new Date(date).toLocaleString("fr-FR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export default function ConversationThreadClient({ id, initialThread, initialUser, categories }) {
   const [messages, setMessages] = useState(initialThread.messages);
   const [myRole] = useState(initialThread.myRole);
@@ -14,8 +21,10 @@ export default function ConversationThreadClient({ id, initialThread, initialUse
   const [orderId] = useState(initialThread.orderId);
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState("");
   const bottomRef = useRef(null);
+  const fileInputRef = useRef(null);
   const isFirstRun = useRef(true);
 
   const loadMessages = useCallback(async () => {
@@ -26,8 +35,6 @@ export default function ConversationThreadClient({ id, initialThread, initialUse
   }, [id]);
 
   useEffect(() => {
-    // Le premier rendu contient déjà le fil résolu côté serveur — le
-    // polling ne fait que rafraîchir en tâche de fond ensuite.
     const timer = setInterval(loadMessages, POLL_MS);
     return () => clearInterval(timer);
   }, [loadMessages]);
@@ -40,75 +47,124 @@ export default function ConversationThreadClient({ id, initialThread, initialUse
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  async function handleSend(e) {
-    e.preventDefault();
-    if (!text.trim()) return;
+  async function sendMessage(payload) {
     setSending(true);
     setError("");
-
     const res = await fetch(`/api/conversations/${id}/messages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ body: text.trim() }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json();
     setSending(false);
-
     if (!res.ok) {
-      setError(data.error || "Erreur lors de l'envoi du message.");
+      setError(data.error || "Erreur lors de l'envoi.");
       return;
     }
-
     setText("");
     loadMessages();
   }
 
+  function handleSend(e) {
+    e.preventDefault();
+    if (!text.trim() || sending) return;
+    sendMessage({ body: text.trim() });
+  }
+
+  async function handleAttach(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setError("");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const upRes = await fetch("/api/vendor/upload", { method: "POST", body: fd });
+      const upData = await upRes.json();
+      if (!upRes.ok) throw new Error(upData.error || "Upload échoué");
+      await sendMessage({ body: "", imageUrl: upData.url });
+    } catch (err) {
+      setError(err.message);
+    }
+    setUploading(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   return (
-    <div className="shell">
+    <div className="shell chat-shell">
       <SiteHeader initialUser={initialUser} categories={categories} />
 
-      <div className="content" style={{ maxWidth: 640, margin: "0 auto", display: "flex", flexDirection: "column", minHeight: "60vh" }}>
-        <div className="page-header" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-          <div>
-            <Link href="/messages" style={{ fontSize: "0.85rem", color: "var(--ink-400)", textDecoration: "none" }}>← Messages</Link>
-            <h1 style={{ margin: "4px 0 0" }}>{shopName || "Conversation"}</h1>
+      <div className="chat-thread-wrap">
+        {/* En-tête conversation */}
+        <div className="chat-thread-header">
+          <Link href="/messages" className="chat-back-btn" aria-label="Retour">←</Link>
+          <div className="chat-thread-title">
+            <strong>{shopName || "Conversation"}</strong>
+            {orderId && <span>Commande #{orderId}</span>}
           </div>
-          {orderId && <span style={{ color: "var(--ink-400)", fontSize: "0.85rem" }}>Commande #{orderId}</span>}
         </div>
 
-        {error && <div className="error-box">{error}</div>}
+        {error && <div className="chat-error">{error}</div>}
 
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 }}>
+        {/* Fil de messages */}
+        <div className="chat-thread-body">
           {messages.length === 0 ? (
-            <p style={{ color: "var(--ink-400)", textAlign: "center", marginTop: 40 }}>
-              Aucun message pour l'instant — écrivez le premier !
-            </p>
+            <div className="chat-empty-thread">
+              <p>Aucun message — écrivez le premier !</p>
+            </div>
           ) : (
-            messages.map((m) => (
-              <div
-                key={m.id}
-                className={`chat-bubble ${m.sender_role === myRole ? "chat-bubble-mine" : "chat-bubble-theirs"}`}
-              >
-                <p style={{ margin: 0 }}>{m.body}</p>
-                <span className="chat-bubble-time">
-                  {new Date(m.created_at).toLocaleString("fr-FR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
-                </span>
-              </div>
-            ))
+            messages.map((m) => {
+              const mine = m.sender_role === myRole;
+              return (
+                <div
+                  key={m.id}
+                  className={`chat-bubble ${mine ? "chat-bubble-mine" : "chat-bubble-theirs"}`}
+                >
+                  {m.image_url ? (
+                    <img src={m.image_url} alt="Photo partagée" className="chat-bubble-img" />
+                  ) : null}
+                  {m.body && <p>{m.body}</p>}
+                  <span className="chat-bubble-time">{formatTime(m.created_at)}</span>
+                </div>
+              );
+            })
           )}
           <div ref={bottomRef} />
         </div>
 
-        <form onSubmit={handleSend} style={{ display: "flex", gap: 8, position: "sticky", bottom: 16 }}>
+        {/* Barre d'envoi façon WhatsApp */}
+        <form className="chat-composer" onSubmit={handleSend}>
+          <button
+            type="button"
+            className="chat-composer-btn"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            aria-label="Joindre une photo"
+            title="Joindre une photo"
+          >
+            {uploading ? "…" : "📎"}
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            style={{ display: "none" }}
+            onChange={handleAttach}
+          />
           <input
             type="text"
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="Écrire un message..."
-            style={{ flex: 1 }}
+            disabled={sending}
           />
-          <button type="submit" className="btn btn-primary" disabled={sending || !text.trim()}>
-            Envoyer
+          <button
+            type="submit"
+            className="chat-composer-send"
+            disabled={sending || !text.trim()}
+            aria-label="Envoyer"
+          >
+            ➤
           </button>
         </form>
       </div>
