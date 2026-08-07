@@ -19,11 +19,11 @@ const REASONS = [
   },
 ];
 
-export default function WhyFasoShop() {
+export default function WhyKimoxa() {
   return (
     <div className="why-section">
       <div className="section-head" style={{ maxWidth: 1080, margin: "0 auto 18px", padding: "0 28px" }}>
-        <h2>Pourquoi FasoShop</h2>
+        <h2>Pourquoi Kimoxa</h2>
       </div>
       <div className="why-grid">
         {REASONS.map((r) => (
