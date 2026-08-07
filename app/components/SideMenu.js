@@ -112,7 +112,7 @@ export default function SideMenu({ open, onClose, user, categories = [], onLogou
             </>
           ) : (
             <div className="side-menu-guest">
-              <p>Bienvenue sur FasoShop</p>
+              <p>Bienvenue sur Kimoxa</p>
               <div className="side-menu-guest-actions">
                 <Link href="/login" onClick={onClose}>
                   <button className="btn btn-primary">Se connecter</button>
