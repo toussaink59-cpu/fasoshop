@@ -5479,3 +5479,64 @@ select, input { max-width: 100%; box-sizing: border-box; }
   /* Onglets : défilement interne, pas la page */
   .vendor-filters { max-width: 100%; overflow-x: auto; }
 }
+/* ===== FORCAGE MOBILE : écrase les vieilles règles cachées ===== */
+@media (max-width: 767px) {
+
+  /* --- Commandes acheteur : plus aucun débordement possible --- */
+  .orders-wrap {
+    max-width: 100% !important;
+    overflow-x: clip !important;
+    padding: 0 10px 90px !important;
+  }
+  .order-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+  }
+  .order-head {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 4px 8px !important;
+  }
+  .order-meta, .order-payment {
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+  .order-sub-items div, .order-item-row {
+    display: flex !important;
+    justify-content: space-between !important;
+    gap: 10px !important;
+    flex-wrap: wrap !important;
+  }
+  .order-total, .order-number {
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+  .vendor-filters {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    max-width: 100% !important;
+  }
+
+  /* --- Panier : le bouton Supprimer redevient cliquable --- */
+  .cart-item-card { position: relative !important; }
+  .cart-item-subtotal { position: static !important; }
+  .cart-item-actions {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: wrap !important;
+    position: relative !important;
+    z-index: 5 !important;
+  }
+  .cart-item-remove {
+    position: relative !important;
+    z-index: 10 !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    cursor: pointer !important;
+  }
+}
