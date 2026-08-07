@@ -4,29 +4,30 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AdminBottomNav from "@/app/components/AdminBottomNav";
+import KimoxaLogo from "@/app/components/KimoxaLogo";
 
 function Sparkline({ data, valueKey }) {
   const width = 900;
-  const height = 110;
+  const height = 140;
   const max = Math.max(...data.map((d) => d[valueKey]), 1);
   const stepX = width / (data.length - 1 || 1);
 
   const points = data.map((d, i) => {
     const x = i * stepX;
-    const y = height - (d[valueKey] / max) * (height - 12) - 6;
+    const y = height - (d[valueKey] / max) * (height - 16) - 8;
     return `${x},${y}`;
   });
 
   const areaPoints = `0,${height} ${points.join(" ")} ${width},${height}`;
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: 110, display: "block" }}>
-      <polygon points={areaPoints} fill="var(--orange-100)" />
+    <svg viewBox={`0 0 ${width} ${height}`} style={{ width: "100%", height: 140, display: "block" }}>
+      <polygon points={areaPoints} fill="rgba(212, 175, 55, 0.15)" />
       <polyline
         points={points.join(" ")}
         fill="none"
-        stroke="var(--orange-500)"
-        strokeWidth="2.5"
+        stroke="var(--gold-600, #d97706)"
+        strokeWidth="3"
         strokeLinejoin="round"
         strokeLinecap="round"
       />
@@ -52,11 +53,30 @@ function BarList({ items, labelKey, valueKey, secondaryKey, formatValue }) {
               style={{
                 height: "100%",
                 width: `${(item[valueKey] / max) * 100}%`,
-                background: "var(--orange-500)",
+                background: "var(--gold-600, #d97706)",
                 borderRadius: 4,
               }}
             />
           </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function RankList({ items }) {
+  return (
+    <div className="ana-rank-list">
+      {items.map((p, i) => (
+        <div className="ana-rank-item" key={i}>
+          <span className={`ana-rank-num ${i < 3 ? "ana-rank-top" : ""}`}>{i + 1}</span>
+          <div className="ana-rank-text">
+            <strong>{p.product_name}</strong>
+            <span>
+              {p.shop_name} · {p.units_sold} unité{p.units_sold > 1 ? "s" : ""} vendue{p.units_sold > 1 ? "s" : ""}
+            </span>
+          </div>
+          <span className="ana-rank-value">{Number(p.revenue).toLocaleString("fr-FR")} FCFA</span>
         </div>
       ))}
     </div>
@@ -68,7 +88,7 @@ export default function AdminAnalyticsPage() {
   const [user, setUser] = useState(null);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [chartMode, setChartMode] = useState("range"); // "range" | "year"
+  const [chartMode, setChartMode] = useState("range");
   const [rangeDays, setRangeDays] = useState(30);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [series, setSeries] = useState(null);
@@ -114,11 +134,20 @@ export default function AdminAnalyticsPage() {
     router.push("/login");
   }
 
+  // KPIs calculés sur la période affichée
+  const totalGross = series ? series.reduce((s, d) => s + Number(d.gross || 0), 0) : 0;
+  const bestDay =
+    series && series.length
+      ? series.reduce((a, b) => (Number(b.gross || 0) > Number(a.gross || 0) ? b : a))
+      : null;
+  const topCat = data?.salesByCategory?.[0];
+  const topVendor = data?.salesByVendor?.[0];
+
   return (
     <div className="shell">
       <div className="topbar">
         <div className="brand">
-          🛒 Kimoxa <span className="role-tag">Admin</span>
+          <KimoxaLogo light size={22} /> <span className="role-tag">Admin</span>
         </div>
         <div className="topbar-actions">
           <Link href="/admin/dashboard"><button>Tableau de bord</button></Link>
@@ -127,8 +156,8 @@ export default function AdminAnalyticsPage() {
       </div>
       <div className="woven-strip" />
 
-      <div className="content">
-        <div className="page-header">
+      <div className="vendor-dashboard-wrap">
+        <div className="vendor-dashboard-header">
           <h1>Analytics</h1>
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
@@ -137,110 +166,125 @@ export default function AdminAnalyticsPage() {
           <p>Chargement...</p>
         ) : (
           <>
-            <div className="panel">
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-                <h2 style={{ marginBottom: 0 }}>Ventes dans le temps</h2>
-                <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-                  {[1, 7, 30].map((d) => (
-                    <button
-                      key={d}
-                      className={`btn ${chartMode === "range" && rangeDays === d ? "btn-primary" : "btn-ghost"}`}
-                      onClick={() => {
-                        setChartMode("range");
-                        setRangeDays(d);
-                      }}
-                    >
-                      {d}J
-                    </button>
-                  ))}
-                  <select
-                    value={chartMode === "year" ? selectedYear : ""}
-                    onChange={(e) => {
-                      setSelectedYear(Number(e.target.value));
-                      setChartMode("year");
-                    }}
-                    style={{ width: "auto" }}
-                  >
-                    <option value="" disabled>Choisir une année</option>
-                    {(data.availableYears || [new Date().getFullYear()]).map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
+            {/* Sélecteur de période (pilules Temu) */}
+            <div className="vendor-filters">
+              {[1, 7, 30].map((d) => (
+                <button
+                  key={d}
+                  className={`vendor-filter-btn ${chartMode === "range" && rangeDays === d ? "active" : ""}`}
+                  onClick={() => {
+                    setChartMode("range");
+                    setRangeDays(d);
+                  }}
+                >
+                  {d} jour{d > 1 ? "s" : ""}
+                </button>
+              ))}
+              <select
+                className="vendor-filter-select"
+                value={chartMode === "year" ? selectedYear : ""}
+                onChange={(e) => {
+                  setSelectedYear(Number(e.target.value));
+                  setChartMode("year");
+                }}
+              >
+                <option value="" disabled>Année…</option>
+                {(data.availableYears || [new Date().getFullYear()]).map((y) => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* 4 KPI cards */}
+            <div className="vendor-stats-grid">
+              <div className="vendor-stat-card">
+                <div className="vendor-stat-icon">💰</div>
+                <div className="vendor-stat-value" style={{ fontSize: "1.15rem" }}>
+                  {totalGross.toLocaleString("fr-FR")}
                 </div>
+                <div className="vendor-stat-label">FCFA sur la période</div>
+              </div>
+              <div className="vendor-stat-card">
+                <div className="vendor-stat-icon">📈</div>
+                <div className="vendor-stat-value" style={{ fontSize: "1.15rem" }}>
+                  {bestDay ? Number(bestDay.gross).toLocaleString("fr-FR") : "—"}
+                </div>
+                <div className="vendor-stat-label">Meilleur jour ({bestDay?.label || "—"})</div>
+              </div>
+              <div className="vendor-stat-card">
+                <div className="vendor-stat-icon">🏆</div>
+                <div className="vendor-stat-value" style={{ fontSize: "0.95rem" }}>
+                  {topCat ? topCat.category_name : "—"}
+                </div>
+                <div className="vendor-stat-label">Top catégorie</div>
+              </div>
+              <div className="vendor-stat-card">
+                <div className="vendor-stat-icon">🥇</div>
+                <div className="vendor-stat-value" style={{ fontSize: "0.95rem" }}>
+                  {topVendor ? topVendor.shop_name : "—"}
+                </div>
+                <div className="vendor-stat-label">Top vendeur</div>
+              </div>
+            </div>
+
+            {/* Grand graphique */}
+            <div className="ana-chart-card">
+              <h2>Ventes dans le temps</h2>
+              {seriesLoading ? (
+                <p style={{ color: "var(--ink-400)" }}>Chargement...</p>
+              ) : series && series.some((d) => d.gross > 0) ? (
+                <>
+                  <Sparkline data={series} valueKey="gross" />
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "var(--ink-400)", marginTop: 4 }}>
+                    <span>{series[0]?.label}</span>
+                    <span>{series[Math.floor(series.length / 2)]?.label}</span>
+                    <span>{series[series.length - 1]?.label}</span>
+                  </div>
+                </>
+              ) : (
+                <p style={{ color: "var(--ink-400)" }}>Aucune vente sur cette période.</p>
+              )}
+            </div>
+
+            {/* Deux colonnes : catégories + vendeurs */}
+            <div className="ana-two-col">
+              <div className="ana-panel">
+                <h2>Ventes par catégorie</h2>
+                {data.salesByCategory.length === 0 ? (
+                  <p style={{ color: "var(--ink-400)" }}>Aucune donnée pour l'instant.</p>
+                ) : (
+                  <BarList
+                    items={data.salesByCategory}
+                    labelKey="category_name"
+                    valueKey="revenue"
+                    formatValue={(v) => `${Number(v).toLocaleString("fr-FR")} FCFA`}
+                  />
+                )}
               </div>
 
-              <div style={{ marginTop: 16 }}>
-                {seriesLoading ? (
-                  <p style={{ color: "var(--ink-400)" }}>Chargement...</p>
-                ) : series && series.some((d) => d.gross > 0) ? (
-                  <>
-                    <Sparkline data={series} valueKey="gross" />
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.72rem", color: "var(--ink-400)", marginTop: 4 }}>
-                      <span>{series[0]?.label}</span>
-                      <span>{series[Math.floor(series.length / 2)]?.label}</span>
-                      <span>{series[series.length - 1]?.label}</span>
-                    </div>
-                  </>
+              <div className="ana-panel">
+                <h2>Ventes par vendeur</h2>
+                {data.salesByVendor.length === 0 ? (
+                  <p style={{ color: "var(--ink-400)" }}>Aucune donnée pour l'instant.</p>
                 ) : (
-                  <p style={{ color: "var(--ink-400)" }}>Aucune vente sur cette période.</p>
+                  <BarList
+                    items={data.salesByVendor}
+                    labelKey="shop_name"
+                    secondaryKey="vendor_name"
+                    valueKey="revenue"
+                    formatValue={(v) => `${Number(v).toLocaleString("fr-FR")} FCFA`}
+                  />
                 )}
               </div>
             </div>
 
-            <div className="panel">
-              <h2>Ventes par catégorie</h2>
-              {data.salesByCategory.length === 0 ? (
-                <p style={{ color: "var(--ink-400)" }}>Aucune donnée pour l'instant.</p>
-              ) : (
-                <BarList
-                  items={data.salesByCategory}
-                  labelKey="category_name"
-                  valueKey="revenue"
-                  formatValue={(v) => `${Number(v).toLocaleString("fr-FR")} FCFA`}
-                />
-              )}
-            </div>
-
-            <div className="panel">
-              <h2>Ventes par vendeur</h2>
-              {data.salesByVendor.length === 0 ? (
-                <p style={{ color: "var(--ink-400)" }}>Aucune donnée pour l'instant.</p>
-              ) : (
-                <BarList
-                  items={data.salesByVendor}
-                  labelKey="shop_name"
-                  secondaryKey="vendor_name"
-                  valueKey="revenue"
-                  formatValue={(v) => `${Number(v).toLocaleString("fr-FR")} FCFA`}
-                />
-              )}
-            </div>
-
-            <div className="panel">
-              <h2>Top produits</h2>
+            {/* Top produits en classement */}
+            <div className="ana-panel">
+              <h2>🏅 Top produits</h2>
               {data.topProducts.length === 0 ? (
                 <p style={{ color: "var(--ink-400)" }}>Aucune donnée pour l'instant.</p>
               ) : (
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Produit</th>
-                      <th>Boutique</th>
-                      <th>Unités vendues</th>
-                      <th>Revenu généré</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {data.topProducts.map((p, i) => (
-                      <tr key={i}>
-                        <td>{p.product_name}</td>
-                        <td>{p.shop_name}</td>
-                        <td>{p.units_sold}</td>
-                        <td>{Number(p.revenue).toLocaleString("fr-FR")} FCFA</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <RankList items={data.topProducts} />
               )}
             </div>
           </>
