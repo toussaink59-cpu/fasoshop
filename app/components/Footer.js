@@ -1,4 +1,5 @@
 import Link from "next/link";
+import KimoxaLogo from "@/app/components/KimoxaLogo";
 
 export default function Footer() {
   return (
@@ -7,7 +8,7 @@ export default function Footer() {
 
         {/* 1. Logo + promesse */}
         <div className="temu-footer-brand">
-          <div className="site-footer-brand">🛒 FasoShop</div>
+          <KimoxaLogo light size={34} withTagline />
           <p className="site-footer-tagline">
             La marketplace multi-vendeurs qui connecte l'Afrique qui vend à l'Afrique qui achète.
           </p>
@@ -57,14 +58,14 @@ export default function Footer() {
           </div>
 
           <div className="site-footer-col">
-            <h4>Vendre sur FasoShop</h4>
+            <h4>Vendre sur Kimoxa</h4>
             <Link href="/devenir-vendeur" className="footer-cta-vendor">Devenir vendeur →</Link>
             <Link href="/vendor/dashboard">Espace vendeur</Link>
             <Link href="/nos-vendeurs">Nos vendeurs</Link>
           </div>
 
           <div className="site-footer-col">
-            <h4>FasoShop</h4>
+            <h4>Kimoxa</h4>
             <Link href="/a-propos">À propos</Link>
             <Link href="/cgu">Conditions d'utilisation</Link>
             <Link href="/cgv">Conditions de vente</Link>
@@ -74,7 +75,7 @@ export default function Footer() {
         {/* 5. Barre basse */}
         <div className="temu-footer-bottombar">
           <span className="temu-footer-country">🇧🇫 Burkina Faso</span>
-          <span>© {new Date().getFullYear()} FasoShop — Conçu pour toute l'Afrique 🌍</span>
+          <span>© {new Date().getFullYear()} Kimoxa — Conçu pour toute l'Afrique 🌍</span>
         </div>
       </div>
     </footer>
