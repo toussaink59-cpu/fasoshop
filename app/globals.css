@@ -4885,3 +4885,9 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 @media (max-width: 767px) {
   .site-footer-inner { padding-bottom: 76px; }
 }
+/* Logo du footer (style Temu) */
+.temu-footer-brand { padding-bottom: 14px; }
+.temu-footer-brand .site-footer-brand { font-size: 1.35rem; color: #fff; }
+.temu-footer-brand .site-footer-tagline {
+  margin: 4px 0 0; font-size: 0.8rem; opacity: 0.85; max-width: 460px;
+}
