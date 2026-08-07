@@ -4829,3 +4829,13 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 @media (max-width: 767px) {
   .site-footer-bottom { padding-bottom: 76px; }
 }
+/* Footer v2 : marque + réseaux sur une seule ligne */
+.footer-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.footer-top-row .site-footer-socials { margin: 0 !important; }
+.site-footer-tagline { margin: 0 0 16px; }
