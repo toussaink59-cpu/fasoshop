@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { getCategoriesTree } from "@/lib/queries/categories";
 import { getCurrentUser } from "@/lib/session";
 import { getActiveFlashSales } from "@/lib/queries/flashSales";
 import { getBestSellers, getNewArrivals, getTopRated } from "@/lib/queries/homepage";
 import { getRecommendedProducts } from "@/lib/queries/recommendations";
+import { getProducts } from "@/lib/queries/products";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
 import BannerCarousel from "@/app/components/BannerCarousel";
@@ -11,17 +11,14 @@ import Footer from "@/app/components/Footer";
 import FlashSaleSection from "@/app/components/FlashSaleSection";
 import HorizontalProductSection from "@/app/components/HorizontalProductSection";
 import CategoryPillBar from "@/app/components/CategoryPillBar";
+import HomeFeed from "@/app/components/HomeFeed";
 
 export const metadata = {
   title: "Accueil",
   description:
-    "Commandez où que vous soyez au Burkina Faso. Paiement à la livraison disponible sur toutes les boutiques FasoShop.",
+    "Kimoxa, la marketplace multi-vendeurs qui connecte l'Afrique qui vend à l'Afrique qui achète. Paiement à la livraison et Mobile Money.",
 };
 
-// Server Component : les catégories et l'utilisateur connecté sont résolus
-// côté serveur avant l'envoi du HTML (plus de "Chargement..." au premier
-// rendu, contenu indexable par les moteurs de recherche, pas de flash
-// visuel sur l'état de connexion).
 export default async function HomePage() {
   const [categories, user, flashSales, bestSellers, newArrivals, topRated] = await Promise.all([
     getCategoriesTree(),
@@ -32,9 +29,10 @@ export default async function HomePage() {
     getTopRated(),
   ]);
 
-  // Recommandations : dépendent de l'utilisateur résolu ci-dessus (besoin de
-  // son id), donc requête séparée plutôt que dans le premier Promise.all.
   const recommended = await getRecommendedProducts(user?.id ?? null);
+
+  // Flux complet pour le bouton "Voir plus" façon Temu (chargement sur place)
+  const feed = await getProducts({ sort: "newest" }, user?.id ?? null);
 
   return (
     <div className="shell">
@@ -78,16 +76,9 @@ export default async function HomePage() {
         products={recommended}
         user={user}
       />
-      {/* Pas de "Voir tout" ici : ce n'est pas une catégorie ou un tri du
-          catalogue, juste une sélection personnalisée sur cette page. */}
 
-      <div className="home-section" style={{ textAlign: "center" }}>
-        <Link href="/shop">
-          <button className="btn btn-primary" style={{ fontSize: "1rem", padding: "14px 36px" }}>
-            Voir tout le catalogue →
-          </button>
-        </Link>
-      </div>
+      {/* Flux infini façon Temu : "Voir plus" charge sur place, sans changer de page */}
+      <HomeFeed initialProducts={feed} user={user} />
 
       <Footer />
       <BottomNav user={user} />
