@@ -59,8 +59,8 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
             <h2>Commande #{confirmedId} confirmée !</h2>
             <p>
               {confirmedMethod === "mobile_money"
-                ? "La boutique va vous contacter au numéro fourni pour finaliser le paiement Mobile Money."
-                : "Paiement à la livraison — vous serez contacté au numéro fourni."}
+                ? "Nous allons vous contacter au numéro fourni pour finaliser le paiement Mobile Money."
+                : "Paiement à la livraison — nous vous contacterons au numéro fourni."}
             </p>
             <div className="order-steps">
               <div className="order-step is-active">
@@ -99,19 +99,21 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
         ) : (
           <>
             {/* Onglets de suivi façon Temu */}
-            <div className="vendor-filters">
-              <button className={`vendor-filter-btn ${orderFilter === "all" ? "active" : ""}`} onClick={() => setOrderFilter("all")}>
-                Toutes ({orders.length})
-              </button>
-              <button className={`vendor-filter-btn ${orderFilter === "preparation" ? "active" : ""}`} onClick={() => setOrderFilter("preparation")}>
-                En préparation ({countBy("preparation")})
-              </button>
-              <button className={`vendor-filter-btn ${orderFilter === "shipped" ? "active" : ""}`} onClick={() => setOrderFilter("shipped")}>
-                Expédiées ({countBy("shipped")})
-              </button>
-              <button className={`vendor-filter-btn ${orderFilter === "delivered" ? "active" : ""}`} onClick={() => setOrderFilter("delivered")}>
-                Livrées ({countBy("delivered")})
-              </button>
+            <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
+              <div className="vendor-filters" style={{ flexWrap: "nowrap", width: "max-content", maxWidth: "none" }}>
+                <button className={`vendor-filter-btn ${orderFilter === "all" ? "active" : ""}`} onClick={() => setOrderFilter("all")}>
+                  Toutes ({orders.length})
+                </button>
+                <button className={`vendor-filter-btn ${orderFilter === "preparation" ? "active" : ""}`} onClick={() => setOrderFilter("preparation")}>
+                  En préparation ({countBy("preparation")})
+                </button>
+                <button className={`vendor-filter-btn ${orderFilter === "shipped" ? "active" : ""}`} onClick={() => setOrderFilter("shipped")}>
+                  Expédiées ({countBy("shipped")})
+                </button>
+                <button className={`vendor-filter-btn ${orderFilter === "delivered" ? "active" : ""}`} onClick={() => setOrderFilter("delivered")}>
+                  Livrées ({countBy("delivered")})
+                </button>
+              </div>
             </div>
 
             {filteredOrders.length === 0 ? (
@@ -140,13 +142,13 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
                     {order.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 À la livraison"}
                   </div>
 
-                  {/* Une sous-commande par boutique, avec son propre statut */}
+                  {/* OPTION B : anonymisation — toutes les sous-commandes affichent "Kimoxa" */}
                   {order.subOrders.map((sub) => {
                     const key = `${order.id}-${sub.shopId}`;
                     return (
                       <div className="order-sub" key={sub.shopId}>
                         <div className="order-sub-head">
-                          <strong>🏪 {sub.shopName}</strong>
+                          <strong>Kimoxa <span style={{ color: "var(--gold-600)" }}>✓</span></strong>
                           <span className={`status-pill status-${sub.deliveryStatus}`}>
                             {STATUS_LABELS[sub.deliveryStatus] || sub.deliveryStatus}
                           </span>
@@ -170,7 +172,7 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
                           onClick={() => handleContact(order.id, sub.shopId)}
                           disabled={contactingKey === key}
                         >
-                          💬 {contactingKey === key ? "Ouverture..." : "Contacter le vendeur"}
+                          💬 {contactingKey === key ? "Ouverture..." : "Contacter le support"}
                         </button>
                       </div>
                     );
