@@ -5095,3 +5095,22 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
     max-width: 360px;
   }
 }
+/* ===== BOUTON VOIR PLUS STYLE TEMU ===== */
+.load-more-wrap { text-align: center; margin: 20px 0 8px; }
+.btn-load-more {
+  width: 100%;
+  max-width: 420px;
+  padding: 13px 20px;
+  background: #fff;
+  color: var(--ink-900, #241712);
+  border: 1.5px solid var(--gold-600, #d97706);
+  border-radius: 999px;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.btn-load-more:hover { background: var(--gold-600, #d97706); color: #fff; }
+.btn-load-more:disabled { opacity: 0.6; cursor: wait; }
+.load-more-count { font-size: 0.75rem; color: var(--ink-400); margin-top: 6px; }
+.load-more-done { font-size: 0.82rem; color: var(--ink-400); font-weight: 600; }
