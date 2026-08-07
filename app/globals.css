@@ -5428,3 +5428,19 @@ select, input { max-width: 100%; box-sizing: border-box; }
 .order-payment { font-size: 0.78rem; color: var(--ink-400); margin-top: 6px; }
 .order-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
 .order-actions .btn { flex: 1; min-width: 140px; }
+/* ===== COMMANDES ACHETEUR : textes propres ===== */
+.orders-wrap { max-width: 720px; margin: 0 auto; padding: 0 12px 90px; }
+.orders-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 2px 10px; }
+.orders-header h1 { margin: 0; font-size: 1.25rem; }
+.orders-count {
+  background: var(--gold-600); color: #fff;
+  padding: 2px 10px; border-radius: 999px; font-size: 0.72rem; font-weight: 800;
+}
+.order-meta { word-break: break-word; line-height: 1.5; }
+.order-sub { border-top: 1px dashed var(--border); margin-top: 12px; padding-top: 12px; }
+.order-sub-head {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 8px; flex-wrap: wrap; margin-bottom: 8px;
+}
+.order-contact-btn { width: 100%; margin-top: 10px; }
+.order-number, .order-total { word-break: break-word; }
