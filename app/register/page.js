@@ -8,12 +8,20 @@ function RegisterForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [role, setRole] = useState("buyer");
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [shopName, setShopName] = useState("");
+  const [mainCategoryId, setMainCategoryId] = useState("");
+  const [city, setCity] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [nationality, setNationality] = useState("");
+  const [countryOfResidence, setCountryOfResidence] = useState("");
+  const [verificationAcknowledged, setVerificationAcknowledged] = useState(false);
+  const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -22,6 +30,15 @@ function RegisterForm() {
       setRole("vendor");
     }
   }, [searchParams]);
+
+  // Catégories pour le sélecteur "Catégorie principale" — chargées une
+  // seule fois, uniquement utiles si l'utilisateur choisit "Vendeur".
+  useEffect(() => {
+    fetch("/api/categories")
+      .then((r) => r.json())
+      .then((d) => setCategories(d.categories || []))
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -32,18 +49,30 @@ function RegisterForm() {
       return;
     }
 
+    if (role === "vendor" && !verificationAcknowledged) {
+      setError("Merci de confirmer que vous avez compris que votre compte sera vérifié.");
+      return;
+    }
+
     setSubmitting(true);
 
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        firstName,
+        lastName,
         email,
         password,
-        fullName,
-        phone: phone || undefined,
+        phone,
         role,
         shopName: role === "vendor" ? shopName : undefined,
+        mainCategoryId: role === "vendor" && mainCategoryId ? Number(mainCategoryId) : undefined,
+        city: role === "vendor" ? city : undefined,
+        dateOfBirth: role === "vendor" ? dateOfBirth : undefined,
+        nationality: role === "vendor" ? nationality : undefined,
+        countryOfResidence: role === "vendor" ? countryOfResidence : undefined,
+        verificationAcknowledged: role === "vendor" ? verificationAcknowledged : undefined,
       }),
     });
     const data = await res.json();
@@ -94,13 +123,23 @@ function RegisterForm() {
 
             <div className="form-row">
               <div>
-                <label htmlFor="r-name">Nom complet</label>
+                <label htmlFor="r-firstname">Prénom</label>
                 <input
-                  id="r-name"
+                  id="r-firstname"
                   required
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Ex : Aïcha Ouédraogo"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  placeholder="Ex : Aïcha"
+                />
+              </div>
+              <div>
+                <label htmlFor="r-lastname">Nom</label>
+                <input
+                  id="r-lastname"
+                  required
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  placeholder="Ex : Ouédraogo"
                 />
               </div>
             </div>
@@ -118,9 +157,10 @@ function RegisterForm() {
                 />
               </div>
               <div>
-                <label htmlFor="r-phone">Téléphone (optionnel)</label>
+                <label htmlFor="r-phone">Téléphone</label>
                 <input
                   id="r-phone"
+                  required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="70 00 00 00"
@@ -159,8 +199,45 @@ function RegisterForm() {
               <>
                 <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: 4, marginBottom: 12 }}>
                   Une fois votre compte créé, une dernière étape vous permettra de vérifier votre
-                  identité pour activer votre boutique — pas besoin de le faire maintenant.
+                  identité pour activer votre boutique — pas besoin d'ajouter de photo maintenant.
                 </p>
+
+                <div className="form-row">
+                  <div>
+                    <label htmlFor="r-dob">Date de naissance</label>
+                    <input
+                      id="r-dob"
+                      type="date"
+                      required
+                      value={dateOfBirth}
+                      onChange={(e) => setDateOfBirth(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="r-nationality">Nationalité</label>
+                    <input
+                      id="r-nationality"
+                      required
+                      value={nationality}
+                      onChange={(e) => setNationality(e.target.value)}
+                      placeholder="Ex : Burkinabè"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div>
+                    <label htmlFor="r-country">Pays de résidence</label>
+                    <input
+                      id="r-country"
+                      required
+                      value={countryOfResidence}
+                      onChange={(e) => setCountryOfResidence(e.target.value)}
+                      placeholder="Ex : Burkina Faso"
+                    />
+                  </div>
+                </div>
+
                 <div className="form-row">
                   <div>
                     <label htmlFor="r-shop-name">Nom de la boutique</label>
@@ -172,7 +249,44 @@ function RegisterForm() {
                       placeholder="Ex : Boutique Aïcha Mode"
                     />
                   </div>
+                  <div>
+                    <label htmlFor="r-shop-category">Catégorie principale</label>
+                    <select
+                      id="r-shop-category"
+                      value={mainCategoryId}
+                      onChange={(e) => setMainCategoryId(e.target.value)}
+                    >
+                      <option value="">Sélectionner...</option>
+                      {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
+
+                <div className="form-row">
+                  <div>
+                    <label htmlFor="r-shop-city">Ville de la boutique</label>
+                    <input
+                      id="r-shop-city"
+                      value={city}
+                      onChange={(e) => setCity(e.target.value)}
+                      placeholder="Ex : Ouagadougou"
+                    />
+                  </div>
+                </div>
+
+                <label className="checkbox-row" htmlFor="r-verification-ack">
+                  <input
+                    id="r-verification-ack"
+                    type="checkbox"
+                    checked={verificationAcknowledged}
+                    onChange={(e) => setVerificationAcknowledged(e.target.checked)}
+                  />
+                  <span>
+                    Je comprends que mon compte sera vérifié avant l'ouverture de ma boutique.
+                  </span>
+                </label>
               </>
             )}
 
