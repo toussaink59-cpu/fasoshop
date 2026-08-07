@@ -11,7 +11,7 @@ export default function CategoryPillBar({ categories = [] }) {
       <div className="pill-bar-track">
         <Link href="/shop" className="pill is-active">Recommandé</Link>
         {categories.map((c) => (
-          <Link key={c.id} href={`/shop?category=${c.id}`} className="pill">
+          <Link key={c.id} href={`/shop?category=${c.slug}`} className="pill">
             {c.name}
           </Link>
         ))}
