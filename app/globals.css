@@ -5222,3 +5222,52 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   min-width: 240px;
   left: 0;
 }
+/* ===== ANTI-DÉBORDEMENT MOBILE (toutes pages) ===== */
+html, body { overflow-x: hidden; max-width: 100vw; }
+.shell { max-width: 100vw; overflow-x: clip; }
+.vendor-dashboard-wrap { max-width: 100%; overflow-x: clip; }
+
+/* Grilles : minmax(0,1fr) empêche le contenu d'élargir les colonnes */
+.vendor-stats-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (min-width: 640px) {
+  .vendor-stats-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.vendor-quick-links { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.vendor-stat-card, .vendor-quick-link { min-width: 0; }
+.vendor-stat-value { font-size: 1.4rem; word-break: break-word; }
+.ana-two-col { grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 768px) {
+  .ana-two-col { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Pilules de période : défilement INTERNE, jamais la page */
+.ana-period .vendor-filters { overflow-x: auto; max-width: 100%; }
+.vendor-filters { max-width: 100%; }
+
+/* Champs et selects jamais plus larges que l'écran */
+select, input { max-width: 100%; box-sizing: border-box; }
+
+/* Topbar vendeur/admin mobile : 2 rangées propres */
+@media (max-width: 767px) {
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    padding: 10px 12px;
+  }
+  .topbar .brand {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+  }
+  .topbar-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .topbar-actions a { margin-right: 0 !important; font-size: 0.8rem !important; }
+  .topbar-actions button { padding: 6px 10px; font-size: 0.78rem; }
+}
