@@ -3,7 +3,7 @@
 import { useState } from "react";
 import ProductCard from "@/app/components/ProductCard";
 
-const PAGE = 10;
+const PAGE = 6;
 
 // Flux de produits façon Temu : on reste sur la même page,
 // le bouton "Voir plus" affiche 10 produits supplémentaires.
