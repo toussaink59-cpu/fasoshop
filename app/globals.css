@@ -5001,3 +5001,97 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   color: var(--ink-400);
   font-weight: 600;
 }
+/* ===== BOUTON "VOIR PLUS" STYLE TEMU ===== */
+.load-more-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  margin: 28px auto 20px;
+  padding: 0 16px;
+  max-width: 100%;
+}
+
+.btn-load-more {
+  width: 100%;
+  max-width: 400px;
+  padding: 16px 24px;
+  font-size: 1rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--gold-600, #d97706), var(--orange-500, #f97316));
+  color: white;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
+  transition: all 0.2s ease;
+}
+
+.btn-load-more:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.4);
+}
+
+.btn-load-more:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.load-more-icon {
+  font-size: 1.2rem;
+  transition: transform 0.2s;
+}
+
+.btn-load-more:hover .load-more-icon {
+  transform: translateY(2px);
+}
+
+.load-more-spinner {
+  display: inline-block;
+  font-size: 1.2rem;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.load-more-count {
+  font-size: 0.85rem;
+  color: var(--ink-400, #9ca3af);
+  font-weight: 600;
+  margin: 0;
+}
+
+.load-more-done {
+  font-size: 0.9rem;
+  color: var(--millet-600, #2f7a3d);
+  font-weight: 700;
+  margin: 0;
+  padding: 12px 20px;
+  background: rgba(47, 122, 61, 0.1);
+  border-radius: 999px;
+}
+
+/* Responsive */
+@media (max-width: 767px) {
+  .btn-load-more {
+    max-width: 100%;
+    padding: 14px 20px;
+    font-size: 0.95rem;
+  }
+  .load-more-wrap {
+    margin: 20px auto 16px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .btn-load-more {
+    max-width: 360px;
+  }
+}
