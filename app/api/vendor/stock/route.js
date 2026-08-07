@@ -5,13 +5,13 @@ const ALLOWED_CONDITIONS = ["neuf", "quasi_neuf", "occasion"];
 // GET /api/vendor/stock
 export async function GET(request) {
   const userId = request.headers.get("x-user-id");
-
   const products = await sql`
     SELECT p.id, p.name, p.sku, p.price, p.compare_at_price, p.stock_quantity, p.low_stock_threshold,
            p.flash_sale_ends_at, p.flash_sale_stock_snapshot, p.condition, p.brand,
            p.is_sponsored, p.sponsored_until,
            p.status, p.updated_at, s.name AS shop_name,
-           c.name AS category_name, c.id AS category_id
+           c.name AS category_name, c.id AS category_id,
+           p.images
     FROM products p
     JOIN shops s ON s.id = p.shop_id
     LEFT JOIN categories c ON c.id = p.category_id
@@ -27,10 +27,10 @@ export async function GET(request) {
 // La boutique doit être vérifiée (status = 'active') pour pouvoir publier des produits.
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
-
   try {
     const body = await request.json();
     const { name, description, price, compareAtPrice, sku, stockQuantity, lowStockThreshold, categoryId, images, condition, brand } = body;
+
     if (!name || price === undefined) {
       return Response.json(
         { error: "Le nom et le prix du produit sont requis." },
@@ -50,6 +50,7 @@ export async function POST(request) {
     const [shop] = await sql`
       SELECT id, status FROM shops WHERE vendor_id = ${userId} LIMIT 1
     `;
+
     if (!shop) {
       return Response.json(
         { error: "Aucune boutique associée à ce compte vendeur." },
