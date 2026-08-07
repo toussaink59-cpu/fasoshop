@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import VendorBottomNav from "@/app/components/VendorBottomNav";
+import KimoxaLogo from "@/app/components/KimoxaLogo";
 
 const DOC_LABELS = { cni: "CNI", passeport: "Passeport", permis: "Permis de conduire" };
 
@@ -383,7 +384,6 @@ export default function VendorDashboard() {
   const isActive = shop?.status === "active";
   const outOfStockCount = products.filter((p) => p.stock_quantity === 0).length;
 
-  // Filtrage des produits
   const filteredProducts = products.filter((p) => {
     if (activeFilter === "low") return p.stock_quantity <= p.low_stock_threshold && p.stock_quantity > 0;
     if (activeFilter === "out") return p.stock_quantity === 0;
@@ -392,36 +392,23 @@ export default function VendorDashboard() {
 
   return (
     <div className="shell">
+      {/* ===== TOPBAR TEMU ===== */}
       <div className="topbar">
         <div className="brand">
-          🛒 Kimoxa <span className="role-tag">Vendeur</span>
+          <KimoxaLogo light size={20} /> <span className="role-tag">Vendeur</span>
         </div>
         <div className="topbar-actions">
-          <Link href="/messages" style={{ marginRight: 10, color: "var(--sand-50)", fontSize: "0.85rem" }}>
-            Messages {unreadMessages > 0 ? `(${unreadMessages})` : ""}
-          </Link>
-          <a
-            href="/vendor/orders"
-            style={{ marginRight: 10, color: "var(--sand-50)", fontSize: "0.85rem", position: "relative" }}
-          >
-            Commandes reçues
-            {newOrdersCount > 0 && (
-              <span
-                style={{
-                  marginLeft: 6,
-                  background: "var(--bissap-600)",
-                  color: "white",
-                  borderRadius: 999,
-                  padding: "1px 7px",
-                  fontSize: "0.75rem",
-                  fontWeight: 700,
-                }}
-              >
-                {newOrdersCount}
-              </span>
+          <Link href="/messages" className="topbar-icon" aria-label="Messages">
+            💬
+            {unreadMessages > 0 && (
+              <span className="topbar-badge">{unreadMessages > 9 ? "9+" : unreadMessages}</span>
             )}
-          </a>
-          <button onClick={handleLogout}>Déconnexion</button>
+          </Link>
+          <Link href="/vendor/orders" className="topbar-icon" aria-label="Commandes reçues">
+            📦
+            {newOrdersCount > 0 && <span className="topbar-badge">{newOrdersCount > 9 ? "9+" : newOrdersCount}</span>}
+          </Link>
+          <button className="topbar-logout" onClick={handleLogout}>Déconnexion</button>
         </div>
       </div>
       <div className="woven-strip" />
