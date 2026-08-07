@@ -9,6 +9,21 @@ import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/Pri
 const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
 const CONDITION_COLORS = { neuf: "var(--gold-600)", quasi_neuf: "#6b7280", occasion: "var(--bissap-600)" };
 
+// Émojis par catégorie pour les placeholders
+const CATEGORY_ICONS = {
+  electronique: "📱",
+  telephones: "📱",
+  mode: "👗",
+  vetements: "👗",
+  beaute: "💄",
+  maison: "🏠",
+  cuisine: "🍳",
+  sport: "⚽",
+  livres: "📚",
+  jouets: "🧸",
+  auto: "🚗",
+};
+
 export function Stars({ rating }) {
   const rounded = Math.round(Number(rating) || 0);
   return (
@@ -19,9 +34,6 @@ export function Stars({ rating }) {
   );
 }
 
-// Carte produit standard (catalogue + sections horizontales de l'accueil).
-// Gère elle-même le favori et l'ajout au panier — aucun état à faire
-// remonter au parent, pour rester réutilisable telle quelle partout.
 export default function ProductCard({ p, user, compact = false }) {
   const router = useRouter();
   const [favorited, setFavorited] = useState(Boolean(p.is_favorited));
@@ -56,6 +68,10 @@ export default function ProductCard({ p, user, compact = false }) {
     setTimeout(() => setJustAdded(false), 1200);
   }
 
+  // Émoji de catégorie pour le placeholder
+  const categorySlug = (p.category_slug || p.category_name || "").toLowerCase();
+  const placeholderIcon = CATEGORY_ICONS[categorySlug] || "🛍️";
+
   return (
     <div className={`product-card shop-card ${compact ? "shop-card-compact" : ""}`}>
       <button
@@ -63,7 +79,6 @@ export default function ProductCard({ p, user, compact = false }) {
         onClick={handleFav}
         disabled={favBusy}
         aria-label={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
-        title={favorited ? "Retirer des favoris" : "Ajouter aux favoris"}
       >
         {favorited ? "♥" : "♡"}
       </button>
@@ -79,37 +94,35 @@ export default function ProductCard({ p, user, compact = false }) {
           {p.images && p.images.length > 0 ? (
             <img src={p.images[0]} alt={p.name} className="shop-card-image" loading="lazy" />
           ) : (
-            <div className="shop-card-image shop-card-image-placeholder">🛍️</div>
+            <div className="shop-card-image shop-card-image-placeholder">{placeholderIcon}</div>
           )}
         </div>
-        <div className="name shop-card-name">{p.name}</div>
+        <div className="shop-card-info">
+          <div className="name shop-card-name">{p.name}</div>
+          <span
+            className="shop-card-condition"
+            style={{ background: CONDITION_COLORS[p.condition] || "var(--gold-600)" }}
+          >
+            {CONDITION_LABELS[p.condition] || "Neuf"}
+          </span>
+          <div className="shop-card-shop-row">
+            <span className="shop">{p.shop_name}</span>
+            {p.shop_verified && (
+              <span className="shop-card-verified" title="Boutique vérifiée">✓</span>
+            )}
+          </div>
+          {Number(p.review_count) > 0 && (
+            <div className="shop-card-rating">
+              <Stars rating={p.avg_rating} />
+              <span className="shop-card-rating-count">({p.review_count})</span>
+            </div>
+          )}
+          <PriceDisplay product={p} />
+        </div>
       </Link>
 
-      <span
-        className="shop-card-condition"
-        style={{ background: CONDITION_COLORS[p.condition] || "var(--gold-600)" }}
-      >
-        {CONDITION_LABELS[p.condition] || "Neuf"}
-      </span>
-
-      <div className="shop-card-shop-row">
-        <span className="shop">{p.shop_name}</span>
-        {p.shop_verified && (
-          <span className="shop-card-verified" title="Boutique vérifiée">✓</span>
-        )}
-      </div>
-
-      {Number(p.review_count) > 0 && (
-        <div className="shop-card-rating">
-          <Stars rating={p.avg_rating} />
-          <span className="shop-card-rating-count">({p.review_count})</span>
-        </div>
-      )}
-
-      <PriceDisplay product={p} />
-
-      <button className="btn btn-primary" onClick={handleAdd} disabled={p.stock_quantity <= 0}>
-        {p.stock_quantity <= 0 ? "Rupture de stock" : justAdded ? "Ajouté ✓" : "Ajouter au panier"}
+      <button className="btn btn-primary shop-card-add-btn" onClick={handleAdd} disabled={p.stock_quantity <= 0}>
+        {p.stock_quantity <= 0 ? "Rupture" : justAdded ? "✓" : "+ Panier"}
       </button>
     </div>
   );
