@@ -144,13 +144,14 @@ export default function AdminAnalyticsPage() {
 
   return (
     <div className="shell">
+      {/* ===== TOPBAR TEMU ===== */}
       <div className="topbar">
         <div className="brand">
-          <KimoxaLogo light size={22} /> <span className="role-tag">Admin</span>
+          <KimoxaLogo light size={20} /> <span className="role-tag">Admin</span>
         </div>
         <div className="topbar-actions">
-          <Link href="/admin/dashboard"><button>Tableau de bord</button></Link>
-          <button onClick={handleLogout}>Déconnexion</button>
+          <Link href="/admin/dashboard" className="topbar-textlink">Tableau de bord</Link>
+          <button className="topbar-logout" onClick={handleLogout}>Déconnexion</button>
         </div>
       </div>
       <div className="woven-strip" />
