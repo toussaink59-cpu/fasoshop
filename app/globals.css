@@ -4697,3 +4697,28 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   .vendor-product-image { width: 100px; height: 100px; }
   .vendor-action-row { flex-wrap: nowrap; }
 }
+/* ===== TOPBAR VENDEUR MOBILE : propre et lisible ===== */
+@media (max-width: 767px) {
+  .topbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 14px;
+  }
+  .topbar .brand { justify-content: center; }
+  .topbar-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .topbar-actions a {
+    margin-right: 0 !important;
+    font-size: 0.8rem !important;
+  }
+  .topbar-actions button {
+    padding: 6px 12px;
+    font-size: 0.78rem;
+  }
+}
