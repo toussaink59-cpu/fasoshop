@@ -1,8 +1,7 @@
 import { getCategoriesTree } from "@/lib/queries/categories";
 import { getCurrentUser } from "@/lib/session";
 import { getActiveFlashSales } from "@/lib/queries/flashSales";
-import { getBestSellers, getNewArrivals, getTopRated } from "@/lib/queries/homepage";
-import { getRecommendedProducts } from "@/lib/queries/recommendations";
+import { getNewArrivals } from "@/lib/queries/homepage";
 import { getProducts } from "@/lib/queries/products";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
@@ -16,22 +15,18 @@ import HomeFeed from "@/app/components/HomeFeed";
 export const metadata = {
   title: "Accueil",
   description:
-    "Kimoxa, la marketplace multi-vendeurs qui connecte l'Afrique qui vend à l'Afrique qui achète. Paiement à la livraison et Mobile Money.",
+    "Kimoxa, la marketplace multi-vendeurs qui connecte l'Afrique qui vend à l'Afrique qui achète.",
 };
 
 export default async function HomePage() {
-  const [categories, user, flashSales, bestSellers, newArrivals, topRated] = await Promise.all([
+  const [categories, user, flashSales, newArrivals] = await Promise.all([
     getCategoriesTree(),
     getCurrentUser(),
     getActiveFlashSales(),
-    getBestSellers(),
     getNewArrivals(),
-    getTopRated(),
   ]);
 
-  const recommended = await getRecommendedProducts(user?.id ?? null);
-
-  // Flux complet pour le bouton "Voir plus" façon Temu (chargement sur place)
+  // Flux unique façon Temu : tout le catalogue + "Afficher plus"
   const feed = await getProducts({ sort: "newest" }, user?.id ?? null);
 
   return (
@@ -53,31 +48,7 @@ export default async function HomePage() {
         user={user}
       />
 
-      <HorizontalProductSection
-        title="Meilleures ventes"
-        icon="🏆"
-        seeAllHref={null}
-        products={bestSellers}
-        user={user}
-      />
-
-      <HorizontalProductSection
-        title="Produits populaires"
-        icon="⭐"
-        seeAllHref={null}
-        products={topRated}
-        user={user}
-      />
-
-      <HorizontalProductSection
-        title="Recommandés pour vous"
-        icon="🎯"
-        seeAllHref={null}
-        products={recommended}
-        user={user}
-      />
-
-      {/* Flux infini façon Temu : "Voir plus" charge sur place, sans changer de page */}
+      {/* Flux unique : "Afficher plus" charge le reste, comme Temu */}
       <HomeFeed initialProducts={feed} user={user} />
 
       <Footer />
