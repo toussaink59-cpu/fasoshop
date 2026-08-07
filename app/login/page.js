@@ -2,10 +2,11 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import KimoxaLogo from "@/app/components/KimoxaLogo";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [mode, setMode] = useState("login"); // 'login' | 'register'
+  const [mode, setMode] = useState("login");
   const [role, setRole] = useState("vendor");
   const [form, setForm] = useState({ email: "", password: "", fullName: "" });
   const [error, setError] = useState("");
@@ -40,7 +41,6 @@ export default function LoginPage() {
         return;
       }
 
-      // Récupère le rôle réel pour rediriger au bon endroit
       const meRes = await fetch("/api/auth/me");
       const me = await meRes.json();
       const userRole = me.user?.role;
@@ -61,7 +61,7 @@ export default function LoginPage() {
   return (
     <div className="auth-wrap">
       <div className="auth-card">
-        <h1>🛒 FasoShop</h1>
+        <h1><KimoxaLogo size={42} withTagline /></h1>
         <p className="subtitle">
           {mode === "login" ? "Connectez-vous à votre compte" : "Créez votre compte"}
         </p>
