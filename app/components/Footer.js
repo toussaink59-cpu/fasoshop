@@ -5,28 +5,20 @@ export default function Footer() {
     <footer className="site-footer">
       <div className="site-footer-inner">
 
-        {/* 1. Marque + promesse panafricaine */}
-        <div className="footer-brand-block">
+        {/* 1. Marque + réseaux sociaux sur une seule ligne */}
+        <div className="footer-top-row">
           <div className="site-footer-brand">🛒 FasoShop</div>
-          <p className="site-footer-tagline">
-            La marketplace multi-vendeurs qui connecte l'Afrique qui vend à l'Afrique qui achète.
-          </p>
           <div className="site-footer-socials">
             <a href="#" className="site-footer-social-icon" aria-label="Facebook">📘</a>
             <a href="#" className="site-footer-social-icon" aria-label="Instagram">📷</a>
             <a href="#" className="site-footer-social-icon" aria-label="WhatsApp">💬</a>
           </div>
         </div>
+        <p className="site-footer-tagline">
+          La marketplace multi-vendeurs qui connecte l'Afrique qui vend à l'Afrique qui achète.
+        </p>
 
-        {/* 2. Bandeau confiance panafricain */}
-        <div className="footer-trust">
-          <span>📱 Orange Money · Moov Money · MTN MoMo · M-Pesa · Wave</span>
-          <span>💵 Paiement à la livraison</span>
-          <span>🚚 Livraison multi-pays</span>
-          <span>🛡️ Acheteurs protégés</span>
-        </div>
-
-        {/* 3. Quatre blocs de liens */}
+        {/* 2. Liens utiles d'abord (2 colonnes mobile, 4 PC) */}
         <div className="footer-cols">
           <div className="site-footer-col">
             <h4>🛍️ Acheter</h4>
@@ -58,9 +50,17 @@ export default function Footer() {
           </div>
         </div>
 
+        {/* 3. Bandeau confiance panafricain */}
+        <div className="footer-trust">
+          <span>📱 Orange Money · Moov Money · MTN MoMo · M-Pesa · Wave</span>
+          <span>💵 Paiement à la livraison</span>
+          <span>🚚 Livraison multi-pays</span>
+          <span>🛡️ Acheteurs protégés</span>
+        </div>
+
         {/* 4. Pays desservis */}
         <div className="footer-countries">
-          <strong>Pays desservis :</strong> 🇧 Burkina Faso
+          <strong>Pays desservis :</strong> 🇧🇫 Burkina Faso
           <span className="footer-countries-soon">
             {" "}· Bientôt : 🇸🇳 🇨🇮 🇲🇱 🇬🇳 🇧🇯 🇹🇬 — et toute l'Afrique 🌍
           </span>
