@@ -7,6 +7,19 @@ import VendorBottomNav from "@/app/components/VendorBottomNav";
 
 const DOC_LABELS = { cni: "CNI", passeport: "Passeport", permis: "Permis de conduire" };
 
+// Parse les images qui peuvent arriver comme chaîne JSON depuis la DB
+function parseImages(raw) {
+  if (Array.isArray(raw)) return raw;
+  if (typeof raw === "string" && raw.trim().startsWith("[")) {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return [];
+    }
+  }
+  return [];
+}
+
 export default function VendorDashboard() {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -806,13 +819,14 @@ export default function VendorDashboard() {
                 const isLow = p.stock_quantity <= p.low_stock_threshold;
                 const isFlashActive = p.flash_sale_ends_at && new Date(p.flash_sale_ends_at) > new Date();
                 const isExpanded = expandedProduct === p.id;
+                const images = parseImages(p.images);
 
                 return (
                   <div key={p.id} className="vendor-product-card">
                     <div className="vendor-product-header" onClick={() => setExpandedProduct(isExpanded ? null : p.id)}>
                       <div className="vendor-product-image">
-                        {p.images && p.images.length > 0 ? (
-                          <img src={p.images[0]} alt={p.name} />
+                        {images.length > 0 ? (
+                          <img src={images[0]} alt={p.name} />
                         ) : (
                           <div className="vendor-product-placeholder">📦</div>
                         )}
