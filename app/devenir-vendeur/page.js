@@ -21,7 +21,7 @@ export default async function DevenirVendeurPage() {
 
       <div className="content">
         <div className="page-header">
-          <h1>Vendez sur FasoShop</h1>
+          <h1>Vendez sur Kimoxa</h1>
           <p>Rejoignez les boutiques qui vendent déjà partout au Burkina Faso, sans frais d'inscription.</p>
         </div>
 
@@ -55,7 +55,7 @@ export default async function DevenirVendeurPage() {
             <thead>
               <tr>
                 <th>Montant de la vente</th>
-                <th>Commission FasoShop (5,5%)</th>
+                <th>Commission Kimoxa (5,5%)</th>
                 <th>Vous recevez</th>
               </tr>
             </thead>
@@ -83,7 +83,7 @@ export default async function DevenirVendeurPage() {
               <div style={{ fontSize: "1.6rem", marginBottom: 6 }}>👀</div>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>Visibilité</div>
               <p style={{ color: "var(--ink-400)", margin: 0, fontSize: "0.9rem" }}>
-                Votre boutique apparaît dans le catalogue, les recherches et les recommandations vues par tous les acheteurs FasoShop.
+                Votre boutique apparaît dans le catalogue, les recherches et les recommandations vues par tous les acheteurs Kimoxa.
               </p>
             </div>
             <div>
