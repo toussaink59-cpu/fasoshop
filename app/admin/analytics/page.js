@@ -134,7 +134,6 @@ export default function AdminAnalyticsPage() {
     router.push("/login");
   }
 
-  // KPIs calculés sur la période affichée
   const totalGross = series ? series.reduce((s, d) => s + Number(d.gross || 0), 0) : 0;
   const bestDay =
     series && series.length
@@ -166,33 +165,59 @@ export default function AdminAnalyticsPage() {
           <p>Chargement...</p>
         ) : (
           <>
-            {/* Sélecteur de période (pilules Temu) */}
-            <div className="vendor-filters">
-              {[1, 7, 30].map((d) => (
+            {/* Sélecteur de période professionnel */}
+            <div className="ana-period">
+              <div className="vendor-filters">
                 <button
-                  key={d}
-                  className={`vendor-filter-btn ${chartMode === "range" && rangeDays === d ? "active" : ""}`}
-                  onClick={() => {
-                    setChartMode("range");
-                    setRangeDays(d);
+                  className={`vendor-filter-btn ${chartMode === "range" && rangeDays === 1 ? "active" : ""}`}
+                  onClick={() => { setChartMode("range"); setRangeDays(1); }}
+                >
+                  Aujourd'hui
+                </button>
+                <button
+                  className={`vendor-filter-btn ${chartMode === "range" && rangeDays === 7 ? "active" : ""}`}
+                  onClick={() => { setChartMode("range"); setRangeDays(7); }}
+                >
+                  7 derniers jours
+                </button>
+                <button
+                  className={`vendor-filter-btn ${chartMode === "range" && rangeDays === 30 ? "active" : ""}`}
+                  onClick={() => { setChartMode("range"); setRangeDays(30); }}
+                >
+                  30 derniers jours
+                </button>
+                <button
+                  className={`vendor-filter-btn ${chartMode === "range" && rangeDays === 90 ? "active" : ""}`}
+                  onClick={() => { setChartMode("range"); setRangeDays(90); }}
+                >
+                  90 derniers jours
+                </button>
+                <button
+                  className={`vendor-filter-btn ${chartMode === "year" && selectedYear === new Date().getFullYear() ? "active" : ""}`}
+                  onClick={() => { setChartMode("year"); setSelectedYear(new Date().getFullYear()); }}
+                >
+                  Cette année
+                </button>
+                <select
+                  className="vendor-filter-select"
+                  value={chartMode === "year" ? selectedYear : ""}
+                  onChange={(e) => {
+                    setSelectedYear(Number(e.target.value));
+                    setChartMode("year");
                   }}
                 >
-                  {d} jour{d > 1 ? "s" : ""}
-                </button>
-              ))}
-              <select
-                className="vendor-filter-select"
-                value={chartMode === "year" ? selectedYear : ""}
-                onChange={(e) => {
-                  setSelectedYear(Number(e.target.value));
-                  setChartMode("year");
-                }}
-              >
-                <option value="" disabled>Année…</option>
-                {(data.availableYears || [new Date().getFullYear()]).map((y) => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
+                  <option value="" disabled>Autres années…</option>
+                  {(data.availableYears || [new Date().getFullYear()]).map((y) => (
+                    <option key={y} value={y}>{y}</option>
+                  ))}
+                </select>
+              </div>
+
+              {!seriesLoading && series && series.length > 0 && (
+                <p className="ana-period-hint">
+                  📅 Du {series[0]?.label} au {series[series.length - 1]?.label}
+                </p>
+              )}
             </div>
 
             {/* 4 KPI cards */}
