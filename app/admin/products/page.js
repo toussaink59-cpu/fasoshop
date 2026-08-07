@@ -2,7 +2,9 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import AdminBottomNav from "@/app/components/AdminBottomNav";
+import KimoxaLogo from "@/app/components/KimoxaLogo";
 
 export default function AdminProductsPage() {
   const router = useRouter();
@@ -65,39 +67,44 @@ export default function AdminProductsPage() {
 
   return (
     <div className="shell">
+      {/* ===== TOPBAR TEMU ===== */}
       <div className="topbar">
         <div className="brand">
-          🛒 Kimoxa <span className="role-tag">Admin</span>
+          <KimoxaLogo light size={20} /> <span className="role-tag">Admin</span>
         </div>
         <div className="topbar-actions">
-          <button onClick={handleLogout}>Déconnexion</button>
+          <Link href="/admin/dashboard" className="topbar-textlink">Tableau de bord</Link>
+          <button className="topbar-logout" onClick={handleLogout}>Déconnexion</button>
         </div>
       </div>
       <div className="woven-strip" />
 
-      <div className="content">
-        <div className="page-header">
+      <div className="vendor-dashboard-wrap">
+        <div className="vendor-dashboard-header">
           <h1>Produits</h1>
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
 
-        <div className="stat-row">
-          <div className="stat-card">
-            <div className="label">Unités en stock</div>
-            <div className="value">{totalStock}</div>
+        {/* Cartes stats (même style que le dashboard) */}
+        <div className="vendor-stats-grid">
+          <div className="vendor-stat-card">
+            <div className="vendor-stat-icon">📦</div>
+            <div className="vendor-stat-value">{totalStock}</div>
+            <div className="vendor-stat-label">Unités en stock</div>
           </div>
-          <div className="stat-card">
-            <div className="label">Stock faible</div>
-            <div className="value" style={{ color: lowStockCount > 0 ? "var(--bissap-600)" : "inherit" }}>
+          <div className="vendor-stat-card">
+            <div className="vendor-stat-icon">⚠️</div>
+            <div className="vendor-stat-value" style={{ color: lowStockCount > 0 ? "var(--bissap-600)" : "inherit" }}>
               {lowStockCount}
             </div>
+            <div className="vendor-stat-label">Stock faible</div>
           </div>
         </div>
 
-        <div className="panel">
+        <div className="ana-panel">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-            <h2 style={{ marginBottom: 0 }}>Détail des produits</h2>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <h2 style={{ margin: 0 }}>Détail des produits</h2>
+            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
               <select
                 value={selectedShop}
                 onChange={(e) => applyFilters(e.target.value, lowStockOnly)}
