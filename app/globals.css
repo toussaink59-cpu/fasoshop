@@ -4911,3 +4911,43 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   display: inline-block;
   flex-shrink: 0;
 }
+/* ===== VRAIS LOGOS DE PAIEMENT (couleurs de marque) ===== */
+.temu-footer-payment-badges .pay-logo {
+  display: inline-flex; align-items: center; gap: 4px;
+  background: #fff; color: #6b7280;
+  border-radius: 6px; padding: 4px 9px;
+  font-size: 0.7rem; font-weight: 600;
+}
+.pay-logo b { font-weight: 800; }
+.pay-om::before { content: ""; width: 9px; height: 9px; background: #FF7900; border-radius: 2px; }
+.pay-om b { color: #FF7900; }
+.pay-moov b { color: #0072BC; }
+.temu-footer-payment-badges .pay-mtn { background: #FFCC00; color: #000; }
+.pay-mtn b { color: #000; }
+.pay-mpesa b { color: #4CAF50; }
+.pay-wave b { color: #00B8E6; letter-spacing: 0.5px; }
+
+/* ===== FOOTER COMPACT (moins d'espace) ===== */
+.site-footer-inner { padding: 20px 20px 12px; }
+.temu-footer-brand { padding-bottom: 8px; }
+.temu-footer-brand .site-footer-brand { font-size: 1.1rem; }
+.temu-footer-brand .site-footer-tagline { margin: 2px 0 0; font-size: 0.72rem; }
+.temu-footer-top { padding: 8px 0; gap: 10px; }
+.temu-footer-app-icon { font-size: 1.2rem; }
+.temu-footer-app strong { font-size: 0.8rem; }
+.temu-footer-app span { font-size: 0.68rem; }
+.temu-footer-socials-title { font-size: 0.66rem; margin-bottom: 4px; }
+.temu-footer-payments { padding: 8px 0; }
+.temu-footer-payments-title { font-size: 0.66rem; margin-bottom: 6px; }
+.temu-footer-payment-badges { gap: 5px; }
+.temu-footer-cols { padding: 10px 0; gap: 14px 10px; }
+.site-footer-col { gap: 4px; }
+.site-footer-col h4 { margin: 0 0 2px; font-size: 0.78rem; }
+.site-footer-col a { font-size: 0.74rem; }
+.temu-footer-bottombar { padding-top: 8px; font-size: 0.7rem; }
+@media (min-width: 768px) {
+  .temu-footer-brand { display: flex; align-items: baseline; gap: 14px; }
+}
+@media (max-width: 767px) {
+  .site-footer-inner { padding-bottom: 70px; }
+}
