@@ -209,7 +209,6 @@ function ShopContent({
   const [loadingMore, setLoadingMore] = useState(false);
   const lastLoadedRef = useRef(null);
 
-  const [searchInput, setSearchInput] = useState(q);
   const [minPriceInput, setMinPriceInput] = useState(minPrice);
   const [maxPriceInput, setMaxPriceInput] = useState(maxPrice);
 
@@ -221,7 +220,7 @@ function ShopContent({
     }
 
     setLoading(true);
-    setVisibleCount(ITEMS_PER_PAGE); // Reset pagination quand les filtres changent
+    setVisibleCount(ITEMS_PER_PAGE);
     const params = new URLSearchParams();
     if (categorySlug) params.set("category", categorySlug);
     if (q) params.set("q", q);
@@ -252,19 +251,12 @@ function ShopContent({
     setMobileFiltersOpen(false);
   }
 
-  function handleSearchSubmit(e) {
-    e.preventDefault();
-    updateParams({ q: searchInput });
-  }
-
   function handleLoadMore() {
     setLoadingMore(true);
-    // Simule un petit délai pour l'UX
     setTimeout(() => {
       const newCount = Math.min(visibleCount + ITEMS_PER_PAGE, products.length);
       setVisibleCount(newCount);
       setLoadingMore(false);
-      // Scroll vers les nouveaux produits
       if (lastLoadedRef.current) {
         lastLoadedRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
@@ -329,22 +321,10 @@ function ShopContent({
         </aside>
 
         <div className="shop-main">
-          <div className="page-header" style={{ marginBottom: 12 }}>
-            <form onSubmit={handleSearchSubmit} style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-              <input
-                type="text"
-                placeholder="Rechercher un produit..."
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                style={{ flex: 1 }}
-              />
-              <button type="submit" className="btn btn-primary">Rechercher</button>
-            </form>
-          </div>
-
           <div className="shop-toolbar">
             <span className="shop-result-count">
               {loading ? "Chargement..." : `${products.length} produit${products.length > 1 ? "s" : ""}`}
+              {q && ` pour « ${q} »`}
             </span>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <button
@@ -378,7 +358,6 @@ function ShopContent({
                 ))}
               </div>
 
-              {/* Bouton "Voir plus" style Temu */}
               {hasMore && (
                 <div className="load-more-wrap">
                   <button
