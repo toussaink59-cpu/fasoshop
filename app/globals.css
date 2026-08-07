@@ -4951,3 +4951,9 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 @media (max-width: 767px) {
   .site-footer-inner { padding-bottom: 70px; }
 }
+/* ===== MARQUE KIMOXA ===== */
+.kimoxa-logo { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+.kimoxa-logo-text { display: flex; flex-direction: column; line-height: 1.15; }
+.kimoxa-wordmark { font-weight: 800; letter-spacing: 0.14em; font-size: 1.05rem; color: #0F172A; }
+.kimoxa-wordmark.is-light { color: #FFFFFF; }
+.kimoxa-tagline { font-size: 0.58rem; letter-spacing: 0.16em; text-transform: uppercase; color: #D4AF37; }
