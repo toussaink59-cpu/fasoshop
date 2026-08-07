@@ -6,17 +6,8 @@ import Link from "next/link";
 import { getCart, cartCount } from "@/lib/cart";
 import SideMenu from "@/app/components/SideMenu";
 import SearchBar from "@/app/components/SearchBar";
+import KimoxaLogo from "@/app/components/KimoxaLogo";
 
-// Header sticky mobile-first : logo + icônes essentielles (favoris, messages,
-// panier) + hamburger ouvrant le SideMenu (compte, catégories, liens légaux).
-// La barre de recherche est un second bloc, sous la rangée d'icônes, pour que
-// la rangée principale tienne dans 60-70px même sur les écrans les plus
-// étroits (360px, Galaxy S23) sans débordement.
-//
-// À partir de 768px (tablette/desktop), les actions précédemment visibles en
-// permanence (Devenir vendeur, Compte, Déconnexion) réapparaissent dans le
-// header lui-même (.site-header-desktop-actions) : la demande portait sur la
-// refonte MOBILE, on ne régresse donc pas l'expérience desktop existante.
 export default function SiteHeader({ initialUser, categories = [], searchValue = "" }) {
   const router = useRouter();
   const [user, setUser] = useState(initialUser);
@@ -27,8 +18,6 @@ export default function SiteHeader({ initialUser, categories = [], searchValue =
 
   function closeMenu() {
     setMenuOpen(false);
-    // Restitue le focus clavier au bouton qui a ouvert le menu — sans ça,
-    // le focus reste "perdu" sur un élément désormais inerte.
     hamburgerRef.current?.focus();
   }
 
@@ -75,8 +64,8 @@ export default function SiteHeader({ initialUser, categories = [], searchValue =
             ☰
           </button>
 
-          <Link href="/" className="site-header-logo" aria-label="FasoShop — accueil">
-            🛒 FasoShop
+          <Link href="/" className="site-header-logo" aria-label="Kimoxa — accueil">
+            <KimoxaLogo size={28} />
           </Link>
 
           <div className="site-header-desktop-actions">
