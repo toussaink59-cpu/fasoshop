@@ -5114,3 +5114,39 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 .btn-load-more:disabled { opacity: 0.6; cursor: wait; }
 .load-more-count { font-size: 0.75rem; color: var(--ink-400); margin-top: 6px; }
 .load-more-done { font-size: 0.82rem; color: var(--ink-400); font-weight: 600; }
+/* ===== HEADER TEMU : une seule rangée compacte ===== */
+.site-header-row { gap: 10px; padding: 8px 12px; }
+
+/* Recherche compacte arrondie au centre */
+.site-header-search-compact { flex: 1; min-width: 0; }
+.site-header-search-compact .search-bar-wrap { width: 100%; }
+.site-header-search-compact .search-bar-standalone {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--sand-100, #f1ece4);
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0 14px;
+  height: 38px;
+}
+.site-header-search-compact .search-bar-standalone:focus-within {
+  border-color: var(--gold-600, #d97706);
+  background: #fff;
+}
+.site-header-search-compact .search-bar-icon { font-size: 0.85rem; }
+.site-header-search-compact .search-bar-standalone input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 0.85rem;
+  height: 100%;
+}
+.site-header-search-compact .search-bar-standalone input:focus { outline: none; }
+
+/* Icône compte : mobile uniquement (le PC a déjà « Bonjour / Compte ») */
+@media (min-width: 768px) {
+  .site-header-account { display: none; }
+}
