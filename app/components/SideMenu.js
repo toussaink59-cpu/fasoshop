@@ -1,19 +1,19 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
-// Drawer latéral ouvert depuis le bouton hamburger du SiteHeader.
-// Regroupe tout ce qui était auparavant affiché en permanence dans le
-// header desktop (Bonjour X, Déconnexion, Devenir vendeur) + navigation
-// et liens légaux, pour libérer le header mobile.
+// Drawer latÃ©ral ouvert depuis le bouton hamburger du SiteHeader.
+// Regroupe tout ce qui Ã©tait auparavant affichÃ© en permanence dans le
+// header desktop (Bonjour X, DÃ©connexion, Devenir vendeur) + navigation
+// et liens lÃ©gaux, pour libÃ©rer le header mobile.
 export default function SideMenu({ open, onClose, user, categories = [], onLogout }) {
   const router = useRouter();
   const navRef = useRef(null);
   const closeBtnRef = useRef(null);
 
-  // Ferme au clavier (Échap) — accessibilité.
+  // Ferme au clavier (Ã‰chap) â€” accessibilitÃ©.
   useEffect(() => {
     function onKeyDown(e) {
       if (e.key === "Escape") onClose();
@@ -22,10 +22,10 @@ export default function SideMenu({ open, onClose, user, categories = [], onLogou
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open, onClose]);
 
-  // Piège de focus clavier : tant que le menu est ouvert, Tab/Shift+Tab
-  // reste à l'intérieur du drawer (norme WAI-ARIA pour les dialogues
-  // modaux). Sans ça, un utilisateur au clavier peut tabuler vers des
-  // liens invisibles hors écran derrière l'overlay.
+  // PiÃ¨ge de focus clavier : tant que le menu est ouvert, Tab/Shift+Tab
+  // reste Ã  l'intÃ©rieur du drawer (norme WAI-ARIA pour les dialogues
+  // modaux). Sans Ã§a, un utilisateur au clavier peut tabuler vers des
+  // liens invisibles hors Ã©cran derriÃ¨re l'overlay.
   useEffect(() => {
     if (!open) return;
 
@@ -51,17 +51,17 @@ export default function SideMenu({ open, onClose, user, categories = [], onLogou
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [open]);
 
-  // Déplace le focus dans le drawer à l'ouverture (bouton fermer), et le
-  // rend inerte (non focusable, non lisible par lecteur d'écran) une fois
-  // refermé — la transposition CSS seule (translateX) ne suffit pas, les
-  // liens restaient tabulables hors écran.
+  // DÃ©place le focus dans le drawer Ã  l'ouverture (bouton fermer), et le
+  // rend inerte (non focusable, non lisible par lecteur d'Ã©cran) une fois
+  // refermÃ© â€” la transposition CSS seule (translateX) ne suffit pas, les
+  // liens restaient tabulables hors Ã©cran.
   useEffect(() => {
     if (open) {
       closeBtnRef.current?.focus();
     }
   }, [open]);
 
-  // Empêche le scroll de l'arrière-plan pendant que le drawer est ouvert.
+  // EmpÃªche le scroll de l'arriÃ¨re-plan pendant que le drawer est ouvert.
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => {
@@ -98,7 +98,7 @@ export default function SideMenu({ open, onClose, user, categories = [], onLogou
         aria-hidden={!open}
         aria-modal={open ? "true" : undefined}
         role={open ? "dialog" : undefined}
-        inert={!open ? "" : undefined}
+        inert={!open}
       >
         <div className="side-menu-header">
           {user ? (
@@ -116,32 +116,32 @@ export default function SideMenu({ open, onClose, user, categories = [], onLogou
               <p>Bienvenue sur FasoShop</p>
               <div className="side-menu-guest-actions">
                 <Link href="/login" onClick={onClose}><button className="btn btn-primary">Se connecter</button></Link>
-                <Link href="/register" onClick={onClose}><button className="btn btn-outline">Créer un compte</button></Link>
+                <Link href="/register" onClick={onClose}><button className="btn btn-outline">CrÃ©er un compte</button></Link>
               </div>
             </div>
           )}
-          <button ref={closeBtnRef} className="side-menu-close" onClick={onClose} aria-label="Fermer le menu">✕</button>
+          <button ref={closeBtnRef} className="side-menu-close" onClick={onClose} aria-label="Fermer le menu">âœ•</button>
         </div>
 
         <div className="side-menu-body">
           {user && (
             <Link href={accountLink()} className="side-menu-link" onClick={onClose}>
-              {user.role === "vendor" ? "📊 Tableau de bord vendeur" : user.role === "admin" ? "📊 Tableau de bord admin" : "📦 Mes commandes"}
+              {user.role === "vendor" ? "ðŸ“Š Tableau de bord vendeur" : user.role === "admin" ? "ðŸ“Š Tableau de bord admin" : "ðŸ“¦ Mes commandes"}
             </Link>
           )}
           {user && user.role === "buyer" && (
-            <Link href="/favoris" className="side-menu-link" onClick={onClose}>♡ Mes favoris</Link>
+            <Link href="/favoris" className="side-menu-link" onClick={onClose}>â™¡ Mes favoris</Link>
           )}
           {user && (
-            <Link href="/messages" className="side-menu-link" onClick={onClose}>💬 Messages</Link>
+            <Link href="/messages" className="side-menu-link" onClick={onClose}>ðŸ’¬ Messages</Link>
           )}
           {user && (
-            <Link href="/account/addresses" className="side-menu-link" onClick={onClose}>📍 Mes adresses</Link>
+            <Link href="/account/addresses" className="side-menu-link" onClick={onClose}>ðŸ“ Mes adresses</Link>
           )}
 
           <div className="side-menu-divider" />
 
-          <p className="side-menu-section-title">Catégories</p>
+          <p className="side-menu-section-title">CatÃ©gories</p>
           {categories.map((c) => (
             <Link key={c.slug} href={`/shop?category=${c.slug}`} className="side-menu-link" onClick={onClose}>
               {c.emoji} {c.name}
@@ -152,11 +152,11 @@ export default function SideMenu({ open, onClose, user, categories = [], onLogou
 
           {(!user || user.role === "buyer") && (
             <Link href="/devenir-vendeur" className="side-menu-link side-menu-link-accent" onClick={onClose}>
-              🏪 Devenir vendeur
+              ðŸª Devenir vendeur
             </Link>
           )}
           <Link href="/nos-vendeurs" className="side-menu-link" onClick={onClose}>Nos vendeurs</Link>
-          <Link href="/a-propos" className="side-menu-link" onClick={onClose}>À propos</Link>
+          <Link href="/a-propos" className="side-menu-link" onClick={onClose}>Ã€ propos</Link>
           <Link href="/faq" className="side-menu-link" onClick={onClose}>FAQ</Link>
           <Link href="/retours" className="side-menu-link" onClick={onClose}>Politique de retour</Link>
 
@@ -169,7 +169,7 @@ export default function SideMenu({ open, onClose, user, categories = [], onLogou
             <>
               <div className="side-menu-divider" />
               <button className="side-menu-link side-menu-logout" onClick={handleLogout}>
-                ⏻ Déconnexion
+                â» DÃ©connexion
               </button>
             </>
           )}
