@@ -5602,3 +5602,11 @@ select, input { max-width: 100%; box-sizing: border-box; }
   body { background: #fff !important; }
   .invoice-sheet { max-width: 100%; padding: 20px; }
 }
+/* ===== FACTURE : force le vrai tableau (contre la règle mobile globale) ===== */
+.invoice-table { display: table !important; width: 100% !important; border-collapse: collapse !important; }
+.invoice-table thead { display: table-header-group !important; }
+.invoice-table tbody { display: table-row-group !important; }
+.invoice-table tfoot { display: table-footer-group !important; }
+.invoice-table tr { display: table-row !important; }
+.invoice-table th, .invoice-table td { display: table-cell !important; padding: 10px 8px !important; }
+.invoice-table th::before, .invoice-table td::before { content: none !important; }
