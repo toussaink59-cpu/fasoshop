@@ -26,6 +26,13 @@ export default async function HomePage() {
     getNewArrivals(),
   ]);
 
+  // Collecte des IDs déjà affichés dans les sections vitrine (Flash + Nouveautés)
+  // pour les exclure du flux principal (zéro doublon, modèle Temu)
+  const featuredIds = new Set([
+    ...flashSales.map((p) => p.id),
+    ...newArrivals.map((p) => p.id),
+  ]);
+
   // Flux unique façon Temu : tout le catalogue + "Afficher plus"
   const feed = await getProducts({ sort: "newest" }, user?.id ?? null);
 
@@ -49,7 +56,7 @@ export default async function HomePage() {
       />
 
       {/* Flux unique : "Afficher plus" charge le reste, comme Temu */}
-      <HomeFeed initialProducts={feed} user={user} />
+      <HomeFeed initialProducts={feed} user={user} excludeIds={featuredIds} />
 
       <Footer />
       <BottomNav user={user} />
