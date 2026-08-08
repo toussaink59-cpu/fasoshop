@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Footer from "@/app/components/Footer";
 import SiteHeader from "@/app/components/SiteHeader";
@@ -9,170 +9,229 @@ import ProductCard from "@/app/components/ProductCard";
 
 const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
 const SORT_OPTIONS = [
-  { value: "newest", label: "Nouveautés" },
-  { value: "price_asc", label: "Prix croissant" },
-  { value: "price_desc", label: "Prix décroissant" },
-  { value: "rating", label: "Mieux notés" },
+  { value: "newest", label: "✨ Nouveautés" },
+  { value: "price_asc", label: "↑ Prix croissant" },
+  { value: "price_desc", label: "↓ Prix décroissant" },
+  { value: "rating", label: "★ Mieux notés" },
 ];
-const ITEMS_PER_PAGE = 20;
+const ITEMS_PER_PAGE = 24;
 
-function FilterSidebar({
+// ====== SHEET DE FILTRES (mobile + desktop, façon Temu) ======
+function FilterSheet({
+  open,
+  onClose,
+  onApply,
+  onReset,
   categories,
   shops,
-  categorySlug,
-  shopId,
-  condition,
-  brand,
-  city,
-  minRating,
   brands,
   cities,
-  minPrice,
-  maxPrice,
-  onCategoryPick,
-  onShopChange,
-  onConditionPick,
-  onBrandChange,
-  onCityChange,
-  onMinRatingPick,
-  minPriceInput,
-  maxPriceInput,
-  setMinPriceInput,
-  setMaxPriceInput,
-  onApplyPrice,
+  filters,
+  setFilters,
 }) {
+  if (!open) return null;
+
   return (
-    <>
-      <div className="sidebar-section">
-        <h3>Catégories</h3>
-        <div className="sidebar-cat-list">
-          <button
-            className={`sidebar-cat-link ${!categorySlug ? "active" : ""}`}
-            onClick={() => onCategoryPick("")}
-          >
-            Toutes les catégories
-          </button>
-          {categories.map((cat) => (
-            <div key={cat.id}>
+    <div className="temu-sheet-overlay" onClick={onClose}>
+      <div className="temu-sheet" onClick={(e) => e.stopPropagation()}>
+        <div className="temu-sheet-head">
+          <h2>Filtres</h2>
+          <button className="temu-sheet-close" onClick={onClose} aria-label="Fermer">✕</button>
+        </div>
+
+        <div className="temu-sheet-body">
+          {/* Catégories */}
+          <section className="temu-filter-section">
+            <h3>Catégories</h3>
+            <div className="temu-chip-group">
               <button
-                className={`sidebar-cat-link ${categorySlug === cat.slug ? "active" : ""}`}
-                onClick={() => onCategoryPick(cat.slug)}
+                className={`temu-chip ${!filters.categorySlug ? "is-active" : ""}`}
+                onClick={() => setFilters((f) => ({ ...f, categorySlug: "" }))}
               >
-                {cat.emoji} {cat.name}
+                Toutes
               </button>
-              {cat.children?.map((sub) => (
+              {categories.map((cat) => (
                 <button
-                  key={sub.id}
-                  className={`sidebar-cat-link sidebar-cat-link-sub ${categorySlug === sub.slug ? "active" : ""}`}
-                  onClick={() => onCategoryPick(sub.slug)}
+                  key={cat.id}
+                  className={`temu-chip ${filters.categorySlug === cat.slug ? "is-active" : ""}`}
+                  onClick={() => setFilters((f) => ({ ...f, categorySlug: cat.slug }))}
                 >
-                  {sub.name}
+                  {cat.emoji} {cat.name}
                 </button>
               ))}
             </div>
-          ))}
+          </section>
+
+          {/* Prix */}
+          <section className="temu-filter-section">
+            <h3>Prix (FCFA)</h3>
+            <div className="temu-price-row">
+              <input
+                type="number"
+                min="0"
+                placeholder="Min"
+                value={filters.minPrice || ""}
+                onChange={(e) => setFilters((f) => ({ ...f, minPrice: e.target.value }))}
+              />
+              <span>—</span>
+              <input
+                type="number"
+                min="0"
+                placeholder="Max"
+                value={filters.maxPrice || ""}
+                onChange={(e) => setFilters((f) => ({ ...f, maxPrice: e.target.value }))}
+              />
+            </div>
+          </section>
+
+          {/* État */}
+          <section className="temu-filter-section">
+            <h3>État</h3>
+            <div className="temu-chip-group">
+              <button
+                className={`temu-chip ${!filters.condition ? "is-active" : ""}`}
+                onClick={() => setFilters((f) => ({ ...f, condition: "" }))}
+              >
+                Tous
+              </button>
+              {Object.entries(CONDITION_LABELS).map(([key, label]) => (
+                <button
+                  key={key}
+                  className={`temu-chip ${filters.condition === key ? "is-active" : ""}`}
+                  onClick={() => setFilters((f) => ({ ...f, condition: key }))}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Note minimum */}
+          <section className="temu-filter-section">
+            <h3>Note minimum</h3>
+            <div className="temu-chip-group">
+              <button
+                className={`temu-chip ${!filters.minRating ? "is-active" : ""}`}
+                onClick={() => setFilters((f) => ({ ...f, minRating: "" }))}
+              >
+                Toutes
+              </button>
+              {[4, 3, 2].map((n) => (
+                <button
+                  key={n}
+                  className={`temu-chip ${filters.minRating === String(n) ? "is-active" : ""}`}
+                  onClick={() => setFilters((f) => ({ ...f, minRating: String(n) }))}
+                >
+                  {"★".repeat(n)} et plus
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* Boutique */}
+          {shops.length > 0 && (
+            <section className="temu-filter-section">
+              <h3>Boutique</h3>
+              <select
+                value={filters.shopId || ""}
+                onChange={(e) => setFilters((f) => ({ ...f, shopId: e.target.value }))}
+              >
+                <option value="">Toutes les boutiques</option>
+                {shops.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </section>
+          )}
+
+          {/* Marque */}
+          {brands.length > 0 && (
+            <section className="temu-filter-section">
+              <h3>Marque</h3>
+              <select
+                value={filters.brand || ""}
+                onChange={(e) => setFilters((f) => ({ ...f, brand: e.target.value }))}
+              >
+                <option value="">Toutes les marques</option>
+                {brands.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </section>
+          )}
+
+          {/* Ville */}
+          {cities.length > 0 && (
+            <section className="temu-filter-section">
+              <h3>Ville</h3>
+              <select
+                value={filters.city || ""}
+                onChange={(e) => setFilters((f) => ({ ...f, city: e.target.value }))}
+              >
+                <option value="">Toutes les villes</option>
+                {cities.map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+            </section>
+          )}
+        </div>
+
+        <div className="temu-sheet-foot">
+          <button className="btn btn-ghost" onClick={onReset}>
+            Réinitialiser
+          </button>
+          <button className="btn btn-primary" onClick={onApply}>
+            Appliquer les filtres
+          </button>
         </div>
       </div>
+    </div>
+  );
+}
 
-      <div className="sidebar-section">
-        <h3>Prix (FCFA)</h3>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            type="number"
-            min="0"
-            placeholder="Min"
-            value={minPriceInput}
-            onChange={(e) => setMinPriceInput(e.target.value)}
-          />
-          <input
-            type="number"
-            min="0"
-            placeholder="Max"
-            value={maxPriceInput}
-            onChange={(e) => setMaxPriceInput(e.target.value)}
-          />
-        </div>
-        <button className="btn btn-ghost" style={{ width: "100%", marginTop: 8 }} onClick={onApplyPrice}>
-          Appliquer
+// ====== CHIPS DE FILTRES ACTIFS (suppression en 1 clic) ======
+function ActiveFilterChips({ filters, categories, onRemove }) {
+  const chips = [];
+
+  if (filters.categorySlug) {
+    const cat = categories.find((c) => c.slug === filters.categorySlug);
+    chips.push({
+      key: "categorySlug",
+      label: cat ? `${cat.emoji} ${cat.name}` : filters.categorySlug,
+    });
+  }
+  if (filters.condition) {
+    chips.push({ key: "condition", label: CONDITION_LABELS[filters.condition] || filters.condition });
+  }
+  if (filters.minRating) {
+    chips.push({ key: "minRating", label: `${"★".repeat(Number(filters.minRating))} et plus` });
+  }
+  if (filters.minPrice || filters.maxPrice) {
+    chips.push({
+      key: "price",
+      label: `${filters.minPrice || "0"} - ${filters.maxPrice || "∞"} FCFA`,
+    });
+  }
+  if (filters.brand) chips.push({ key: "brand", label: filters.brand });
+  if (filters.city) chips.push({ key: "city", label: filters.city });
+
+  if (chips.length === 0) return null;
+
+  return (
+    <div className="temu-active-filters">
+      {chips.map((chip) => (
+        <button
+          key={chip.key}
+          className="temu-active-chip"
+          onClick={() => onRemove(chip.key)}
+          aria-label={`Retirer le filtre ${chip.label}`}
+        >
+          <span>{chip.label}</span>
+          <span className="temu-active-chip-x">✕</span>
         </button>
-      </div>
-
-      <div className="sidebar-section">
-        <h3>État</h3>
-        <div className="sidebar-cat-list">
-          <button
-            className={`sidebar-cat-link ${!condition ? "active" : ""}`}
-            onClick={() => onConditionPick("")}
-          >
-            Tous les états
-          </button>
-          {Object.entries(CONDITION_LABELS).map(([key, label]) => (
-            <button
-              key={key}
-              className={`sidebar-cat-link ${condition === key ? "active" : ""}`}
-              onClick={() => onConditionPick(key)}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="sidebar-section">
-        <h3>Boutique</h3>
-        <select value={shopId} onChange={(e) => onShopChange(e.target.value)}>
-          <option value="">Toutes les boutiques</option>
-          {shops.map((s) => (
-            <option key={s.id} value={s.id}>{s.name}</option>
-          ))}
-        </select>
-      </div>
-
-      {brands.length > 0 && (
-        <div className="sidebar-section">
-          <h3>Marque</h3>
-          <select value={brand} onChange={(e) => onBrandChange(e.target.value)}>
-            <option value="">Toutes les marques</option>
-            {brands.map((b) => (
-              <option key={b} value={b}>{b}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      {cities.length > 0 && (
-        <div className="sidebar-section">
-          <h3>Ville</h3>
-          <select value={city} onChange={(e) => onCityChange(e.target.value)}>
-            <option value="">Toutes les villes</option>
-            {cities.map((c) => (
-              <option key={c} value={c}>{c}</option>
-            ))}
-          </select>
-        </div>
-      )}
-
-      <div className="sidebar-section">
-        <h3>Note minimum</h3>
-        <div className="sidebar-cat-list">
-          <button
-            className={`sidebar-cat-link ${!minRating ? "active" : ""}`}
-            onClick={() => onMinRatingPick("")}
-          >
-            Toutes les notes
-          </button>
-          {[4, 3, 2].map((n) => (
-            <button
-              key={n}
-              className={`sidebar-cat-link ${minRating === String(n) ? "active" : ""}`}
-              onClick={() => onMinRatingPick(String(n))}
-            >
-              {"★".repeat(n)}{"☆".repeat(5 - n)} et plus
-            </button>
-          ))}
-        </div>
-      </div>
-    </>
+      ))}
+    </div>
   );
 }
 
@@ -186,70 +245,114 @@ function ShopContent({
 }) {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const categorySlug = searchParams.get("category") || "";
-  const shopId = searchParams.get("shopId") || "";
-  const condition = searchParams.get("condition") || "";
-  const brand = searchParams.get("brand") || "";
-  const city = searchParams.get("city") || "";
-  const minRating = searchParams.get("minRating") || "";
-  const sort = searchParams.get("sort") || "newest";
   const q = searchParams.get("q") || "";
-  const minPrice = searchParams.get("minPrice") || "";
-  const maxPrice = searchParams.get("maxPrice") || "";
 
   const [products, setProducts] = useState(initialProducts);
-  const [shops] = useState(initialShops);
   const [categories] = useState(initialCategories);
+  const [shops] = useState(initialShops);
   const [brands] = useState(initialBrands);
   const [cities] = useState(initialCities);
+  const [user] = useState(initialUser);
+
   const [loading, setLoading] = useState(false);
-  const [user, setUser] = useState(initialUser);
-  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
   const [loadingMore, setLoadingMore] = useState(false);
   const lastLoadedRef = useRef(null);
 
-  const [minPriceInput, setMinPriceInput] = useState(minPrice);
-  const [maxPriceInput, setMaxPriceInput] = useState(maxPrice);
+  // Filtres locaux (pour la sheet, on les applique au clic "Appliquer")
+  const [draftFilters, setDraftFilters] = useState({
+    categorySlug: searchParams.get("category") || "",
+    shopId: searchParams.get("shopId") || "",
+    condition: searchParams.get("condition") || "",
+    brand: searchParams.get("brand") || "",
+    city: searchParams.get("city") || "",
+    minRating: searchParams.get("minRating") || "",
+    minPrice: searchParams.get("minPrice") || "",
+    maxPrice: searchParams.get("maxPrice") || "",
+  });
 
+  // Filtres appliqués (ceux dans l'URL)
+  const appliedFilters = useMemo(() => ({
+    categorySlug: searchParams.get("category") || "",
+    shopId: searchParams.get("shopId") || "",
+    condition: searchParams.get("condition") || "",
+    brand: searchParams.get("brand") || "",
+    city: searchParams.get("city") || "",
+    minRating: searchParams.get("minRating") || "",
+    minPrice: searchParams.get("minPrice") || "",
+    maxPrice: searchParams.get("maxPrice") || "",
+  }), [searchParams]);
+
+  const sort = searchParams.get("sort") || "newest";
+
+  // Ouvre la sheet avec les filtres courants
+  function openSheet() {
+    setDraftFilters(appliedFilters);
+    setSheetOpen(true);
+  }
+
+  function applyFilters() {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    Object.entries(draftFilters).forEach(([key, val]) => {
+      if (val) params.set(key, val);
+    });
+    if (sort) params.set("sort", sort);
+    router.push(`/shop?${params.toString()}`);
+    setSheetOpen(false);
+  }
+
+  function resetFilters() {
+    setDraftFilters({
+      categorySlug: "", shopId: "", condition: "", brand: "",
+      city: "", minRating: "", minPrice: "", maxPrice: "",
+    });
+  }
+
+  function removeFilter(key) {
+    const params = new URLSearchParams(searchParams.toString());
+    if (key === "price") {
+      params.delete("minPrice");
+      params.delete("maxPrice");
+    } else {
+      params.delete(key);
+    }
+    router.push(`/shop?${params.toString()}`);
+  }
+
+  function updateSort(newSort) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("sort", newSort);
+    router.push(`/shop?${params.toString()}`);
+  }
+
+  // Recharge quand les filtres URL changent
   const isFirstRun = useRef(true);
   useEffect(() => {
     if (isFirstRun.current) {
       isFirstRun.current = false;
       return;
     }
-
     setLoading(true);
     setVisibleCount(ITEMS_PER_PAGE);
-    const params = new URLSearchParams();
-    if (categorySlug) params.set("category", categorySlug);
-    if (q) params.set("q", q);
-    if (minPrice) params.set("minPrice", minPrice);
-    if (maxPrice) params.set("maxPrice", maxPrice);
-    if (shopId) params.set("shopId", shopId);
-    if (condition) params.set("condition", condition);
-    if (brand) params.set("brand", brand);
-    if (city) params.set("city", city);
-    if (minRating) params.set("minRating", minRating);
-    if (sort) params.set("sort", sort);
-
+    const params = new URLSearchParams(searchParams.toString());
     fetch(`/api/products?${params.toString()}`)
       .then((r) => r.json())
       .then((data) => {
         setProducts(data.products || []);
         setLoading(false);
       });
-  }, [categorySlug, q, minPrice, maxPrice, shopId, condition, brand, city, minRating, sort]);
+  }, [searchParams]);
 
-  function updateParams(patch) {
-    const params = new URLSearchParams(searchParams.toString());
-    Object.entries(patch).forEach(([key, value]) => {
-      if (value) params.set(key, value);
-      else params.delete(key);
-    });
-    router.push(`/shop?${params.toString()}`);
-    setMobileFiltersOpen(false);
-  }
+  // Ferme la sheet avec ESC
+  useEffect(() => {
+    function onKey(e) {
+      if (e.key === "Escape") setSheetOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   function handleLoadMore() {
     setLoadingMore(true);
@@ -260,152 +363,161 @@ function ShopContent({
       if (lastLoadedRef.current) {
         lastLoadedRef.current.scrollIntoView({ behavior: "smooth", block: "nearest" });
       }
-    }, 400);
+    }, 350);
   }
 
   const visibleProducts = products.slice(0, visibleCount);
   const hasMore = visibleCount < products.length;
   const remaining = products.length - visibleCount;
+  const hasActiveFilters = Object.values(appliedFilters).some((v) => v);
 
-  const sidebarProps = {
-    categories,
-    shops,
-    categorySlug,
-    shopId,
-    condition,
-    brand,
-    city,
-    minRating,
-    brands,
-    cities,
-    minPrice,
-    maxPrice,
-    onCategoryPick: (slug) => updateParams({ category: slug }),
-    onShopChange: (id) => updateParams({ shopId: id }),
-    onConditionPick: (val) => updateParams({ condition: val }),
-    onBrandChange: (val) => updateParams({ brand: val }),
-    onCityChange: (val) => updateParams({ city: val }),
-    onMinRatingPick: (val) => updateParams({ minRating: val }),
-    minPriceInput,
-    maxPriceInput,
-    setMinPriceInput,
-    setMaxPriceInput,
-    onApplyPrice: () => updateParams({ minPrice: minPriceInput, maxPrice: maxPriceInput }),
-  };
+  // Trouve le nom de la catégorie active pour le titre
+  const activeCategory = appliedFilters.categorySlug
+    ? categories.find((c) => c.slug === appliedFilters.categorySlug)
+    : null;
+
+  const pageTitle = q
+    ? `Résultats pour « ${q} »`
+    : activeCategory
+    ? `${activeCategory.emoji || ""} ${activeCategory.name}`
+    : "Catalogue";
 
   return (
     <div className="shell">
       <SiteHeader initialUser={user} categories={categories} searchValue={q} />
 
-      <div className="shop-mobile-cats">
+      {/* Pilules de catégories horizontales (sticky) */}
+      <div className="temu-cat-bar">
         <button
-          className={`category-pill ${!categorySlug ? "active-pill" : ""}`}
-          onClick={() => updateParams({ category: "" })}
+          className={`temu-cat-pill ${!appliedFilters.categorySlug ? "is-active" : ""}`}
+          onClick={() => {
+            const params = new URLSearchParams(searchParams.toString());
+            params.delete("category");
+            router.push(`/shop?${params.toString()}`);
+          }}
         >
           Tout
         </button>
         {categories.map((cat) => (
           <button
             key={cat.id}
-            className={`category-pill ${categorySlug === cat.slug ? "active-pill" : ""}`}
-            onClick={() => updateParams({ category: cat.slug })}
+            className={`temu-cat-pill ${appliedFilters.categorySlug === cat.slug ? "is-active" : ""}`}
+            onClick={() => {
+              const params = new URLSearchParams(searchParams.toString());
+              params.set("category", cat.slug);
+              router.push(`/shop?${params.toString()}`);
+            }}
           >
-            {cat.emoji} {cat.name}
+            <span className="temu-cat-pill-emoji">{cat.emoji}</span>
+            <span>{cat.name}</span>
           </button>
         ))}
       </div>
 
-      <div className="shop-layout">
-        <aside className="shop-sidebar">
-          <FilterSidebar {...sidebarProps} />
-        </aside>
+      <div className="woven-strip" />
 
-        <div className="shop-main">
-          <div className="shop-toolbar">
-            <span className="shop-result-count">
-              {loading ? "Chargement..." : `${products.length} produit${products.length > 1 ? "s" : ""}`}
-              {q && ` pour « ${q} »`}
-            </span>
-            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-              <button
-                className="btn btn-ghost shop-mobile-filter-btn"
-                onClick={() => setMobileFiltersOpen(true)}
-              >
-                ⚙ Filtres
-              </button>
-              <select value={sort} onChange={(e) => updateParams({ sort: e.target.value })} style={{ width: "auto" }}>
-                {SORT_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>{opt.label}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {loading ? (
-            <p>Chargement...</p>
-          ) : products.length === 0 ? (
-            <div className="empty-state">
-              <div className="glyph">🛍️</div>
-              <p>Aucun produit ne correspond à votre recherche.</p>
-            </div>
-          ) : (
-            <>
-              <div className="shop-grid">
-                {visibleProducts.map((p, idx) => (
-                  <div key={p.id} ref={idx === visibleCount - 1 ? lastLoadedRef : null}>
-                    <ProductCard p={p} user={user} />
-                  </div>
-                ))}
-              </div>
-
-              {hasMore && (
-                <div className="load-more-wrap">
-                  <button
-                    className="btn btn-load-more"
-                    onClick={handleLoadMore}
-                    disabled={loadingMore}
-                  >
-                    {loadingMore ? (
-                      <>
-                        <span className="load-more-spinner">↓</span>
-                        Chargement...
-                      </>
-                    ) : (
-                      <>
-                        <span className="load-more-icon">↓</span>
-                        Afficher {Math.min(ITEMS_PER_PAGE, remaining)} produit{Math.min(ITEMS_PER_PAGE, remaining) > 1 ? "s" : ""} de plus
-                      </>
-                    )}
-                  </button>
-                  <p className="load-more-count">
-                    {remaining} produit{remaining > 1 ? "s" : ""} restant{remaining > 1 ? "s" : ""}
-                  </p>
-                </div>
-              )}
-
-              {!hasMore && products.length > ITEMS_PER_PAGE && (
-                <div className="load-more-wrap">
-                  <p className="load-more-done">
-                    ✓ Tous les {products.length} produits sont affichés
-                  </p>
-                </div>
-              )}
-            </>
-          )}
+      {/* Contenu principal */}
+      <div className="temu-shop-wrap">
+        {/* Titre de la page */}
+        <div className="temu-shop-title-row">
+          <h1>{pageTitle}</h1>
         </div>
+
+        {/* Barre d'outils : compteur + tri + filtres */}
+        <div className="temu-shop-toolbar">
+          <span className="temu-result-count">
+            {loading ? "Chargement..." : `${products.length} produit${products.length > 1 ? "s" : ""}`}
+          </span>
+          <div className="temu-toolbar-actions">
+            <select
+              className="temu-sort-select"
+              value={sort}
+              onChange={(e) => updateSort(e.target.value)}
+            >
+              {SORT_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+            <button className="temu-filter-btn" onClick={openSheet}>
+              <span>⚙</span>
+              <span>Filtres</span>
+              {hasActiveFilters && <span className="temu-filter-dot" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Chips de filtres actifs */}
+        <ActiveFilterChips
+          filters={appliedFilters}
+          categories={categories}
+          onRemove={removeFilter}
+        />
+
+        {/* Contenu */}
+        {loading ? (
+          <div className="temu-loading">
+            <div className="temu-loading-spinner" />
+            <p>Chargement des produits...</p>
+          </div>
+        ) : products.length === 0 ? (
+          <div className="empty-state">
+            <div className="glyph">🛍️</div>
+            <p>Aucun produit ne correspond à votre recherche.</p>
+            <button className="btn btn-ghost" onClick={() => router.push("/shop")}>
+              Voir tous les produits
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="temu-shop-grid">
+              {visibleProducts.map((p, idx) => (
+                <div key={p.id} ref={idx === visibleCount - 1 ? lastLoadedRef : null}>
+                  <ProductCard p={p} user={user} />
+                </div>
+              ))}
+            </div>
+
+            {hasMore && (
+              <div className="load-more-wrap">
+                <button
+                  className="btn-load-more"
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                >
+                  {loadingMore ? (
+                    <span className="load-more-spinner">↓</span>
+                  ) : (
+                    <span className="load-more-icon">↓</span>
+                  )}
+                  {loadingMore ? "Chargement..." : `Afficher plus (${remaining})`}
+                </button>
+              </div>
+            )}
+
+            {!hasMore && products.length > ITEMS_PER_PAGE && (
+              <div className="load-more-wrap">
+                <p className="load-more-done">
+                  ✓ Vous avez vu tous les {products.length} produits
+                </p>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
-      {mobileFiltersOpen && (
-        <div className="shop-filter-overlay" onClick={() => setMobileFiltersOpen(false)}>
-          <div className="shop-filter-drawer" onClick={(e) => e.stopPropagation()}>
-            <div className="shop-filter-drawer-head">
-              <strong>Filtres</strong>
-              <button className="btn btn-ghost" onClick={() => setMobileFiltersOpen(false)}>Fermer ✕</button>
-            </div>
-            <FilterSidebar {...sidebarProps} />
-          </div>
-        </div>
-      )}
+      {/* Sheet de filtres */}
+      <FilterSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        onApply={applyFilters}
+        onReset={resetFilters}
+        categories={categories}
+        shops={shops}
+        brands={brands}
+        cities={cities}
+        filters={draftFilters}
+        setFilters={setDraftFilters}
+      />
 
       <Footer />
       <BottomNav user={user} />
