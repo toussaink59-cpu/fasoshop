@@ -24,6 +24,11 @@ export function Stars({ rating }) {
 // invisible pour lui mais accessible à l'admin et au vendeur lui-même.
 export default function ProductCard({ p, user, compact = false }) {
   const router = useRouter();
+
+  // CEINTURE DE SÉCURITÉ : masque les produits en rupture de stock
+  // (garantie absolue qu'ils ne s'affichent NULLE PART, quelle que soit la source)
+  if (p.stock_quantity <= 0) return null;
+
   const [favorited, setFavorited] = useState(Boolean(p.is_favorited));
   const [favBusy, setFavBusy] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
