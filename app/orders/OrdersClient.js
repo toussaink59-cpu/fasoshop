@@ -17,6 +17,7 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
   const router = useRouter();
   const [orders, setOrders] = useState(initialOrders);
   const [contactingKey, setContactingKey] = useState(null);
+  const [confirmingKey, setConfirmingKey] = useState(null);
   const [error, setError] = useState("");
   const [orderFilter, setOrderFilter] = useState("all");
 
@@ -39,6 +40,40 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
     }
 
     router.push(`/messages/${data.conversationId}`);
+  }
+
+  // 💰 CONFIRMATION DE RÉCEPTION : débloque le payout vendeur (commission 5,5% Kimoxa)
+  async function handleConfirmReceipt(orderId, shopId) {
+    const key = `${orderId}-${shopId}`;
+    setError("");
+    setConfirmingKey(key);
+
+    const res = await fetch(`/api/orders/${orderId}/confirm-receipt`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ shopId }),
+    });
+    const data = await res.json();
+    setConfirmingKey(null);
+
+    if (!res.ok) {
+      setError(data.error || "Erreur lors de la confirmation.");
+      return;
+    }
+
+    // Mise à jour immédiate de l'affichage (statut → delivered)
+    setOrders((prev) =>
+      prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              subOrders: o.subOrders.map((s) =>
+                s.shopId === shopId ? { ...s, deliveryStatus: "delivered" } : s
+              ),
+            }
+          : o
+      )
+    );
   }
 
   // Une commande "contient" un statut si une de ses boutiques l'a
@@ -182,6 +217,18 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
                         >
                           🧾 Voir la facture
                         </Link>
+
+                        {/* 💰 BOUTON DE CONFIRMATION — visible UNIQUEMENT en statut "shipped" */}
+                        {sub.deliveryStatus === "shipped" && (
+                          <button
+                            className="btn btn-primary order-contact-btn"
+                            style={{ marginTop: 6 }}
+                            onClick={() => handleConfirmReceipt(order.id, sub.shopId)}
+                            disabled={confirmingKey === key}
+                          >
+                            ✅ {confirmingKey === key ? "Confirmation..." : "J'ai reçu ma commande"}
+                          </button>
+                        )}
                       </div>
                     );
                   })}
