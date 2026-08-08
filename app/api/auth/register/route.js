@@ -4,8 +4,8 @@ import { signToken, AUTH_COOKIE_NAME } from "@/lib/auth";
 import { COUNTRIES } from "@/lib/countries";
 
 // POST /api/auth/register
-// Vendeur (modèle Jumia) : pièce d'identité OBLIGATOIRE à l'inscription.
-// Une fois vérifié par l'admin : AUCUNE limite de vente ou de gains.
+// Inscription simple. La pièce d'identité du vendeur est soumise
+// APRÈS connexion, depuis le dashboard (alerte 🪪), puis validée par l'admin.
 export async function POST(request) {
   try {
     const body = await request.json();
@@ -13,10 +13,8 @@ export async function POST(request) {
       firstName, lastName, email, password, confirmPassword, phone, role,
       dateOfBirth, nationalityCode, countryOfResidenceCode, agreeTerms,
       shopName, mainCategoryId, city,
-      idDocumentType, idDocumentNumber, idDocumentUrl,
     } = body;
 
-    // === VALIDATIONS COMMUNES ===
     if (!firstName?.trim() || !lastName?.trim() || !email || !phone?.trim()) {
       return Response.json({ error: "Prénom, nom, email et téléphone sont requis." }, { status: 400 });
     }
@@ -41,7 +39,7 @@ export async function POST(request) {
     if (!dateOfBirth) {
       return Response.json({ error: "Date de naissance requise." }, { status: 400 });
     }
-    
+
     const birthDate = new Date(dateOfBirth);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
@@ -52,23 +50,8 @@ export async function POST(request) {
 
     const finalRole = role === "vendor" ? "vendor" : "buyer";
 
-    // === VALIDATIONS VENDEUR (modèle Jumia) ===
-    if (finalRole === "vendor") {
-      if (!shopName?.trim()) {
-        return Response.json({ error: "Le nom de la boutique est requis." }, { status: 400 });
-      }
-      if (!idDocumentType || !["cni", "passeport", "permis"].includes(idDocumentType)) {
-        return Response.json({ error: "Type de pièce d'identité invalide." }, { status: 400 });
-      }
-      if (!idDocumentNumber?.trim()) {
-        return Response.json({ error: "Le numéro de la pièce d'identité est requis." }, { status: 400 });
-      }
-      if (!idDocumentUrl || !idDocumentUrl.startsWith("data:image/")) {
-        return Response.json({ error: "La photo de la pièce d'identité est obligatoire pour vendre." }, { status: 400 });
-      }
-      if (idDocumentUrl.length > 2000000) {
-        return Response.json({ error: "Photo trop lourde. Utilisez une image plus légère." }, { status: 400 });
-      }
+    if (finalRole === "vendor" && !shopName?.trim()) {
+      return Response.json({ error: "Le nom de la boutique est requis." }, { status: 400 });
     }
 
     const existing = await sql`SELECT id FROM users WHERE email = ${email}`;
@@ -93,15 +76,8 @@ export async function POST(request) {
 
     if (finalRole === "vendor") {
       await sql`
-        INSERT INTO shops (
-          vendor_id, name, status, city, main_category_id,
-          id_document_type, id_document_number, id_document_url
-        )
-        VALUES (
-          ${user.id}, ${shopName.trim()}, 'pending',
-          ${city?.trim() || null}, ${mainCategoryId || null},
-          ${idDocumentType}, ${idDocumentNumber.trim()}, ${idDocumentUrl}
-        )
+        INSERT INTO shops (vendor_id, name, status, city, main_category_id)
+        VALUES (${user.id}, ${shopName.trim()}, 'pending', ${city?.trim() || null}, ${mainCategoryId || null})
       `;
     }
 
