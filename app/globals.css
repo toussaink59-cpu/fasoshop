@@ -5806,3 +5806,31 @@ select, input { max-width: 100%; box-sizing: border-box; }
   color: var(--ink-400);
   margin-top: 6px;
 }
+/* ===== Zone d'upload pièce d'identité ===== */
+.doc-upload-zone {
+  display: block;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+  background: #fff;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+  margin-top: 4px;
+}
+.doc-upload-zone:hover {
+  border-color: var(--millet-600);
+}
+.doc-upload-preview {
+  max-width: 240px;
+  max-height: 150px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  display: block;
+  margin: 0 auto;
+}
+.doc-upload-hint {
+  font-size: 0.75rem;
+  color: var(--ink-400);
+  margin-top: 6px;
+}
