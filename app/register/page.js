@@ -6,7 +6,6 @@ import Link from "next/link";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
 import { COUNTRIES } from "@/lib/countries";
 
-// Jauge de force du mot de passe (0 à 4)
 function getPasswordStrength(pwd) {
   if (!pwd) return 0;
   let score = 0;
@@ -20,6 +19,28 @@ function getPasswordStrength(pwd) {
 
 const STRENGTH_LABELS = ["", "Faible", "Moyen", "Bon", "Excellent"];
 const STRENGTH_COLORS = ["", "#dc2626", "#f59e0b", "#16a34a", "#059669"];
+
+// Compression côté client (la photo de la pièce reste légère en base)
+async function compressImage(file, maxDim = 900, quality = 0.72) {
+  const raw = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+  const img = await new Promise((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = reject;
+    i.src = raw;
+  });
+  const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(img.width * scale);
+  canvas.height = Math.round(img.height * scale);
+  canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL("image/jpeg", quality);
+}
 
 function RegisterForm() {
   const router = useRouter();
@@ -37,11 +58,14 @@ function RegisterForm() {
   const [countryOfResidenceCode, setCountryOfResidenceCode] = useState("BF");
   const [agreeTerms, setAgreeTerms] = useState(false);
 
-  // Champs vendeur uniquement
+  // Vendeur
   const [shopName, setShopName] = useState("");
   const [mainCategoryId, setMainCategoryId] = useState("");
   const [city, setCity] = useState("");
-  const [verificationAcknowledged, setVerificationAcknowledged] = useState(false);
+  const [idDocumentType, setIdDocumentType] = useState("cni");
+  const [idDocumentNumber, setIdDocumentNumber] = useState("");
+  const [docDataUrl, setDocDataUrl] = useState("");
+  const [docBusy, setDocBusy] = useState(false);
 
   const [categories, setCategories] = useState([]);
   const [error, setError] = useState("");
@@ -51,7 +75,6 @@ function RegisterForm() {
   const pwdMatch = password && confirmPassword && password === confirmPassword;
   const pwdMismatch = confirmPassword && password !== confirmPassword;
 
-  // Date max = aujourd'hui - 15 ans
   const maxDate = new Date();
   maxDate.setFullYear(maxDate.getFullYear() - 15);
   const maxDateStr = maxDate.toISOString().split("T")[0];
@@ -66,6 +89,28 @@ function RegisterForm() {
       .then((d) => setCategories(d.categories || []))
       .catch(() => {});
   }, []);
+
+  async function handleDocFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setError("");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setError("Format non supporté. Utilisez JPG, PNG ou WEBP.");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setError("Image trop lourde (8 Mo max).");
+      return;
+    }
+    setDocBusy(true);
+    try {
+      const dataUrl = await compressImage(file);
+      setDocDataUrl(dataUrl);
+    } catch {
+      setError("Impossible de lire cette image.");
+    }
+    setDocBusy(false);
+  }
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -83,9 +128,19 @@ function RegisterForm() {
       setError("Les deux mots de passe ne correspondent pas.");
       return;
     }
-    if (role === "vendor" && !verificationAcknowledged) {
-      setError("Merci de confirmer que vous avez compris la vérification de votre compte.");
-      return;
+    if (role === "vendor") {
+      if (!shopName.trim()) {
+        setError("Le nom de la boutique est requis.");
+        return;
+      }
+      if (!idDocumentNumber.trim()) {
+        setError("Le numéro de la pièce d'identité est requis.");
+        return;
+      }
+      if (!docDataUrl) {
+        setError("La photo de la pièce d'identité est obligatoire pour vendre.");
+        return;
+      }
     }
 
     setSubmitting(true);
@@ -98,7 +153,9 @@ function RegisterForm() {
         shopName: role === "vendor" ? shopName : undefined,
         mainCategoryId: role === "vendor" && mainCategoryId ? Number(mainCategoryId) : undefined,
         city: role === "vendor" ? city : undefined,
-        verificationAcknowledged: role === "vendor" ? verificationAcknowledged : undefined,
+        idDocumentType: role === "vendor" ? idDocumentType : undefined,
+        idDocumentNumber: role === "vendor" ? idDocumentNumber : undefined,
+        idDocumentUrl: role === "vendor" ? docDataUrl : undefined,
       }),
     });
     const data = await res.json();
@@ -113,20 +170,25 @@ function RegisterForm() {
 
   return (
     <div className="shell">
-      <div className="register-layout">
+      {/* Barre supérieure professionnelle */}
+      <div className="register-topbar">
+        <Link href="/" aria-label="Accueil Kimoxa">
+          <KimoxaLogo size={30} />
+        </Link>
+        <span className="register-topbar-link">
+          Déjà inscrit ? <Link href="/login">Se connecter</Link>
+        </span>
+      </div>
 
-        {/* ====== COLONNE GAUCHE : FORMULAIRE ====== */}
+      <div className="register-layout">
+        {/* ====== FORMULAIRE ====== */}
         <div className="register-form-col">
-          <div className="register-brand">
-            <KimoxaLogo size={44} withTagline />
-          </div>
           <h1>Créer mon compte</h1>
           <p className="register-subtitle">Rejoignez la marketplace de confiance de l'Afrique</p>
 
           {error && <div className="error-box">{error}</div>}
 
           <form onSubmit={handleSubmit}>
-            {/* Choix du rôle */}
             <div className="account-type-choice" role="radiogroup">
               <button
                 type="button"
@@ -134,7 +196,7 @@ function RegisterForm() {
                 onClick={() => setRole("buyer")}
               >
                 <strong>🛍️ Je veux acheter</strong>
-                <span>Compte gratuit, accès immédiat</span>
+                <span>Accès immédiat et gratuit</span>
               </button>
               <button
                 type="button"
@@ -142,13 +204,13 @@ function RegisterForm() {
                 onClick={() => setRole("vendor")}
               >
                 <strong>🏪 Je veux vendre</strong>
-                <span>Ouvrir ma boutique (vérification requise)</span>
+                <span>Boutique vérifiée, sans limite de vente</span>
               </button>
             </div>
 
-            {/* Identité */}
+            {/* 1 · Profil */}
             <div className="register-section">
-              <h2 className="register-section-title">👤 Mon identité</h2>
+              <h2 className="register-section-title">1 · Mon profil</h2>
               <div className="form-row">
                 <div>
                   <label htmlFor="r-firstname">Prénom *</label>
@@ -159,7 +221,6 @@ function RegisterForm() {
                   <input id="r-lastname" required value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Ex : Ouédraogo" />
                 </div>
               </div>
-
               <div className="form-row">
                 <div>
                   <label htmlFor="r-email">Email *</label>
@@ -170,16 +231,11 @@ function RegisterForm() {
                   <input id="r-phone" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+226 70 00 00 00" />
                 </div>
               </div>
-
               <div className="form-row">
                 <div>
                   <label htmlFor="r-dob">Date de naissance *</label>
                   <input id="r-dob" type="date" required max={maxDateStr} value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
-                  <small style={{ color: "var(--ink-400)", fontSize: "0.72rem" }}>Vous devez avoir au moins 15 ans</small>
                 </div>
-              </div>
-
-              <div className="form-row">
                 <div>
                   <label htmlFor="r-nationality">Nationalité *</label>
                   <select id="r-nationality" required value={nationalityCode} onChange={(e) => setNationalityCode(e.target.value)}>
@@ -195,9 +251,9 @@ function RegisterForm() {
               </div>
             </div>
 
-            {/* Sécurité */}
+            {/* 2 · Sécurité */}
             <div className="register-section">
-              <h2 className="register-section-title">🔐 Sécurité</h2>
+              <h2 className="register-section-title">2 · Sécurité</h2>
               <div className="form-row">
                 <div>
                   <label htmlFor="r-password">Mot de passe *</label>
@@ -217,9 +273,7 @@ function RegisterForm() {
                           <div
                             key={i}
                             className="pwd-strength-bar"
-                            style={{
-                              background: i <= pwdStrength ? STRENGTH_COLORS[pwdStrength] : "#e5e7eb",
-                            }}
+                            style={{ background: i <= pwdStrength ? STRENGTH_COLORS[pwdStrength] : "#e5e7eb" }}
                           />
                         ))}
                       </div>
@@ -228,9 +282,6 @@ function RegisterForm() {
                       </span>
                     </div>
                   )}
-                  <small style={{ color: "var(--ink-400)", fontSize: "0.72rem", display: "block", marginTop: 4 }}>
-                    Minimum 8 caractères · majuscules + chiffres + symboles recommandés
-                  </small>
                 </div>
                 <div>
                   <label htmlFor="r-password-confirm">Confirmer *</label>
@@ -244,72 +295,107 @@ function RegisterForm() {
                     placeholder="Retapez le mot de passe"
                     style={{ borderColor: pwdMismatch ? "#dc2626" : pwdMatch ? "#16a34a" : undefined }}
                   />
-                  {pwdMatch && <small style={{ color: "#16a34a", fontSize: "0.75rem" }}>✓ Les mots de passe correspondent</small>}
-                  {pwdMismatch && <small style={{ color: "#dc2626", fontSize: "0.75rem" }}>✗ Les mots de passe ne correspondent pas</small>}
+                  {pwdMatch && <small style={{ color: "#16a34a", fontSize: "0.75rem" }}>✓ Identiques</small>}
+                  {pwdMismatch && <small style={{ color: "#dc2626", fontSize: "0.75rem" }}>✗ Différents</small>}
                 </div>
               </div>
             </div>
 
-            {/* Champs vendeur */}
+            {/* 3 · Boutique + 4 · Vérification (vendeur) */}
             {role === "vendor" && (
-              <div className="register-section">
-                <h2 className="register-section-title">🏪 Ma boutique</h2>
-                <p style={{ fontSize: "0.82rem", color: "var(--ink-400)", marginBottom: 10 }}>
-                  Après inscription, une vérification d'identité (CNI / passeport) sera requise pour activer votre boutique.
-                </p>
-                <div className="form-row">
-                  <div>
-                    <label htmlFor="r-shop-name">Nom de la boutique *</label>
-                    <input id="r-shop-name" required value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="Ex : Boutique Aïcha Mode" />
-                  </div>
-                  <div>
-                    <label htmlFor="r-shop-category">Catégorie principale</label>
-                    <select id="r-shop-category" value={mainCategoryId} onChange={(e) => setMainCategoryId(e.target.value)}>
-                      <option value="">Sélectionner...</option>
-                      {categories.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
-                    </select>
-                  </div>
-                </div>
-                <div className="form-row">
-                  <div>
-                    <label htmlFor="r-shop-city">Ville de la boutique</label>
-                    <input id="r-shop-city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ex : Ouagadougou" />
+              <>
+                <div className="register-section">
+                  <h2 className="register-section-title">3 · Ma boutique</h2>
+                  <div className="form-row">
+                    <div>
+                      <label htmlFor="r-shop-name">Nom de la boutique *</label>
+                      <input id="r-shop-name" required value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="Ex : Boutique Aïcha Mode" />
+                    </div>
+                    <div>
+                      <label htmlFor="r-shop-city">Ville</label>
+                      <input id="r-shop-city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ex : Ouagadougou" />
+                    </div>
+                    <div>
+                      <label htmlFor="r-shop-category">Catégorie principale</label>
+                      <select id="r-shop-category" value={mainCategoryId} onChange={(e) => setMainCategoryId(e.target.value)}>
+                        <option value="">Sélectionner...</option>
+                        {categories.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}
+                      </select>
+                    </div>
                   </div>
                 </div>
-                <label className="checkbox-row" htmlFor="r-verification-ack">
-                  <input id="r-verification-ack" type="checkbox" checked={verificationAcknowledged} onChange={(e) => setVerificationAcknowledged(e.target.checked)} />
-                  <span>Je comprends que mon compte sera vérifié avant l'ouverture de ma boutique.</span>
-                </label>
-              </div>
+
+                <div className="register-section">
+                  <h2 className="register-section-title">4 · Vérification d'identité *</h2>
+                  <p style={{ fontSize: "0.82rem", color: "var(--ink-400)", margin: "0 0 12px", lineHeight: 1.5 }}>
+                    Comme sur les grandes marketplaces, chaque vendeur Kimoxa est vérifié.
+                    Une fois votre pièce validée (moins de 24 h), vous vendez <strong>sans aucune limite</strong> de produits ou de gains.
+                  </p>
+                  <div className="form-row">
+                    <div>
+                      <label htmlFor="r-doc-type">Type de pièce *</label>
+                      <select id="r-doc-type" value={idDocumentType} onChange={(e) => setIdDocumentType(e.target.value)}>
+                        <option value="cni">Carte Nationale d'Identité (CNI)</option>
+                        <option value="passeport">Passeport</option>
+                        <option value="permis">Permis de conduire</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label htmlFor="r-doc-number">Numéro de la pièce *</label>
+                      <input id="r-doc-number" required value={idDocumentNumber} onChange={(e) => setIdDocumentNumber(e.target.value)} placeholder="Ex : B01234567" />
+                    </div>
+                  </div>
+                  <label className="doc-upload-zone" htmlFor="r-doc-file">
+                    {docDataUrl ? (
+                      <>
+                        <img src={docDataUrl} alt="Aperçu de la pièce" className="doc-upload-preview" />
+                        <div className="doc-upload-hint">✅ Photo ajoutée — cliquez pour remplacer</div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: "1.8rem" }}>🪪</div>
+                        <strong>{docBusy ? "Traitement..." : "Photo de la pièce (recto)"}</strong>
+                        <div className="doc-upload-hint">JPG, PNG ou WEBP · 8 Mo max · image nette et lisible</div>
+                      </>
+                    )}
+                  </label>
+                  <input
+                    id="r-doc-file"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    style={{ display: "none" }}
+                    onChange={handleDocFile}
+                  />
+                  <div className="trust-security" style={{ justifyContent: "flex-start", color: "var(--ink-400)", paddingTop: 10 }}>
+                    <span>🔒</span>
+                    <span>Vos données sont chiffrées et utilisées uniquement pour la vérification.</span>
+                  </div>
+                </div>
+              </>
             )}
 
-            {/* CGU */}
-            <label className="checkbox-row" htmlFor="r-agree-terms" style={{ marginTop: 12 }}>
+            <label className="checkbox-row" htmlFor="r-agree-terms">
               <input id="r-agree-terms" type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} required />
               <span>
                 J'accepte les <Link href="/cgu" target="_blank">CGU</Link> et les <Link href="/cgv" target="_blank">CGV</Link> de Kimoxa *
               </span>
             </label>
 
-            <button type="submit" className="btn btn-primary register-submit" disabled={submitting}>
-              {submitting ? "Création en cours..." : "Créer mon compte sécurisé →"}
+            <button type="submit" className="btn btn-primary register-submit" disabled={submitting || docBusy}>
+              {submitting ? "Création en cours..." : role === "vendor" ? "Ouvrir ma boutique →" : "Créer mon compte →"}
             </button>
-
-            <p className="register-footer-link">
-              Déjà un compte ? <Link href="/login">Se connecter</Link>
-            </p>
           </form>
         </div>
 
-        {/* ====== COLONNE DROITE : PANNEAU CONFIANCE ====== */}
+        {/* ====== PANNEAU CONFIANCE ALLÉGÉ ====== */}
         <aside className="register-trust-col">
           <div className="trust-card">
-            <h2>🛡️ Pourquoi Kimoxa ?</h2>
+            <h2>🛡️ Achetez en toute confiance</h2>
             <ul className="trust-list">
               <li>
                 <span className="trust-icon">🔒</span>
                 <div>
-                  <strong>Paiement séquestré</strong>
+                  <strong>Paiement sécurisé</strong>
                   <span>L'argent est libéré uniquement à la livraison</span>
                 </div>
               </li>
@@ -317,57 +403,20 @@ function RegisterForm() {
                 <span className="trust-icon">🪪</span>
                 <div>
                   <strong>Vendeurs vérifiés</strong>
-                  <span>Chaque vendeur est contrôlé par pièce d'identité</span>
+                  <span>Identité contrôlée avant de vendre</span>
                 </div>
               </li>
               <li>
                 <span className="trust-icon">↩️</span>
                 <div>
                   <strong>Retours 7 jours</strong>
-                  <span>Satisfait ou remboursé sous 7 jours</span>
-                </div>
-              </li>
-              <li>
-                <span className="trust-icon">💬</span>
-                <div>
-                  <strong>Support 7j/7</strong>
-                  <span>Notre équipe vous répond à tout moment</span>
-                </div>
-              </li>
-              <li>
-                <span className="trust-icon">📱</span>
-                <div>
-                  <strong>Mobile Money</strong>
-                  <span>Orange, Moov, Wave, MTN acceptés</span>
+                  <span>Satisfait ou remboursé</span>
                 </div>
               </li>
             </ul>
-
-            <div className="trust-testimonial">
-              <p>« J'ai commandé un téléphone, reçu en 48h. Vendeur sérieux, prix correct. Je recommande Kimoxa ! »</p>
-              <div className="trust-testimonial-author">
-                ⭐⭐⭐⭐⭐ — Awa K., Ouagadougou
-              </div>
-            </div>
-
-            <div className="trust-stats">
-              <div className="trust-stat">
-                <strong>1 200+</strong>
-                <span>Membres actifs</span>
-              </div>
-              <div className="trust-stat">
-                <strong>98%</strong>
-                <span>Satisfaction</span>
-              </div>
-              <div className="trust-stat">
-                <strong>🇧🇫</strong>
-                <span>Conçu au Burkina</span>
-              </div>
-            </div>
-
             <div className="trust-security">
               <span>🔒</span>
-              <span>Inscription sécurisée · SSL · Données protégées</span>
+              <span>Connexion sécurisée SSL · Données protégées</span>
             </div>
           </div>
         </aside>
