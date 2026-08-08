@@ -41,6 +41,7 @@ export async function POST(request) {
     if (!dateOfBirth) {
       return Response.json({ error: "Date de naissance requise." }, { status: 400 });
     }
+    
     const birthDate = new Date(dateOfBirth);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
@@ -48,7 +49,6 @@ export async function POST(request) {
     if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) age--;
     if (age < 15) return Response.json({ error: "Vous devez avoir au moins 15 ans pour vous inscrire." }, { status: 400 });
     if (age > 120) return Response.json({ error: "Date de naissance invalide." }, { status: 400 });
-    }
 
     const finalRole = role === "vendor" ? "vendor" : "buyer";
 
