@@ -5675,3 +5675,89 @@ select, input { max-width: 100%; box-sizing: border-box; }
     grid-template-columns: 1fr;
   }
 }
+/* ===== PAGE INSCRIPTION 2 COLONNES ===== */
+.register-layout {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 40px;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+@media (max-width: 900px) {
+  .register-layout { grid-template-columns: 1fr; gap: 20px; padding: 20px 16px; }
+}
+.register-form-col h1 {
+  font-size: 1.8rem; margin: 20px 0 6px; color: var(--navy-900);
+}
+.register-subtitle { color: var(--ink-400); margin-bottom: 20px; }
+.register-brand { margin-bottom: 10px; }
+.register-section {
+  background: #fafafa; border: 1px solid var(--border); border-radius: 12px;
+  padding: 16px; margin-bottom: 16px;
+}
+.register-section-title {
+  font-size: 0.95rem; margin: 0 0 12px; color: var(--navy-900); font-weight: 700;
+}
+.pwd-strength {
+  display: flex; align-items: center; gap: 8px; margin-top: 6px;
+}
+.pwd-strength-bars {
+  display: flex; gap: 4px; flex: 1;
+}
+.pwd-strength-bar {
+  height: 5px; flex: 1; border-radius: 3px;
+  transition: background 0.2s ease;
+}
+.pwd-strength-label {
+  font-size: 0.75rem; font-weight: 700; min-width: 70px;
+}
+.register-submit {
+  width: 100%; margin-top: 16px; padding: 14px; font-size: 1rem; font-weight: 700;
+}
+.register-footer-link {
+  text-align: center; margin-top: 16px; font-size: 0.88rem;
+}
+
+/* Panneau confiance */
+.trust-card {
+  background: linear-gradient(135deg, var(--navy-900, #0a2540), #1e3a5f);
+  color: #fff; border-radius: 16px; padding: 28px;
+  position: sticky; top: 20px;
+}
+.trust-card h2 {
+  font-size: 1.2rem; margin: 0 0 16px; color: var(--gold-400, #facc15);
+}
+.trust-list {
+  list-style: none; padding: 0; margin: 0 0 20px;
+}
+.trust-list li {
+  display: flex; gap: 12px; padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.trust-list li:last-child { border-bottom: none; }
+.trust-icon {
+  font-size: 1.6rem; flex-shrink: 0;
+}
+.trust-list li strong { display: block; font-size: 0.9rem; }
+.trust-list li span { font-size: 0.78rem; color: rgba(255,255,255,0.8); }
+.trust-testimonial {
+  background: rgba(255,255,255,0.1); padding: 14px; border-radius: 10px;
+  font-size: 0.85rem; font-style: italic; margin-bottom: 16px;
+}
+.trust-testimonial p { margin: 0 0 8px; }
+.trust-testimonial-author {
+  font-size: 0.75rem; color: var(--gold-400, #facc15); font-style: normal; font-weight: 600;
+}
+.trust-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+  padding: 14px; background: rgba(255,255,255,0.08); border-radius: 10px; margin-bottom: 16px;
+}
+.trust-stat { text-align: center; }
+.trust-stat strong { display: block; font-size: 1.1rem; color: var(--gold-400, #facc15); }
+.trust-stat span { font-size: 0.7rem; color: rgba(255,255,255,0.8); }
+.trust-security {
+  display: flex; gap: 8px; align-items: center; justify-content: center;
+  font-size: 0.78rem; color: rgba(255,255,255,0.85);
+  padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1);
+}
