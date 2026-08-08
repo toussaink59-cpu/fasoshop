@@ -6601,3 +6601,29 @@ select, input { max-width: 100%; box-sizing: border-box; }
   .temu-sort-select,
   .temu-filter-btn { font-size: 0.78rem; padding: 7px 11px; }
 }
+/* ===== BOUTON « 📍 PRÈS DE CHEZ MOI » ===== */
+.temu-nearme-btn {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1.5px dashed var(--millet-600);
+  border-radius: 10px;
+  background: var(--millet-100);
+  color: var(--millet-600);
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.temu-nearme-btn:hover:not(:disabled) {
+  background: var(--millet-600);
+  color: #fff;
+}
+.temu-nearme-btn:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.temu-nearme-msg {
+  font-size: 0.75rem;
+  color: var(--ink-400);
+  margin-top: 6px;
+}
