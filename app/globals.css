@@ -7403,3 +7403,144 @@ a.side-menu-link:hover::after {
   font-size: 1.3rem;
   flex-shrink: 0;
 }
+/* =====================================================
+   FOOTER PRO v3 — RESET TOTAL (alignement propre)
+===================================================== */
+.site-footer {
+  background: var(--ink-900) !important;
+  color: var(--sand-100) !important;
+  margin-top: 48px;
+}
+.site-footer-inner {
+  max-width: 1200px !important;
+  margin: 0 auto !important;
+  padding: 32px 24px 20px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 22px !important;
+}
+
+/* --- 1. Marque : logo + tagline sur une ligne --- */
+.temu-footer-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 16px !important;
+  flex-wrap: wrap !important;
+  padding-bottom: 0 !important;
+}
+.temu-footer-brand .site-footer-brand {
+  font-size: 1.2rem !important;
+  color: #fff !important;
+  margin: 0 !important;
+}
+.temu-footer-brand .site-footer-tagline {
+  margin: 0 !important;
+  font-size: 0.8rem !important;
+  opacity: 0.85 !important;
+  max-width: 420px !important;
+}
+
+/* --- 2. Appli + réseaux : une ligne équilibrée entre 2 filets --- */
+.temu-footer-top {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 16px !important;
+  flex-wrap: wrap !important;
+  padding: 14px 0 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+.temu-footer-app {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+}
+.temu-footer-app-icon { font-size: 1.4rem !important; }
+.temu-footer-app strong { display: block !important; font-size: 0.88rem !important; color: #fff !important; }
+.temu-footer-app span { font-size: 0.72rem !important; opacity: 0.75 !important; }
+.temu-footer-socials-title {
+  display: block !important;
+  font-size: 0.68rem !important;
+  opacity: 0.75 !important;
+  margin-bottom: 6px !important;
+  text-align: left !important;
+}
+.temu-footer-socials .site-footer-socials {
+  display: flex !important;
+  gap: 8px !important;
+  margin: 0 !important;
+}
+.site-footer-social-icon {
+  width: 34px !important;
+  height: 34px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* --- 3. Paiements : titre + badges, sans filet parasite --- */
+.temu-footer-payments {
+  padding: 0 !important;
+  border-bottom: none !important;
+}
+.temu-footer-payments-title {
+  font-size: 0.68rem !important;
+  opacity: 0.75 !important;
+  margin-bottom: 8px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.06em !important;
+  display: block !important;
+}
+.temu-footer-payment-badges {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 6px !important;
+}
+
+/* --- 4. Trois colonnes de liens égales, titres sur UNE ligne --- */
+.footer-cols.temu-footer-cols {
+  display: grid !important;
+  grid-template-columns: repeat(3, 1fr) !important;
+  gap: 20px !important;
+  padding: 0 !important;
+}
+.site-footer-col {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+.site-footer-col h4 {
+  margin: 0 0 4px !important;
+  font-size: 0.72rem !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: rgba(255, 255, 255, 0.6) !important;
+  white-space: nowrap !important;
+}
+.site-footer-col a {
+  font-size: 0.8rem !important;
+  margin: 0 !important;
+  color: var(--sand-100) !important;
+}
+
+/* --- 5. Barre basse : une seule ligne équilibrée --- */
+.temu-footer-bottombar {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 10px !important;
+  flex-wrap: wrap !important;
+  padding-top: 14px !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.12) !important;
+  font-size: 0.72rem !important;
+  opacity: 0.9 !important;
+}
+
+/* --- Mobile : colonne propre, rien ne déborde --- */
+@media (max-width: 767px) {
+  .site-footer-inner { padding: 24px 16px 80px !important; gap: 20px !important; }
+  .temu-footer-brand { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
+  .temu-footer-top { flex-direction: column !important; align-items: flex-start !important; }
+  .footer-cols.temu-footer-cols { grid-template-columns: 1fr 1fr !important; }
+  .site-footer-col h4 { white-space: normal !important; }
+  .temu-footer-bottombar { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; }
+}
