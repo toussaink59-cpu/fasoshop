@@ -1,59 +1,155 @@
-import sql from "@/lib/db";
+import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/session";
+import { getInvoiceData } from "@/lib/queries/invoice";
+import KimoxaLogo from "@/app/components/KimoxaLogo";
+import PrintButton from "@/app/components/PrintButton";
+import Link from "next/link";
 
-// Données complètes pour une facture (identité réelle vendeur + acheteur + articles)
-// Obligatoire légalement au Burkina (loi commerce électronique).
-export async function getInvoiceData(orderId, userId) {
-  const [order] = await sql`
-    SELECT o.id, o.total, o.shipping_address, o.phone, o.payment_method,
-           o.created_at, o.status,
-           b.full_name AS buyer_name, b.phone AS buyer_phone, b.email AS buyer_email
-    FROM orders o
-    JOIN users b ON b.id = o.buyer_id
-    WHERE o.id = ${orderId} AND o.buyer_id = ${userId}
-  `;
-  if (!order) return null;
+export const metadata = {
+  title: "Facture",
+};
 
-  // Articles groupés par boutique, avec identité RÉELLE du vendeur
-  const items = await sql`
-    SELECT oi.quantity, oi.price_at_purchase,
-           p.name AS product_name, p.id AS product_id,
-           s.id AS shop_id, s.name AS shop_name, s.city AS shop_city,
-           v.full_name AS vendor_name, v.phone AS vendor_phone,
-           COALESCE(l.delivery_status, 'preparation') AS delivery_status
-    FROM order_items oi
-    JOIN products p ON p.id = oi.product_id
-    JOIN shops s ON s.id = p.shop_id
-    JOIN users v ON v.id = s.vendor_id
-    LEFT JOIN shop_commission_ledger l ON l.order_id = oi.order_id AND l.shop_id = s.id
-    WHERE oi.order_id = ${order.id}
-  `;
+const STATUS_LABELS = {
+  preparation: "En préparation",
+  shipped: "Expédiée",
+  delivered: "Livrée",
+  cancelled: "Annulée",
+};
 
-  // Grouper par boutique
-  const shopsMap = new Map();
-  for (const it of items) {
-    if (!shopsMap.has(it.shop_id)) {
-      shopsMap.set(it.shop_id, {
-        shopId: it.shop_id,
-        shopName: it.shop_name,
-        shopCity: it.shop_city,
-        vendorName: it.vendor_name,
-        vendorPhone: it.vendor_phone,
-        deliveryStatus: it.delivery_status,
-        items: [],
-        subtotal: 0,
-      });
-    }
-    const shop = shopsMap.get(it.shop_id);
-    shop.items.push({
-      productName: it.product_name,
-      quantity: it.quantity,
-      priceAtPurchase: Number(it.price_at_purchase),
-    });
-    shop.subtotal += it.quantity * Number(it.price_at_purchase);
+export default async function InvoicePage({ params }) {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+
+  const { id } = await params;
+  const invoice = await getInvoiceData(id, user.id);
+  if (!invoice) {
+    return (
+      <div style={{ padding: 40, textAlign: "center" }}>
+        <p>Facture introuvable ou accès non autorisé.</p>
+        <Link href="/orders">← Retour aux commandes</Link>
+      </div>
+    );
   }
 
-  return {
-    ...order,
-    subOrders: [...shopsMap.values()],
-  };
+  const date = new Date(invoice.created_at).toLocaleDateString("fr-FR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  });
+
+  return (
+    <div>
+      {/* Bouton imprimer (masqué à l'impression) */}
+      <div className="invoice-toolbar print-hide">
+        <Link href="/orders" className="btn btn-ghost">← Retour aux commandes</Link>
+        <PrintButton />
+      </div>
+
+      <div className="invoice-sheet">
+        {/* En-tête facture */}
+        <div className="invoice-header">
+          <div className="invoice-brand">
+            <KimoxaLogo size={32} />
+          </div>
+          <div className="invoice-title">
+            <h1>FACTURE</h1>
+            <div className="invoice-number">N° {String(invoice.id).padStart(6, "0")}</div>
+            <div className="invoice-date">{date}</div>
+          </div>
+        </div>
+
+        {/* Bloc client */}
+        <div className="invoice-section">
+          <h2>Client</h2>
+          <div className="invoice-info">
+            <div><strong>{invoice.buyer_name}</strong></div>
+            <div>📍 {invoice.shipping_address}</div>
+            <div>📞 {invoice.phone || invoice.buyer_phone}</div>
+            {invoice.buyer_email && <div>✉️ {invoice.buyer_email}</div>}
+          </div>
+        </div>
+
+        {/* Blocs par boutique (identité réelle obligatoire) */}
+        {invoice.subOrders.map((sub) => (
+          <div className="invoice-section" key={sub.shopId}>
+            <div className="invoice-vendor-header">
+              <div>
+                <h2>Vendu par</h2>
+                <div className="invoice-info">
+                  <div><strong>{sub.shopName}</strong></div>
+                  <div>Responsable : {sub.vendorName}</div>
+                  {sub.vendorPhone && <div>📞 {sub.vendorPhone}</div>}
+                  {sub.shopCity && <div>📍 {sub.shopCity}, Burkina Faso</div>}
+                </div>
+              </div>
+              <div className="invoice-status">
+                <span className={`status-pill status-${sub.deliveryStatus}`}>
+                  {STATUS_LABELS[sub.deliveryStatus] || sub.deliveryStatus}
+                </span>
+              </div>
+            </div>
+
+            <table className="invoice-table">
+              <thead>
+                <tr>
+                  <th>Article</th>
+                  <th className="text-right">Qté</th>
+                  <th className="text-right">Prix unitaire</th>
+                  <th className="text-right">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sub.items.map((item, idx) => {
+                  const lineTotal = item.quantity * item.priceAtPurchase;
+                  return (
+                    <tr key={idx}>
+                      <td>{item.productName}</td>
+                      <td className="text-right">{item.quantity}</td>
+                      <td className="text-right">
+                        {item.priceAtPurchase.toLocaleString("fr-FR")} FCFA
+                      </td>
+                      <td className="text-right">
+                        <strong>{lineTotal.toLocaleString("fr-FR")} FCFA</strong>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+              <tfoot>
+                <tr>
+                  <td colSpan={3} className="text-right"><strong>Sous-total boutique</strong></td>
+                  <td className="text-right"><strong>{sub.subtotal.toLocaleString("fr-FR")} FCFA</strong></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        ))}
+
+        {/* Total général */}
+        <div className="invoice-total">
+          <div className="invoice-total-row">
+            <span>Total payé</span>
+            <strong>{Number(invoice.total).toLocaleString("fr-FR")} FCFA</strong>
+          </div>
+          <div className="invoice-total-row invoice-payment">
+            <span>Mode de paiement</span>
+            <span>
+              {invoice.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 Paiement à la livraison"}
+            </span>
+          </div>
+        </div>
+
+        {/* Mention légale */}
+        <div className="invoice-legal">
+          <p><strong>Kimoxa</strong> — Marketplace multi-vendeurs · Burkina Faso</p>
+          <p>
+            Kimoxa agit en tant qu'intermédiaire de paiement sécurisé (séquestre).
+            Conformément à la législation en vigueur sur le commerce électronique,
+            l'identité réelle du vendeur professionnel est mentionnée sur cette facture.
+          </p>
+          <p>En cas de litige, contactez le support Kimoxa : support@kimoxa.bf</p>
+        </div>
+      </div>
+    </div>
+  );
 }
