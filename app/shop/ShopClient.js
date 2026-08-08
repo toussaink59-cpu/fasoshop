@@ -16,19 +16,79 @@ const SORT_OPTIONS = [
 ];
 const ITEMS_PER_PAGE = 24;
 
+// Villes principales du Burkina Faso (pour « près de chez moi »)
+const BF_CITIES = [
+  { name: "Ouagadougou", lat: 12.3714, lon: -1.5197 },
+  { name: "Bobo-Dioulasso", lat: 11.1773, lon: -4.2979 },
+  { name: "Koudougou", lat: 12.2541, lon: -2.3616 },
+  { name: "Ouahigouya", lat: 13.5828, lon: -2.4219 },
+  { name: "Banfora", lat: 10.6333, lon: -4.75 },
+  { name: "Dédougou", lat: 12.4667, lon: -3.4667 },
+  { name: "Fada N'Gourma", lat: 12.0614, lon: 0.3581 },
+  { name: "Gaoua", lat: 10.3167, lon: -3.1833 },
+  { name: "Dori", lat: 14.0356, lon: -0.0347 },
+  { name: "Kaya", lat: 13.0833, lon: -1.0833 },
+  { name: "Tenkodogo", lat: 11.7833, lon: -0.3667 },
+  { name: "Ziniaré", lat: 12.5833, lon: -1.4 },
+];
+
+function nearestCity(lat, lon) {
+  let best = null;
+  let bestD = Infinity;
+  for (const c of BF_CITIES) {
+    const d = (c.lat - lat) ** 2 + (c.lon - lon) ** 2;
+    if (d < bestD) {
+      bestD = d;
+      best = c.name;
+    }
+  }
+  return best;
+}
+
 // ====== SHEET DE FILTRES (mobile + desktop, façon Temu) ======
+// Anonymat Option B : PAS de filtre boutique.
+// « Ville » devient « 📍 Près de chez moi » (côté acheteur, pas vendeur).
 function FilterSheet({
   open,
   onClose,
   onApply,
   onReset,
   categories,
-  shops,
   brands,
   cities,
   filters,
   setFilters,
 }) {
+  const [detecting, setDetecting] = useState(false);
+  const [locMsg, setLocMsg] = useState("");
+
+  const allCities = useMemo(() => {
+    const set = new Set([...cities, ...BF_CITIES.map((c) => c.name)]);
+    return [...set].sort((a, b) => a.localeCompare(b, "fr"));
+  }, [cities]);
+
+  function handleDetectLocation() {
+    setLocMsg("");
+    if (!navigator.geolocation) {
+      setLocMsg("Géolocalisation non supportée. Choisissez votre ville manuellement.");
+      return;
+    }
+    setDetecting(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const city = nearestCity(pos.coords.latitude, pos.coords.longitude);
+        setFilters((f) => ({ ...f, city }));
+        setDetecting(false);
+        setLocMsg(`✅ Ville détectée : ${city}`);
+      },
+      () => {
+        setDetecting(false);
+        setLocMsg("Position introuvable. Choisissez votre ville manuellement.");
+      },
+      { timeout: 8000 }
+    );
+  }
+
   if (!open) return null;
 
   return (
@@ -84,7 +144,7 @@ function FilterSheet({
             </div>
           </section>
 
-          {/* État */}
+          {/* État : inchangé — protège acheteur ET vendeur contre les litiges */}
           <section className="temu-filter-section">
             <h3>État</h3>
             <div className="temu-chip-group">
@@ -128,21 +188,34 @@ function FilterSheet({
             </div>
           </section>
 
-          {/* Boutique */}
-          {shops.length > 0 && (
-            <section className="temu-filter-section">
-              <h3>Boutique</h3>
+          {/* 📍 Près de chez moi (remplace l'ancien filtre Ville vendeur) */}
+          <section className="temu-filter-section">
+            <h3>📍 Près de chez moi</h3>
+            <button
+              type="button"
+              className="temu-nearme-btn"
+              onClick={handleDetectLocation}
+              disabled={detecting}
+            >
+              {detecting ? "Détection en cours..." : "🎯 Détecter ma position"}
+            </button>
+            {locMsg && <div className="temu-nearme-msg">{locMsg}</div>}
+            <div style={{ marginTop: 10 }}>
+              <label htmlFor="temu-city-select" style={{ fontSize: "0.78rem", fontWeight: 600, marginBottom: 6, display: "block" }}>
+                Ou choisissez votre ville
+              </label>
               <select
-                value={filters.shopId || ""}
-                onChange={(e) => setFilters((f) => ({ ...f, shopId: e.target.value }))}
+                id="temu-city-select"
+                value={filters.city || ""}
+                onChange={(e) => setFilters((f) => ({ ...f, city: e.target.value }))}
               >
-                <option value="">Toutes les boutiques</option>
-                {shops.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
+                <option value="">Tout le pays</option>
+                {allCities.map((c) => (
+                  <option key={c} value={c}>{c}</option>
                 ))}
               </select>
-            </section>
-          )}
+            </div>
+          </section>
 
           {/* Marque */}
           {brands.length > 0 && (
@@ -155,22 +228,6 @@ function FilterSheet({
                 <option value="">Toutes les marques</option>
                 {brands.map((b) => (
                   <option key={b} value={b}>{b}</option>
-                ))}
-              </select>
-            </section>
-          )}
-
-          {/* Ville */}
-          {cities.length > 0 && (
-            <section className="temu-filter-section">
-              <h3>Ville</h3>
-              <select
-                value={filters.city || ""}
-                onChange={(e) => setFilters((f) => ({ ...f, city: e.target.value }))}
-              >
-                <option value="">Toutes les villes</option>
-                {cities.map((c) => (
-                  <option key={c} value={c}>{c}</option>
                 ))}
               </select>
             </section>
@@ -190,7 +247,7 @@ function FilterSheet({
   );
 }
 
-// ====== CHIPS DE FILTRES ACTIFS (suppression en 1 clic) ======
+// ====== CHIPS DE FILTRES ACTIFS ======
 function ActiveFilterChips({ filters, categories, onRemove }) {
   const chips = [];
 
@@ -214,7 +271,7 @@ function ActiveFilterChips({ filters, categories, onRemove }) {
     });
   }
   if (filters.brand) chips.push({ key: "brand", label: filters.brand });
-  if (filters.city) chips.push({ key: "city", label: filters.city });
+  if (filters.city) chips.push({ key: "city", label: `📍 Près de ${filters.city}` });
 
   if (chips.length === 0) return null;
 
@@ -249,7 +306,6 @@ function ShopContent({
 
   const [products, setProducts] = useState(initialProducts);
   const [categories] = useState(initialCategories);
-  const [shops] = useState(initialShops);
   const [brands] = useState(initialBrands);
   const [cities] = useState(initialCities);
   const [user] = useState(initialUser);
@@ -260,10 +316,8 @@ function ShopContent({
   const [loadingMore, setLoadingMore] = useState(false);
   const lastLoadedRef = useRef(null);
 
-  // Filtres locaux (pour la sheet, on les applique au clic "Appliquer")
   const [draftFilters, setDraftFilters] = useState({
     categorySlug: searchParams.get("category") || "",
-    shopId: searchParams.get("shopId") || "",
     condition: searchParams.get("condition") || "",
     brand: searchParams.get("brand") || "",
     city: searchParams.get("city") || "",
@@ -272,10 +326,8 @@ function ShopContent({
     maxPrice: searchParams.get("maxPrice") || "",
   });
 
-  // Filtres appliqués (ceux dans l'URL)
   const appliedFilters = useMemo(() => ({
     categorySlug: searchParams.get("category") || "",
-    shopId: searchParams.get("shopId") || "",
     condition: searchParams.get("condition") || "",
     brand: searchParams.get("brand") || "",
     city: searchParams.get("city") || "",
@@ -286,7 +338,6 @@ function ShopContent({
 
   const sort = searchParams.get("sort") || "newest";
 
-  // Ouvre la sheet avec les filtres courants
   function openSheet() {
     setDraftFilters(appliedFilters);
     setSheetOpen(true);
@@ -305,7 +356,7 @@ function ShopContent({
 
   function resetFilters() {
     setDraftFilters({
-      categorySlug: "", shopId: "", condition: "", brand: "",
+      categorySlug: "", condition: "", brand: "",
       city: "", minRating: "", minPrice: "", maxPrice: "",
     });
   }
@@ -327,7 +378,6 @@ function ShopContent({
     router.push(`/shop?${params.toString()}`);
   }
 
-  // Recharge quand les filtres URL changent
   const isFirstRun = useRef(true);
   useEffect(() => {
     if (isFirstRun.current) {
@@ -345,7 +395,6 @@ function ShopContent({
       });
   }, [searchParams]);
 
-  // Ferme la sheet avec ESC
   useEffect(() => {
     function onKey(e) {
       if (e.key === "Escape") setSheetOpen(false);
@@ -371,7 +420,6 @@ function ShopContent({
   const remaining = products.length - visibleCount;
   const hasActiveFilters = Object.values(appliedFilters).some((v) => v);
 
-  // Trouve le nom de la catégorie active pour le titre
   const activeCategory = appliedFilters.categorySlug
     ? categories.find((c) => c.slug === appliedFilters.categorySlug)
     : null;
@@ -416,14 +464,11 @@ function ShopContent({
 
       <div className="woven-strip" />
 
-      {/* Contenu principal */}
       <div className="temu-shop-wrap">
-        {/* Titre de la page */}
         <div className="temu-shop-title-row">
           <h1>{pageTitle}</h1>
         </div>
 
-        {/* Barre d'outils : compteur + tri + filtres */}
         <div className="temu-shop-toolbar">
           <span className="temu-result-count">
             {loading ? "Chargement..." : `${products.length} produit${products.length > 1 ? "s" : ""}`}
@@ -446,14 +491,12 @@ function ShopContent({
           </div>
         </div>
 
-        {/* Chips de filtres actifs */}
         <ActiveFilterChips
           filters={appliedFilters}
           categories={categories}
           onRemove={removeFilter}
         />
 
-        {/* Contenu */}
         {loading ? (
           <div className="temu-loading">
             <div className="temu-loading-spinner" />
@@ -505,14 +548,12 @@ function ShopContent({
         )}
       </div>
 
-      {/* Sheet de filtres */}
       <FilterSheet
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         onApply={applyFilters}
         onReset={resetFilters}
         categories={categories}
-        shops={shops}
         brands={brands}
         cities={cities}
         filters={draftFilters}
