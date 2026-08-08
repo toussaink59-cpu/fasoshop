@@ -1,19 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import ProductCard from "@/app/components/ProductCard";
 
 const PAGE = 6;
 
 // Flux de produits façon Temu : on reste sur la même page,
 // le bouton "Afficher plus" charge 6 produits supplémentaires.
-export default function HomeFeed({ initialProducts = [], user }) {
+// Les produits déjà affichés dans les sections vitrine (Flash, Nouveautés)
+// sont automatiquement exclus pour éviter les doublons.
+export default function HomeFeed({ initialProducts = [], user, excludeIds = new Set() }) {
+  // Filtre les produits déjà vus dans les sections vitrine
+  const filteredProducts = useMemo(
+    () => initialProducts.filter((p) => !excludeIds.has(p.id)),
+    [initialProducts, excludeIds]
+  );
+
   const [visibleCount, setVisibleCount] = useState(PAGE);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const remaining = initialProducts.length - visibleCount;
+  const remaining = filteredProducts.length - visibleCount;
   const hasMore = remaining > 0;
-  const visible = initialProducts.slice(0, visibleCount);
+  const visible = filteredProducts.slice(0, visibleCount);
 
   function handleLoadMore() {
     setLoadingMore(true);
@@ -23,7 +31,7 @@ export default function HomeFeed({ initialProducts = [], user }) {
     }, 350);
   }
 
-  if (initialProducts.length === 0) return null;
+  if (filteredProducts.length === 0) return null;
 
   return (
     <div className="home-section">
@@ -51,7 +59,7 @@ export default function HomeFeed({ initialProducts = [], user }) {
           </p>
         </div>
       ) : (
-        initialProducts.length > PAGE && (
+        filteredProducts.length > PAGE && (
           <div className="load-more-wrap">
             <p className="load-more-done">✓ Vous avez vu tous les produits</p>
           </div>
