@@ -24,6 +24,7 @@ export default function AdminDashboard() {
   const [pendingShopsCount, setPendingShopsCount] = useState(0);
   const [pendingModerationCount, setPendingModerationCount] = useState(0);
   const [orderFilter, setOrderFilter] = useState("all");
+  const [earnings, setEarnings] = useState(null);
 
   const loadOrders = useCallback(async () => {
     const res = await fetch("/api/admin/orders");
@@ -66,6 +67,7 @@ export default function AdminDashboard() {
         setUser(data.user);
         loadOrders();
         loadBadgeCounts();
+        fetch("/api/admin/earnings").then((r) => r.json()).then((d) => setEarnings(d.earnings || null));
       });
   }, [loadOrders, loadBadgeCounts, router]);
 
@@ -96,6 +98,40 @@ export default function AdminDashboard() {
           <h1>Tableau de bord admin</h1>
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
+
+        {/* 💰 COMMISSIONS KIMOXA 5,5% */}
+        {earnings && (
+          <div className="vendor-earnings-block">
+            <h2 style={{ margin: "0 0 12px", fontSize: "1.1rem" }}>📊 Commissions Kimoxa (5,5%)</h2>
+            <div className="vendor-earnings-grid">
+              <div className="vendor-earnings-card vendor-earnings-held">
+                <div className="vendor-earnings-icon">🔒</div>
+                <div className="vendor-earnings-amount">
+                  {Number(earnings.held_amount).toLocaleString("fr-FR")} FCFA
+                </div>
+                <div className="vendor-earnings-label">
+                  Séquestrés ({earnings.held_count})
+                </div>
+              </div>
+              <div className="vendor-earnings-card vendor-earnings-released">
+                <div className="vendor-earnings-icon">✅</div>
+                <div className="vendor-earnings-amount">
+                  {Number(earnings.released_amount).toLocaleString("fr-FR")} FCFA
+                </div>
+                <div className="vendor-earnings-label">
+                  À payer aux vendeurs ({earnings.released_count})
+                </div>
+              </div>
+              <div className="vendor-earnings-card vendor-earnings-paid">
+                <div className="vendor-earnings-icon">💰</div>
+                <div className="vendor-earnings-amount">
+                  {Number(earnings.total_commission).toLocaleString("fr-FR")} FCFA
+                </div>
+                <div className="vendor-earnings-label">Commissions cumulées</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 4 cartes stats */}
         <div className="vendor-stats-grid">
@@ -142,6 +178,14 @@ export default function AdminDashboard() {
           <Link href="/admin/analytics" className="vendor-quick-link">
             📈 <strong>Analytics</strong>
             <span>Statistiques détaillées</span>
+          </Link>
+          <Link href="/admin/payouts" className="vendor-quick-link">
+            💸 <strong>Payouts</strong>
+            <span>{earnings ? `${earnings.released_count} payout(s) à libérer` : "Gestion des retraits vendeur"}</span>
+          </Link>
+          <Link href="/admin/conversations" className="vendor-quick-link">
+            💬 <strong>Conversations</strong>
+            <span>Surveillance vendeur ↔ client</span>
           </Link>
         </div>
 
