@@ -5610,3 +5610,68 @@ select, input { max-width: 100%; box-sizing: border-box; }
 .invoice-table tr { display: table-row !important; }
 .invoice-table th, .invoice-table td { display: table-cell !important; padding: 10px 8px !important; }
 .invoice-table th::before, .invoice-table td::before { content: none !important; }
+/* ===== BLOCS GAINS (vendeur + admin) — escrow 5,5% ===== */
+.vendor-earnings-block {
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.vendor-earnings-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+.vendor-earnings-card {
+  padding: 12px;
+  border-radius: 10px;
+  text-align: center;
+}
+.vendor-earnings-held {
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+}
+.vendor-earnings-released {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+.vendor-earnings-paid {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+}
+.vendor-earnings-icon {
+  font-size: 1.4rem;
+  margin-bottom: 4px;
+}
+.vendor-earnings-amount {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--navy-900);
+}
+.vendor-earnings-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.vendor-earnings-hint {
+  font-size: 0.68rem;
+  color: var(--ink-400);
+  margin-top: 4px;
+}
+.vendor-earnings-summary {
+  display: flex;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--border);
+  font-size: 0.8rem;
+  color: var(--ink-400);
+}
+@media (max-width: 600px) {
+  .vendor-earnings-grid {
+    grid-template-columns: 1fr;
+  }
+}
