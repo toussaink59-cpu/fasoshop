@@ -6627,3 +6627,101 @@ select, input { max-width: 100%; box-sizing: border-box; }
   color: var(--ink-400);
   margin-top: 6px;
 }
+/* ===== CARROUSEL PREMIUM : Ken Burns, progression, badges, photo mobile ===== */
+/* Photo desktop : remplit la colonne droite + zoom lent cinématique */
+.hero-slide-visual .hero-slide-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+  animation: hero-kenburns 8s ease-in-out infinite alternate;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+}
+@keyframes hero-kenburns {
+  from { transform: scale(1); }
+  to { transform: scale(1.07); }
+}
+.hero-carousel.is-paused .hero-slide-image {
+  animation-play-state: paused;
+}
+
+/* Barre de progression de l'autoplay */
+.hero-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(252, 250, 246, 0.2);
+  z-index: 4;
+}
+.hero-progress-fill {
+  height: 100%;
+  width: 0;
+  background: var(--gold-500);
+  animation: hero-progress 5s linear forwards;
+}
+@keyframes hero-progress {
+  from { width: 0; }
+  to { width: 100%; }
+}
+.hero-carousel.is-paused .hero-progress-fill {
+  animation-play-state: paused;
+}
+
+/* Badge promo flottant */
+.hero-badge {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 3;
+  background: var(--bissap-600);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1rem;
+  padding: 10px 18px;
+  border-radius: 14px;
+  transform: rotate(6deg);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+  animation: hero-badge-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes hero-badge-pop {
+  from { transform: rotate(6deg) scale(0); }
+  to { transform: rotate(6deg) scale(1); }
+}
+
+/* Mobile : la photo devient le FOND de la slide (texte lisible par-dessus) */
+@media (max-width: 767px) {
+  .hero-slide.has-image .hero-slide-visual {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+  .hero-slide.has-image .hero-slide-image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 16px;
+    box-shadow: none;
+  }
+  .hero-slide.has-image::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(36, 23, 18, 0.3) 0%, rgba(36, 23, 18, 0.8) 100%);
+    border-radius: 16px;
+    z-index: 1;
+  }
+  .hero-slide.has-image .hero-slide-text {
+    position: relative;
+    z-index: 2;
+  }
+  .hero-badge {
+    top: 10px;
+    right: 10px;
+    font-size: 0.8rem;
+    padding: 7px 12px;
+  }
+}
