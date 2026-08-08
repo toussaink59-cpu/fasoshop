@@ -2,12 +2,10 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 
-// Chaque slide peut recevoir une vraie photo via `image` (placer le fichier
-// dans /public/images puis renseigner le chemin, ex: "/images/promo-hero.jpg").
-// Tant qu'aucune photo n'est fournie, un panneau illustré (icône + motif) est
-// affiché à droite à la place — aucune déformation, aucun texte qui chevauche.
+// Carrousel premium Kimoxa : vraies photos HD (Unsplash), effet Ken Burns,
+// barre de progression de l'autoplay, badges promo flottants, swipe mobile.
+// Si une photo ne charge pas, bascule automatique sur le panneau icône.
 const SLIDES = [
   {
     id: 1,
@@ -17,17 +15,18 @@ const SLIDES = [
     description: "Profitez de réductions exceptionnelles chaque semaine, sur des centaines d'articles.",
     primaryLabel: "Acheter maintenant",
     primaryHref: "/shop",
-    secondaryLabel: "Découvrir",
+    secondaryLabel: "Ventes flash",
     secondaryHref: "/shop",
     theme: "slide-t1",
     icon: "🏷️",
-    image: null,
+    image: "https://images.unsplash.com/photo-1607083206869-4c7672e72a8a?auto=format&fit=crop&w=1600&q=70",
+    badge: "-50%",
   },
   {
     id: 2,
     tag: "Fraîchement arrivé",
     title: "Découvrez les nouveautés",
-    subtitle: "Les derniers produits ajoutés par nos vendeurs",
+    subtitle: "Les derniers produits ajoutés par nos vendeurs vérifiés",
     description: "Soyez parmi les premiers à découvrir les articles tout juste mis en ligne.",
     primaryLabel: "Acheter maintenant",
     primaryHref: "/shop",
@@ -35,7 +34,8 @@ const SLIDES = [
     secondaryHref: "/shop",
     theme: "slide-t2",
     icon: "✨",
-    image: null,
+    image: "https://images.unsplash.com/photo-1483985988355-763728e1935b?auto=format&fit=crop&w=1600&q=70",
+    badge: null,
   },
   {
     id: 3,
@@ -49,7 +49,8 @@ const SLIDES = [
     secondaryHref: "/shop?category=beaute",
     theme: "slide-t3",
     icon: "👗",
-    image: null,
+    image: "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1600&q=70",
+    badge: "Tendance",
   },
   {
     id: 4,
@@ -63,7 +64,8 @@ const SLIDES = [
     secondaryHref: "/shop?category=telephones",
     theme: "slide-t4",
     icon: "📱",
-    image: null,
+    image: "https://images.unsplash.com/photo-1511707171631-6f5687e5b1de?auto=format&fit=crop&w=1600&q=70",
+    badge: null,
   },
   {
     id: 5,
@@ -77,21 +79,23 @@ const SLIDES = [
     secondaryHref: "/shop?category=maison",
     theme: "slide-t5",
     icon: "🏠",
-    image: null,
+    image: "https://images.unsplash.com/photo-1556911220-bff31c812dba?auto=format&fit=crop&w=1600&q=70",
+    badge: null,
   },
   {
     id: 6,
-    tag: "Bientôt disponible",
-    title: "Des services numériques utiles",
-    subtitle: "Recharges, abonnements et bien plus",
-    description: "De nouveaux produits digitaux arrivent prochainement sur FasoShop.",
+    tag: "Paiement sécurisé",
+    title: "Payez en Mobile Money",
+    subtitle: "Orange Money, Moov Money, Wave et MTN acceptés",
+    description: "Votre argent est séquestré par Kimoxa et libéré uniquement à la livraison.",
     primaryLabel: "Voir le catalogue",
     primaryHref: "/shop",
-    secondaryLabel: "En savoir plus",
-    secondaryHref: "/a-propos",
+    secondaryLabel: "Devenir vendeur",
+    secondaryHref: "/register?role=vendor",
     theme: "slide-t6",
     icon: "💳",
-    image: null,
+    image: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?auto=format&fit=crop&w=1600&q=70",
+    badge: "Sécurisé",
   },
 ];
 
@@ -101,6 +105,7 @@ const SWIPE_THRESHOLD = 50;
 export default function BannerCarousel() {
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
+  const [brokenImages, setBrokenImages] = useState({});
   const touchStartX = useRef(null);
   const touchDeltaX = useRef(0);
 
@@ -142,13 +147,14 @@ export default function BannerCarousel() {
   }
 
   const slide = SLIDES[index];
+  const showImage = slide.image && !brokenImages[slide.id];
 
   return (
     <div
-      className={`hero-carousel ${slide.theme}`}
+      className={`hero-carousel ${slide.theme} ${paused ? "is-paused" : ""}`}
       role="region"
       aria-roledescription="carrousel"
-      aria-label="Mises en avant FasoShop"
+      aria-label="Mises en avant Kimoxa"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onTouchStart={handleTouchStart}
@@ -166,7 +172,7 @@ export default function BannerCarousel() {
 
       <div
         key={slide.id}
-        className="hero-slide"
+        className={`hero-slide ${showImage ? "has-image" : ""}`}
         role="group"
         aria-roledescription="diapositive"
         aria-label={`${index + 1} sur ${SLIDES.length} : ${slide.title}`}
@@ -187,15 +193,13 @@ export default function BannerCarousel() {
         </div>
 
         <div className="hero-slide-visual">
-          {slide.image ? (
-            <Image
+          {showImage ? (
+            <img
               src={slide.image}
               alt={slide.title}
-              fill
-              sizes="(max-width: 767px) 90vw, (max-width: 1023px) 45vw, 40vw"
               className="hero-slide-image"
-              priority={index === 0}
               loading={index === 0 ? "eager" : "lazy"}
+              onError={() => setBrokenImages((b) => ({ ...b, [slide.id]: true }))}
             />
           ) : (
             <div className="hero-slide-icon-panel" aria-hidden="true">
@@ -203,6 +207,8 @@ export default function BannerCarousel() {
             </div>
           )}
         </div>
+
+        {slide.badge && <div className="hero-badge">{slide.badge}</div>}
       </div>
 
       <button
@@ -226,6 +232,11 @@ export default function BannerCarousel() {
             aria-label={`Aller à la diapositive ${i + 1} : ${s.title}`}
           />
         ))}
+      </div>
+
+      {/* Barre de progression de l'autoplay (repart à zéro à chaque slide) */}
+      <div className="hero-progress" key={`progress-${index}`} aria-hidden="true">
+        <div className="hero-progress-fill" />
       </div>
     </div>
   );
