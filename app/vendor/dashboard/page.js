@@ -57,7 +57,9 @@ export default function VendorDashboard() {
   const [resubmitDocType, setResubmitDocType] = useState("cni");
   const [resubmitDocNumber, setResubmitDocNumber] = useState("");
   const [resubmitError, setResubmitError] = useState("");
-  const [resubmitting, setResubmitting] = useState(false);
+    const [resubmitting, setResubmitting] = useState(false);
+  const [docDataUrl, setDocDataUrl] = useState("");
+  const [docBusy, setDocBusy] = useState(false);
 
   const [newProduct, setNewProduct] = useState({
     name: "",
