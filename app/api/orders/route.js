@@ -1,12 +1,10 @@
 import sql from "@/lib/db";
 
-const COMMISSION_RATE = 0.10; // 10 %, comme fixé dans le cahier des charges
+const COMMISSION_RATE = 0.055; // 5,5 % — commission Kimoxa sur chaque sous-commande
 
 // POST /api/orders
-// Crée une commande + décrémente le stock de chaque produit, dans une transaction
-// pour éviter la survente si deux acheteurs commandent en même temps.
-// Enregistre aussi la commission due par boutique dans shop_commission_ledger.
-// body: { items: [{ productId, quantity }], shippingAddress, phone }
+// Crée une commande + décrémente le stock, dans une transaction.
+// Enregistre la commission ET le payout séquestré dans shop_commission_ledger.
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
 
@@ -14,16 +12,10 @@ export async function POST(request) {
     const { items, shippingAddress, phone, paymentMethod } = await request.json();
 
     if (!Array.isArray(items) || items.length === 0) {
-      return Response.json(
-        { error: "Le panier est vide." },
-        { status: 400 }
-      );
+      return Response.json({ error: "Le panier est vide." }, { status: 400 });
     }
     if (!shippingAddress || !phone) {
-      return Response.json(
-        { error: "Adresse de livraison et téléphone requis." },
-        { status: 400 }
-      );
+      return Response.json({ error: "Adresse de livraison et téléphone requis." }, { status: 400 });
     }
 
     const allowedMethods = ["cod", "mobile_money"];
@@ -46,13 +38,9 @@ export async function POST(request) {
           FOR UPDATE
         `;
 
-        if (!product) {
-          throw new Error(`Produit introuvable (id ${item.productId}).`);
-        }
+        if (!product) throw new Error(`Produit introuvable (id ${item.productId}).`);
         if (product.stock_quantity < quantity) {
-          throw new Error(
-            `Stock insuffisant pour "${product.name}" (disponible : ${product.stock_quantity}).`
-          );
+          throw new Error(`Stock insuffisant pour "${product.name}" (disponible : ${product.stock_quantity}).`);
         }
 
         total += Number(product.price) * quantity;
@@ -88,11 +76,16 @@ export async function POST(request) {
         subtotalsByShop[product.shop_id] = (subtotalsByShop[product.shop_id] || 0) + lineTotal;
       }
 
+      // 💰 PAYOUT : séquestre + commission 5,5% par boutique
       for (const [shopId, subtotal] of Object.entries(subtotalsByShop)) {
         const commissionAmount = Math.round(subtotal * COMMISSION_RATE);
+        const payoutAmount = subtotal - commissionAmount;
         await tx`
-          INSERT INTO shop_commission_ledger (shop_id, order_id, commission_amount, gross_amount, status)
-          VALUES (${shopId}, ${newOrder.id}, ${commissionAmount}, ${subtotal}, 'due')
+          INSERT INTO shop_commission_ledger
+            (shop_id, order_id, commission_amount, gross_amount, status,
+             commission_rate, payout_amount, payout_status)
+          VALUES (${shopId}, ${newOrder.id}, ${commissionAmount}, ${subtotal}, 'due',
+                  5.5, ${payoutAmount}, 'held')
         `;
       }
 
@@ -109,13 +102,9 @@ export async function POST(request) {
   }
 }
 
-import { getBuyerOrders } from "@/lib/queries/orders";
-
-// GET /api/orders
-// Historique des commandes de l'acheteur connecté, avec le détail par boutique
-// (chaque boutique gère sa propre sous-commande et son propre statut de livraison).
 export async function GET(request) {
   const userId = request.headers.get("x-user-id");
+  const { getBuyerOrders } = await import("@/lib/queries/orders");
   const orders = await getBuyerOrders(userId);
   return Response.json({ orders });
 }
