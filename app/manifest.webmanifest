@@ -1,0 +1,16 @@
+{
+  "name": "Kimoxa — Connecter · Innover · Prospérer",
+  "short_name": "Kimoxa",
+  "description": "La marketplace multi-vendeurs qui connecte l'Afrique qui vend à l'Afrique qui achète.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#FCFAF6",
+  "theme_color": "#241712",
+  "lang": "fr",
+  "icons": [
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
