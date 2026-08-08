@@ -174,6 +174,14 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
                         >
                           💬 {contactingKey === key ? "Ouverture..." : "Contacter le support"}
                         </button>
+
+                        <Link
+                          href={`/orders/${order.id}/invoice`}
+                          className="btn btn-ghost order-contact-btn"
+                          style={{ marginTop: 6 }}
+                        >
+                          🧾 Voir la facture
+                        </Link>
                       </div>
                     );
                   })}
