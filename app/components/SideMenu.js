@@ -198,10 +198,6 @@ export default function SideMenu({ open, onClose, user, categories = [], onLogou
             </Link>
           )}
 
-          <Link href="/nos-vendeurs" className="side-menu-link" onClick={onClose}>
-            Nos vendeurs
-          </Link>
-
           <Link href="/a-propos" className="side-menu-link" onClick={onClose}>
             À propos
           </Link>
