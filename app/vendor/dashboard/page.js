@@ -41,6 +41,7 @@ export default function VendorDashboard() {
   const [sponsorBusy, setSponsorBusy] = useState(null);
   const [activeFilter, setActiveFilter] = useState("all");
   const [expandedProduct, setExpandedProduct] = useState(null);
+  const [earnings, setEarnings] = useState(null);
 
   useEffect(() => {
     function loadUnread() {
@@ -119,6 +120,7 @@ export default function VendorDashboard() {
         setUser(data.user);
         loadStock();
         loadNewOrdersCount();
+        fetch("/api/vendor/earnings").then((r) => r.json()).then((d) => setEarnings(d.earnings || null));
 
         fetch("/api/vendor/shop")
           .then((r) => r.json())
@@ -526,6 +528,47 @@ export default function VendorDashboard() {
 
         {error && <div className="error-box">{error}</div>}
         {success && <div className="success-box">{success}</div>}
+
+        {/* 💰 Bloc GAINS VENDEUR — escrow 5,5% */}
+        {earnings && (
+          <div className="vendor-earnings-block">
+            <h2 style={{ margin: "0 0 12px", fontSize: "1.1rem" }}>💰 Mes gains</h2>
+            <div className="vendor-earnings-grid">
+              <div className="vendor-earnings-card vendor-earnings-held">
+                <div className="vendor-earnings-icon">🔒</div>
+                <div className="vendor-earnings-amount">
+                  {Number(earnings.held_amount).toLocaleString("fr-FR")} FCFA
+                </div>
+                <div className="vendor-earnings-label">
+                  En attente ({earnings.held_count} commande{earnings.held_count > 1 ? "s" : ""})
+                </div>
+                <div className="vendor-earnings-hint">Séquestrés jusqu'à livraison</div>
+              </div>
+              <div className="vendor-earnings-card vendor-earnings-released">
+                <div className="vendor-earnings-icon">✅</div>
+                <div className="vendor-earnings-amount">
+                  {Number(earnings.released_amount).toLocaleString("fr-FR")} FCFA
+                </div>
+                <div className="vendor-earnings-label">
+                  À retirer ({earnings.released_count} commande{earnings.released_count > 1 ? "s" : ""})
+                </div>
+                <div className="vendor-earnings-hint">Livrées, prêtes au payout</div>
+              </div>
+              <div className="vendor-earnings-card vendor-earnings-paid">
+                <div className="vendor-earnings-icon">💸</div>
+                <div className="vendor-earnings-amount">
+                  {Number(earnings.paid_amount).toLocaleString("fr-FR")} FCFA
+                </div>
+                <div className="vendor-earnings-label">Déjà payés</div>
+                <div className="vendor-earnings-hint">Versés sur votre Mobile Money</div>
+              </div>
+            </div>
+            <div className="vendor-earnings-summary">
+              <span>Total brut vendu : <strong>{Number(earnings.total_gross).toLocaleString("fr-FR")} FCFA</strong></span>
+              <span>Commission Kimoxa (5,5%) : <strong>{Number(earnings.total_commission).toLocaleString("fr-FR")} FCFA</strong></span>
+            </div>
+          </div>
+        )}
 
         {/* 4 cartes stats */}
         <div className="vendor-stats-grid">
