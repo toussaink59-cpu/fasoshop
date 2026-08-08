@@ -20,7 +20,7 @@ export default function Footer() {
             <div className="temu-footer-app-icon">📲</div>
             <div>
               <strong>Application mobile</strong>
-              <span>Bientôt sur Android & iPhone</span>
+              <span>Installez-la depuis votre navigateur 📲</span>
             </div>
           </div>
           <div className="temu-footer-socials">
