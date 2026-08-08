@@ -1,5 +1,6 @@
 import "./globals.css";
 import ServiceWorker from "@/app/components/ServiceWorker";
+import PwaInstallPrompt from "@/app/components/PwaInstallPrompt";
 
 export const metadata = {
   title: {
@@ -14,8 +15,9 @@ export default function RootLayout({ children }) {
   return (
     <html lang="fr">
       <body>
-        {/* PWA : enregistrement du service worker (production uniquement) */}
+        {/* PWA : service worker + bannière d'installation */}
         <ServiceWorker />
+        <PwaInstallPrompt />
         <meta name="theme-color" content="#241712" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
