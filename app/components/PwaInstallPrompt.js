@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 // Bannière d'installation PWA :
-// - Android/PC Chrome : bouton "Installer" (déclenche l'invite native)
+// - Android / PC Chrome : bouton « Installer » (invite native)
 // - iPhone Safari : mini-guide (Partager → Sur l'écran d'accueil)
 export default function PwaInstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
@@ -13,7 +13,9 @@ export default function PwaInstallPrompt() {
   useEffect(() => {
     // App déjà installée (mode autonome) → ne rien montrer
     if (window.matchMedia("(display-mode: standalone)").matches) return;
-    if (typeof window !== "undefined" && localStorage.getItem("pwa-install-dismissed")) return;
+    try {
+      if (localStorage.getItem("pwa-install-dismissed")) return;
+    } catch {}
 
     function onBeforeInstallPrompt(e) {
       e.preventDefault();
