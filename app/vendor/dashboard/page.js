@@ -57,7 +57,7 @@ export default function VendorDashboard() {
   const [resubmitDocType, setResubmitDocType] = useState("cni");
   const [resubmitDocNumber, setResubmitDocNumber] = useState("");
   const [resubmitError, setResubmitError] = useState("");
-    const [resubmitting, setResubmitting] = useState(false);
+  const [resubmitting, setResubmitting] = useState(false);
   const [docDataUrl, setDocDataUrl] = useState("");
   const [docBusy, setDocBusy] = useState(false);
 
@@ -320,25 +320,83 @@ export default function VendorDashboard() {
     loadStock();
   }
 
+  // === NOUVEAU : compression d'image pour la pièce d'identité ===
+  async function compressImage(file, maxDim = 900, quality = 0.72) {
+    const raw = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+    const img = await new Promise((resolve, reject) => {
+      const i = new Image();
+      i.onload = () => resolve(i);
+      i.onerror = reject;
+      i.src = raw;
+    });
+    const scale = Math.min(1, maxDim / Math.max(img.width, img.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(img.width * scale);
+    canvas.height = Math.round(img.height * scale);
+    canvas.getContext("2d").drawImage(img, 0, 0, canvas.width, canvas.height);
+    return canvas.toDataURL("image/jpeg", quality);
+  }
+
+  async function handleDocFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setResubmitError("");
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setResubmitError("Format non supporté. Utilisez JPG, PNG ou WEBP.");
+      return;
+    }
+    if (file.size > 8 * 1024 * 1024) {
+      setResubmitError("Image trop lourde (8 Mo max).");
+      return;
+    }
+    setDocBusy(true);
+    try {
+      setDocDataUrl(await compressImage(file));
+    } catch {
+      setResubmitError("Impossible de lire cette image.");
+    }
+    setDocBusy(false);
+  }
+
+  // === MODIFIÉ : envoi avec la photo ===
   async function handleResubmitDocuments(e) {
     e.preventDefault();
     setResubmitError("");
+    if (!docDataUrl) {
+      setResubmitError("La photo de la pièce d'identité est obligatoire.");
+      return;
+    }
+    if (!resubmitDocNumber.trim()) {
+      setResubmitError("Le numéro de la pièce est requis.");
+      return;
+    }
     setResubmitting(true);
 
     const res = await fetch("/api/vendor/shop", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ idDocumentType: resubmitDocType, idDocumentNumber: resubmitDocNumber }),
+      body: JSON.stringify({
+        idDocumentType: resubmitDocType,
+        idDocumentNumber: resubmitDocNumber,
+        idDocumentUrl: docDataUrl,
+      }),
     });
     const data = await res.json();
     setResubmitting(false);
 
     if (!res.ok) {
-      setResubmitError(data.error || "Erreur lors de la resoumission.");
+      setResubmitError(data.error || "Erreur lors de la soumission.");
       return;
     }
 
     setShop(data.shop);
+    setDocDataUrl("");
+    setSuccess("Pièce d'identité soumise ! Nous vérifions votre compte (moins de 24h).");
   }
 
   async function handleDeleteProduct(productId, productName) {
@@ -394,6 +452,37 @@ export default function VendorDashboard() {
     return true;
   });
 
+  // Zone d'upload réutilisable pour les 2 formulaires
+  const DocUploadZone = (
+    <>
+      <label className="doc-upload-zone" htmlFor="verify-doc-file">
+        {docDataUrl ? (
+          <>
+            <img src={docDataUrl} alt="Aperçu de la pièce" className="doc-upload-preview" />
+            <div className="doc-upload-hint">✅ Photo ajoutée — cliquez pour remplacer</div>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: "1.8rem" }}>🪪</div>
+            <strong>{docBusy ? "Traitement..." : "Photo de la pièce (recto) *"}</strong>
+            <div className="doc-upload-hint">JPG, PNG ou WEBP · 8 Mo max · image nette et lisible</div>
+          </>
+        )}
+      </label>
+      <input
+        id="verify-doc-file"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        style={{ display: "none" }}
+        onChange={handleDocFile}
+      />
+      <div className="trust-security" style={{ justifyContent: "flex-start", color: "var(--ink-400)", paddingTop: 10, fontSize: "0.75rem" }}>
+        <span>🔒</span>
+        <span>Vos données sont chiffrées et utilisées uniquement pour la vérification.</span>
+      </div>
+    </>
+  );
+
   return (
     <div className="shell">
       {/* ===== TOPBAR TEMU ===== */}
@@ -427,14 +516,14 @@ export default function VendorDashboard() {
           <div className="vendor-alert vendor-alert-warning">
             <strong>🪪 Vérifiez votre identité pour activer votre boutique</strong>
             <p>
-              Votre compte vendeur est créé ! Il ne manque plus qu'une vérification d'identité pour
-              commencer à vendre.
+              Votre compte vendeur est créé ! Soumettez votre pièce d'identité pour commencer à vendre
+              <strong> sans aucune limite</strong> de produits ou de gains.
             </p>
             {resubmitError && <div className="error-box">{resubmitError}</div>}
             <form onSubmit={handleResubmitDocuments}>
               <div className="form-row">
                 <div>
-                  <label htmlFor="verify-doc-type">Type de pièce</label>
+                  <label htmlFor="verify-doc-type">Type de pièce *</label>
                   <select
                     id="verify-doc-type"
                     value={resubmitDocType}
@@ -446,7 +535,7 @@ export default function VendorDashboard() {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="verify-doc-number">Numéro de la pièce</label>
+                  <label htmlFor="verify-doc-number">Numéro de la pièce *</label>
                   <input
                     id="verify-doc-number"
                     required
@@ -456,7 +545,8 @@ export default function VendorDashboard() {
                   />
                 </div>
               </div>
-              <button type="submit" className="btn btn-primary" disabled={resubmitting}>
+              {DocUploadZone}
+              <button type="submit" className="btn btn-primary" disabled={resubmitting || docBusy} style={{ marginTop: 10 }}>
                 {resubmitting ? "Envoi..." : "Soumettre pour vérification"}
               </button>
             </form>
@@ -468,7 +558,7 @@ export default function VendorDashboard() {
             <strong>⏳ Boutique en attente de vérification</strong>
             <p>
               Notre équipe vérifie les informations de votre pièce d'identité ({DOC_LABELS[shop.id_document_type] || shop.id_document_type} n° {shop.id_document_number}).
-              Vous pourrez publier des produits dès que votre boutique sera validée.
+              Vous pourrez publier des produits dès que votre boutique sera validée (moins de 24h).
             </p>
           </div>
         )}
@@ -488,7 +578,7 @@ export default function VendorDashboard() {
             <form onSubmit={handleResubmitDocuments}>
               <div className="form-row">
                 <div>
-                  <label htmlFor="resubmit-doc-type">Type de pièce</label>
+                  <label htmlFor="resubmit-doc-type">Type de pièce *</label>
                   <select
                     id="resubmit-doc-type"
                     value={resubmitDocType}
@@ -500,7 +590,7 @@ export default function VendorDashboard() {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="resubmit-doc-number">Numéro de la pièce</label>
+                  <label htmlFor="resubmit-doc-number">Numéro de la pièce *</label>
                   <input
                     id="resubmit-doc-number"
                     required
@@ -509,7 +599,8 @@ export default function VendorDashboard() {
                   />
                 </div>
               </div>
-              <button type="submit" className="btn btn-primary" disabled={resubmitting}>
+              {DocUploadZone}
+              <button type="submit" className="btn btn-primary" disabled={resubmitting || docBusy} style={{ marginTop: 10 }}>
                 {resubmitting ? "Envoi..." : "Resoumettre pour vérification"}
               </button>
             </form>
