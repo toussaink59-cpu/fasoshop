@@ -42,7 +42,6 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
     router.push(`/messages/${data.conversationId}`);
   }
 
-  // 💰 CONFIRMATION DE RÉCEPTION : débloque le payout vendeur (commission 5,5% Kimoxa)
   async function handleConfirmReceipt(orderId, shopId) {
     const key = `${orderId}-${shopId}`;
     setError("");
@@ -61,7 +60,6 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
       return;
     }
 
-    // Mise à jour immédiate de l'affichage (statut → delivered)
     setOrders((prev) =>
       prev.map((o) =>
         o.id === orderId
@@ -76,7 +74,6 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
     );
   }
 
-  // Une commande "contient" un statut si une de ses boutiques l'a
   const hasStatus = (o, s) => o.subOrders.some((sub) => sub.deliveryStatus === s);
   const filteredOrders =
     orderFilter === "all" ? orders : orders.filter((o) => hasStatus(o, orderFilter));
@@ -87,7 +84,6 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
       <SiteHeader initialUser={initialUser} categories={categories} />
       <div className="orders-wrap">
 
-        {/* 🎉 Bannière de confirmation avec étapes de suivi */}
         {confirmedId && (
           <div className="order-confirm-banner">
             <div className="order-confirm-icon">🎉</div>
@@ -133,7 +129,6 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
           </div>
         ) : (
           <>
-            {/* Onglets de suivi façon Temu */}
             <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
               <div className="vendor-filters" style={{ flexWrap: "nowrap", width: "max-content", maxWidth: "none" }}>
                 <button className={`vendor-filter-btn ${orderFilter === "all" ? "active" : ""}`} onClick={() => setOrderFilter("all")}>
@@ -177,7 +172,6 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
                     {order.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 À la livraison"}
                   </div>
 
-                  {/* OPTION B : anonymisation — toutes les sous-commandes affichent "Kimoxa" */}
                   {order.subOrders.map((sub) => {
                     const key = `${order.id}-${sub.shopId}`;
                     return (
@@ -202,33 +196,30 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
                           ))}
                         </div>
 
-                        <button
-                          className="btn btn-ghost order-contact-btn"
-                          onClick={() => handleContact(order.id, sub.shopId)}
-                          disabled={contactingKey === key}
-                        >
-                          💬 {contactingKey === key ? "Ouverture..." : "Contacter le support"}
-                        </button>
-
-                        <Link
-                          href={`/orders/${order.id}/invoice`}
-                          className="btn btn-ghost order-contact-btn"
-                          style={{ marginTop: 6 }}
-                        >
-                          🧾 Voir la facture
-                        </Link>
-
-                        {/* 💰 BOUTON DE CONFIRMATION — visible UNIQUEMENT en statut "shipped" */}
-                        {sub.deliveryStatus === "shipped" && (
+                        <div className="order-actions">
                           <button
-                            className="btn btn-primary order-contact-btn"
-                            style={{ marginTop: 6 }}
-                            onClick={() => handleConfirmReceipt(order.id, sub.shopId)}
-                            disabled={confirmingKey === key}
+                            className="btn btn-ghost"
+                            onClick={() => handleContact(order.id, sub.shopId)}
+                            disabled={contactingKey === key}
                           >
-                            ✅ {confirmingKey === key ? "Confirmation..." : "J'ai reçu ma commande"}
+                            💬 {contactingKey === key ? "Ouverture..." : "Contacter"}
                           </button>
-                        )}
+                          <Link
+                            href={`/orders/${order.id}/invoice`}
+                            className="btn btn-ghost"
+                          >
+                            🧾 Facture
+                          </Link>
+                          {sub.deliveryStatus === "shipped" && (
+                            <button
+                              className="btn btn-success"
+                              onClick={() => handleConfirmReceipt(order.id, sub.shopId)}
+                              disabled={confirmingKey === key}
+                            >
+                              ✅ {confirmingKey === key ? "..." : "J'ai reçu"}
+                            </button>
+                          )}
+                        </div>
                       </div>
                     );
                   })}
