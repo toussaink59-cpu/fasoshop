@@ -1,16 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getCart, updateQuantity, clearCart, cartTotal } from "@/lib/cart";
+import { getDeliveryFee, formatDeliveryFee, freeDeliveryHint } from "@/lib/delivery";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
 
 export default function CartClient({ initialUser, categories }) {
   const router = useRouter();
-  // Le panier vit uniquement dans localStorage (jamais côté serveur) : lu de
-  // façon synchrone dès le premier rendu, pas de fetch ni de "Chargement...".
   const [cart, setCart] = useState(() => (typeof window !== "undefined" ? getCart() : []));
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [selectedAddressId, setSelectedAddressId] = useState("");
@@ -21,14 +20,11 @@ export default function CartClient({ initialUser, categories }) {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // Resynchronise après hydratation : localStorage n'existe pas côté
-    // serveur, donc le tout premier rendu serveur ne peut pas connaître le
-    // panier. Évite un mismatch d'hydratation React.
     setCart(getCart());
   }, []);
 
   useEffect(() => {
-    if (!initialUser) return; // pas connecté — le champ adresse reste libre
+    if (!initialUser) return;
     fetch("/api/addresses").then(async (res) => {
       if (!res.ok) return;
       const data = await res.json();
@@ -50,7 +46,7 @@ export default function CartClient({ initialUser, categories }) {
   }
 
   function removeItem(productId) {
-    updateQuantity(productId, 0); // 0 = supprime l'article (logique déjà présente dans lib/cart)
+    updateQuantity(productId, 0);
     setCart(getCart());
   }
 
@@ -67,6 +63,18 @@ export default function CartClient({ initialUser, categories }) {
     }
   }
 
+  // ===== CALCULS LIVRAISON =====
+  const subtotal = cartTotal(cart);
+  // Détecte la ville depuis l'adresse saisie (Ouagadougou = 1 500, sinon 2 500)
+  const detectedCity = useMemo(() => {
+    const addr = (shippingAddress || "").toLowerCase();
+    if (addr.includes("ouaga") || addr.includes("kadiogo")) return "Ouagadougou";
+    return shippingAddress ? "Autre" : "";
+  }, [shippingAddress]);
+  const deliveryFee = getDeliveryFee(detectedCity, subtotal);
+  const grandTotal = subtotal + deliveryFee;
+  const freeHint = freeDeliveryHint(subtotal);
+
   async function handleCheckout(e) {
     e.preventDefault();
     setError("");
@@ -75,6 +83,11 @@ export default function CartClient({ initialUser, categories }) {
     const me = await meRes.json();
     if (!me.user) {
       router.push("/login");
+      return;
+    }
+
+    if (!shippingAddress.trim()) {
+      setError("Merci d'indiquer une adresse de livraison.");
       return;
     }
 
@@ -87,6 +100,7 @@ export default function CartClient({ initialUser, categories }) {
         shippingAddress,
         phone,
         paymentMethod,
+        deliveryFee, // envoyé au serveur pour enregistrement
       }),
     });
     const data = await res.json();
@@ -100,8 +114,6 @@ export default function CartClient({ initialUser, categories }) {
     clearCart();
     router.push(`/orders?confirmed=${data.order.id}&method=${paymentMethod}`);
   }
-
-  const total = cartTotal(cart);
 
   return (
     <div className="shell">
@@ -165,6 +177,25 @@ export default function CartClient({ initialUser, categories }) {
               ))}
             </div>
 
+            {/* Bandeau "Plus que X FCFA pour livraison gratuite" (style Temu) */}
+            {freeHint && (
+              <div
+                style={{
+                  background: "#fef3c7",
+                  border: "1px solid #fbbf24",
+                  color: "#92400e",
+                  padding: "10px 14px",
+                  borderRadius: "10px",
+                  fontSize: "0.85rem",
+                  fontWeight: 700,
+                  textAlign: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                🚚 {freeHint}
+              </div>
+            )}
+
             {/* Formulaire de livraison */}
             <div className="cart-checkout-section">
               <h2>Livraison et paiement</h2>
@@ -209,6 +240,60 @@ export default function CartClient({ initialUser, categories }) {
                   />
                 </div>
 
+                {/* ===== RÉCAP LIVRAISON ===== */}
+                {shippingAddress && (
+                  <div
+                    style={{
+                      background: "#faf7f2",
+                      border: "1px dashed var(--border)",
+                      borderRadius: "10px",
+                      padding: "12px 14px",
+                      marginBottom: "16px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontSize: "0.85rem",
+                        marginBottom: "6px",
+                        color: "var(--ink-700)",
+                      }}
+                    >
+                      <span>Sous-total ({cart.length} article{cart.length > 1 ? "s" : ""})</span>
+                      <strong>{subtotal.toLocaleString("fr-FR")} FCFA</strong>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontSize: "0.85rem",
+                        marginBottom: "8px",
+                        color: "var(--ink-700)",
+                      }}
+                    >
+                      <span>🚚 Livraison ({detectedCity || "—"})</span>
+                      <strong style={{ color: deliveryFee === 0 ? "var(--millet-600)" : "var(--ink-900)" }}>
+                        {formatDeliveryFee(deliveryFee)}
+                      </strong>
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        paddingTop: "8px",
+                        borderTop: "1px solid var(--border)",
+                      }}
+                    >
+                      <span style={{ fontWeight: 700, color: "var(--ink-900)" }}>Total à payer</span>
+                      <strong style={{ fontSize: "1.1rem", color: "var(--ink-900)" }}>
+                        {grandTotal.toLocaleString("fr-FR")} FCFA
+                      </strong>
+                    </div>
+                  </div>
+                )}
+
                 <div className="form-group">
                   <label>Mode de paiement</label>
                   <div className="payment-options">
@@ -235,16 +320,16 @@ export default function CartClient({ initialUser, categories }) {
                   </div>
                 </div>
 
-                <button type="submit" className="btn btn-primary cart-checkout-btn" disabled={submitting}>
-                  {submitting ? "Validation..." : `Valider la commande (${total.toLocaleString("fr-FR")} FCFA)`}
+                <button type="submit" className="btn btn-primary cart-checkout-btn" disabled={submitting || !shippingAddress}>
+                  {submitting ? "Validation..." : `Valider la commande (${grandTotal.toLocaleString("fr-FR")} FCFA)`}
                 </button>
               </form>
             </div>
 
-            {/* Total sticky mobile */}
+            {/* Total sticky mobile (mis à jour avec livraison) */}
             <div className="cart-sticky-total">
               <div className="cart-sticky-label">Total</div>
-              <div className="cart-sticky-price">{total.toLocaleString("fr-FR")} FCFA</div>
+              <div className="cart-sticky-price">{grandTotal.toLocaleString("fr-FR")} FCFA</div>
               <button
                 className="btn btn-primary"
                 onClick={() => window.scrollTo({ top: document.querySelector(".cart-checkout-section").offsetTop, behavior: "smooth" })}
