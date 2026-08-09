@@ -7544,3 +7544,37 @@ a.side-menu-link:hover::after {
   .site-footer-col h4 { white-space: normal !important; }
   .temu-footer-bottombar { flex-direction: column !important; align-items: flex-start !important; gap: 6px !important; }
 }
+/* ===== BOUTONS D'ACTION COMMANDES — hiérarchie claire ===== */
+.order-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.order-actions .btn {
+  flex: 1;
+  min-width: 120px;
+  font-size: 0.85rem;
+  padding: 10px 14px;
+}
+.btn-success {
+  background: var(--millet-600);
+  color: white;
+  border: none;
+  font-weight: 700;
+}
+.btn-success:hover:not(:disabled) {
+  background: #2d5a2d;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(63, 107, 63, 0.3);
+}
+@media (max-width: 640px) {
+  .order-actions {
+    flex-direction: column;
+    gap: 6px;
+  }
+  .order-actions .btn {
+    width: 100%;
+    min-width: 0;
+  }
+}
