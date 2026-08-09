@@ -37,6 +37,10 @@ export default async function InvoicePage({ params }) {
     year: "numeric",
   });
 
+  // ===== CALCUL LIVRAISON =====
+  const deliveryFee = Number(invoice.deliveryFee) || 0;
+  const subtotalProducts = Number(invoice.total) - deliveryFee;
+
   return (
     <div>
       {/* Bouton imprimer (masqué à l'impression) */}
@@ -125,12 +129,29 @@ export default async function InvoicePage({ params }) {
           </div>
         ))}
 
-        {/* Total général */}
+        {/* ===== TOTAL GÉNÉRAL AVEC LIVRAISON ===== */}
         <div className="invoice-total">
+          {/* Sous-total produits */}
           <div className="invoice-total-row">
-            <span>Total payé</span>
+            <span>Sous-total produits</span>
+            <span>{subtotalProducts.toLocaleString("fr-FR")} FCFA</span>
+          </div>
+
+          {/* Frais de livraison */}
+          <div className="invoice-total-row">
+            <span>🚚 Livraison</span>
+            <span style={{ color: deliveryFee === 0 ? "var(--millet-600)" : "inherit", fontWeight: deliveryFee === 0 ? 700 : 400 }}>
+              {deliveryFee === 0 ? "Gratuite 🎉" : `${deliveryFee.toLocaleString("fr-FR")} FCFA`}
+            </span>
+          </div>
+
+          {/* Total payé */}
+          <div className="invoice-total-row">
+            <span><strong>Total payé</strong></span>
             <strong>{Number(invoice.total).toLocaleString("fr-FR")} FCFA</strong>
           </div>
+
+          {/* Mode de paiement */}
           <div className="invoice-total-row invoice-payment">
             <span>Mode de paiement</span>
             <span>
