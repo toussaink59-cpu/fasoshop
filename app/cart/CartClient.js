@@ -15,9 +15,12 @@ export default function CartClient({ initialUser, categories }) {
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
   const [phone, setPhone] = useState("");
+  const [deliveryMethod, setDeliveryMethod] = useState("delivery"); // 🚚 ou 🏪
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [locating, setLocating] = useState(false);
+  const [locError, setLocError] = useState("");
 
   useEffect(() => {
     setCart(getCart());
@@ -63,17 +66,51 @@ export default function CartClient({ initialUser, categories }) {
     }
   }
 
-  // ===== CALCULS LIVRAISON =====
+  // 📍 Géolocalisation gratuite via OpenStreetMap (pas de clé Google)
+  async function useMyLocation() {
+    setLocError("");
+    if (!("geolocation" in navigator)) {
+      setLocError("Géolocalisation non supportée par ce navigateur.");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const { latitude, longitude } = pos.coords;
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}&accept-language=fr`
+          );
+          const data = await res.json();
+          if (data && data.display_name) {
+            setShippingAddress(data.display_name.split(",").slice(0, 4).join(",").trim());
+          } else {
+            setShippingAddress(`Position GPS : ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+          }
+        } catch {
+          setLocError("Conversion GPS impossible. Saisissez l'adresse manuellement.");
+        } finally {
+          setLocating(false);
+        }
+      },
+      () => {
+        setLocError("Autorisez la localisation, ou saisissez l'adresse manuellement.");
+        setLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  }
+
+  // ===== CALCULS LIVRAISON / RETRAIT =====
   const subtotal = cartTotal(cart);
-  // Détecte la ville depuis l'adresse saisie (Ouagadougou = 1 500, sinon 2 500)
   const detectedCity = useMemo(() => {
     const addr = (shippingAddress || "").toLowerCase();
     if (addr.includes("ouaga") || addr.includes("kadiogo")) return "Ouagadougou";
     return shippingAddress ? "Autre" : "";
   }, [shippingAddress]);
-  const deliveryFee = getDeliveryFee(detectedCity, subtotal);
+  const deliveryFee = getDeliveryFee(detectedCity, subtotal, deliveryMethod);
   const grandTotal = subtotal + deliveryFee;
-  const freeHint = freeDeliveryHint(subtotal);
+  const freeHint = freeDeliveryHint(subtotal, deliveryMethod);
 
   async function handleCheckout(e) {
     e.preventDefault();
@@ -86,8 +123,12 @@ export default function CartClient({ initialUser, categories }) {
       return;
     }
 
-    if (!shippingAddress.trim()) {
+    if (deliveryMethod === "delivery" && !shippingAddress.trim()) {
       setError("Merci d'indiquer une adresse de livraison.");
+      return;
+    }
+    if (!phone.trim()) {
+      setError("Merci d'indiquer un numéro de téléphone.");
       return;
     }
 
@@ -100,7 +141,7 @@ export default function CartClient({ initialUser, categories }) {
         shippingAddress,
         phone,
         paymentMethod,
-        deliveryFee, // envoyé au serveur pour enregistrement
+        deliveryMethod, // 🆕 le serveur recalcule lui-même les frais
       }),
     });
     const data = await res.json();
@@ -177,7 +218,7 @@ export default function CartClient({ initialUser, categories }) {
               ))}
             </div>
 
-            {/* Bandeau "Plus que X FCFA pour livraison gratuite" (style Temu) */}
+            {/* Bandeau "Plus que X FCFA pour livraison gratuite" (masqué en mode retrait) */}
             {freeHint && (
               <div
                 style={{
@@ -198,36 +239,90 @@ export default function CartClient({ initialUser, categories }) {
 
             {/* Formulaire de livraison */}
             <div className="cart-checkout-section">
-              <h2>Livraison et paiement</h2>
+              <h2>Réception et paiement</h2>
               <form onSubmit={handleCheckout}>
-                {savedAddresses.length > 0 && (
-                  <div className="form-group">
-                    <label htmlFor="saved-address">Adresse enregistrée</label>
-                    <select
-                      id="saved-address"
-                      value={selectedAddressId}
-                      onChange={(e) => handleAddressSelect(e.target.value)}
-                    >
-                      {savedAddresses.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {a.libelle}{a.par_defaut ? " (par défaut)" : ""}
-                        </option>
-                      ))}
-                      <option value="custom">Autre adresse...</option>
-                    </select>
-                  </div>
-                )}
-
+                {/* ===== 🆕 CHOIX : LIVRAISON ou RETRAIT ===== */}
                 <div className="form-group">
-                  <label htmlFor="address">Adresse de livraison</label>
-                  <input
-                    id="address"
-                    required
-                    value={shippingAddress}
-                    onChange={(e) => setShippingAddress(e.target.value)}
-                    placeholder="Ex : Secteur 15, Ouagadougou"
-                  />
+                  <label>Mode de réception</label>
+                  <div className="payment-options">
+                    <label className={`payment-option ${deliveryMethod === "delivery" ? "selected" : ""}`}>
+                      <input
+                        type="radio"
+                        name="deliveryMethod"
+                        value="delivery"
+                        checked={deliveryMethod === "delivery"}
+                        onChange={() => setDeliveryMethod("delivery")}
+                      />
+                      <div>
+                        <div className="payment-option-title">🚚 Livraison à domicile</div>
+                        <div className="payment-option-desc">
+                          Ouagadougou 1 500 FCFA · Autres villes 2 500 FCFA · Gratuit dès 200 000 FCFA
+                        </div>
+                      </div>
+                    </label>
+                    <label className={`payment-option ${deliveryMethod === "pickup" ? "selected" : ""}`}>
+                      <input
+                        type="radio"
+                        name="deliveryMethod"
+                        value="pickup"
+                        checked={deliveryMethod === "pickup"}
+                        onChange={() => setDeliveryMethod("pickup")}
+                      />
+                      <div>
+                        <div className="payment-option-title">🏪 Retrait au point relais Kimoxa</div>
+                        <div className="payment-option-desc">
+                          Gratuit — venez récupérer votre commande à notre point de retrait (Ouagadougou).
+                        </div>
+                      </div>
+                    </label>
+                  </div>
                 </div>
+
+                {/* Adresse uniquement si livraison à domicile */}
+                {deliveryMethod === "delivery" && (
+                  <>
+                    {savedAddresses.length > 0 && (
+                      <div className="form-group">
+                        <label htmlFor="saved-address">Adresse enregistrée</label>
+                        <select
+                          id="saved-address"
+                          value={selectedAddressId}
+                          onChange={(e) => handleAddressSelect(e.target.value)}
+                        >
+                          {savedAddresses.map((a) => (
+                            <option key={a.id} value={a.id}>
+                              {a.libelle}{a.par_defaut ? " (par défaut)" : ""}
+                            </option>
+                          ))}
+                          <option value="custom">Autre adresse...</option>
+                        </select>
+                      </div>
+                    )}
+
+                    <div className="form-group">
+                      <label htmlFor="address">Adresse de livraison</label>
+                      <input
+                        id="address"
+                        required
+                        value={shippingAddress}
+                        onChange={(e) => setShippingAddress(e.target.value)}
+                        placeholder="Ex : Secteur 15, Ouagadougou"
+                      />
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        style={{ marginTop: 6, width: "100%" }}
+                        onClick={useMyLocation}
+                        disabled={locating}
+                      >
+                        📍 {locating ? "Localisation en cours..." : "Utiliser ma position GPS"}
+                      </button>
+                      {locError && (
+                        <small style={{ color: "#dc2626", fontSize: "0.75rem" }}>{locError}</small>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 <div className="form-group">
                   <label htmlFor="phone">Numéro de téléphone</label>
@@ -240,59 +335,61 @@ export default function CartClient({ initialUser, categories }) {
                   />
                 </div>
 
-                {/* ===== RÉCAP LIVRAISON ===== */}
-                {shippingAddress && (
+                {/* ===== RÉCAP ===== */}
+                <div
+                  style={{
+                    background: "#faf7f2",
+                    border: "1px dashed var(--border)",
+                    borderRadius: "10px",
+                    padding: "12px 14px",
+                    marginBottom: "16px",
+                  }}
+                >
                   <div
                     style={{
-                      background: "#faf7f2",
-                      border: "1px dashed var(--border)",
-                      borderRadius: "10px",
-                      padding: "12px 14px",
-                      marginBottom: "16px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: "0.85rem",
+                      marginBottom: "6px",
+                      color: "var(--ink-700)",
                     }}
                   >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: "0.85rem",
-                        marginBottom: "6px",
-                        color: "var(--ink-700)",
-                      }}
-                    >
-                      <span>Sous-total ({cart.length} article{cart.length > 1 ? "s" : ""})</span>
-                      <strong>{subtotal.toLocaleString("fr-FR")} FCFA</strong>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: "0.85rem",
-                        marginBottom: "8px",
-                        color: "var(--ink-700)",
-                      }}
-                    >
-                      <span>🚚 Livraison ({detectedCity || "—"})</span>
-                      <strong style={{ color: deliveryFee === 0 ? "var(--millet-600)" : "var(--ink-900)" }}>
-                        {formatDeliveryFee(deliveryFee)}
-                      </strong>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        paddingTop: "8px",
-                        borderTop: "1px solid var(--border)",
-                      }}
-                    >
-                      <span style={{ fontWeight: 700, color: "var(--ink-900)" }}>Total à payer</span>
-                      <strong style={{ fontSize: "1.1rem", color: "var(--ink-900)" }}>
-                        {grandTotal.toLocaleString("fr-FR")} FCFA
-                      </strong>
-                    </div>
+                    <span>Sous-total ({cart.length} article{cart.length > 1 ? "s" : ""})</span>
+                    <strong>{subtotal.toLocaleString("fr-FR")} FCFA</strong>
                   </div>
-                )}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      fontSize: "0.85rem",
+                      marginBottom: "8px",
+                      color: "var(--ink-700)",
+                    }}
+                  >
+                    <span>
+                      {deliveryMethod === "pickup"
+                        ? "🏪 Retrait point relais"
+                        : `🚚 Livraison (${detectedCity || "—"})`}
+                    </span>
+                    <strong style={{ color: deliveryFee === 0 ? "var(--millet-600)" : "var(--ink-900)" }}>
+                      {formatDeliveryFee(deliveryFee, deliveryMethod)}
+                    </strong>
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      paddingTop: "8px",
+                      borderTop: "1px solid var(--border)",
+                    }}
+                  >
+                    <span style={{ fontWeight: 700, color: "var(--ink-900)" }}>Total à payer</span>
+                    <strong style={{ fontSize: "1.1rem", color: "var(--ink-900)" }}>
+                      {grandTotal.toLocaleString("fr-FR")} FCFA
+                    </strong>
+                  </div>
+                </div>
 
                 <div className="form-group">
                   <label>Mode de paiement</label>
@@ -306,8 +403,10 @@ export default function CartClient({ initialUser, categories }) {
                         onChange={() => setPaymentMethod("cod")}
                       />
                       <div>
-                        <div className="payment-option-title">💵 Payer à la livraison</div>
-                        <div className="payment-option-desc">Vous réglez en espèces au moment de recevoir votre commande.</div>
+                        <div className="payment-option-title">💵 Payer à la réception</div>
+                        <div className="payment-option-desc">
+                          Vous réglez en espèces au moment de recevoir ou retirer votre commande.
+                        </div>
                       </div>
                     </label>
                     <label className="payment-option" style={{ opacity: 0.5, cursor: "not-allowed" }}>
@@ -320,13 +419,17 @@ export default function CartClient({ initialUser, categories }) {
                   </div>
                 </div>
 
-                <button type="submit" className="btn btn-primary cart-checkout-btn" disabled={submitting || !shippingAddress}>
+                <button
+                  type="submit"
+                  className="btn btn-primary cart-checkout-btn"
+                  disabled={submitting || (deliveryMethod === "delivery" && !shippingAddress)}
+                >
                   {submitting ? "Validation..." : `Valider la commande (${grandTotal.toLocaleString("fr-FR")} FCFA)`}
                 </button>
               </form>
             </div>
 
-            {/* Total sticky mobile (mis à jour avec livraison) */}
+            {/* Total sticky mobile */}
             <div className="cart-sticky-total">
               <div className="cart-sticky-label">Total</div>
               <div className="cart-sticky-price">{grandTotal.toLocaleString("fr-FR")} FCFA</div>
