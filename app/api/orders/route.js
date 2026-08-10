@@ -107,7 +107,6 @@ export async function POST(request) {
         if (!product) {
           throw new Error("Produit introuvable.");
         }
-        // ✅ Sécurité : si status NULL, on accepte (backward compat)
         if (product.status && product.status !== "active") {
           throw new Error(`"${product.name}" n'est plus disponible.`);
         }
@@ -119,22 +118,36 @@ export async function POST(request) {
         resolvedItems.push({ product, quantity });
       }
 
+      // 🚚 Frais livraison RECALCULÉS côté serveur (anti-fraude)
       const city = detectCityFromAddress(finalAddress);
       const deliveryFee = getDeliveryFee(city, subtotal, deliveryMethod);
       const totalWithDelivery = subtotal + deliveryFee;
 
+      // 💰 QUI LIVRE ? (règle de répartition de l'argent de livraison)
+      // - boutique seule ET elle livre elle-même → l'argent part à la boutique
+      // - sinon (multi-boutiques ou non) → l'argent part au livreur Kimoxa
+      let fulfilledBy = "kimoxa";
+      if (deliveryMethod === "delivery" && deliveryFee > 0) {
+        const shopIds = [...new Set(resolvedItems.map((r) => r.product.shop_id))];
+        if (shopIds.length === 1) {
+          const [shopRow] = await tx`
+            SELECT delivers_own_orders FROM shops WHERE id = ${shopIds[0]}
+          `;
+          if (shopRow && shopRow.delivers_own_orders) fulfilledBy = "shop";
+        }
+      }
+
       const [newOrder] = await tx`
         INSERT INTO orders (buyer_id, status, total, shipping_address, phone,
-                            payment_method, delivery_fee, delivery_method)
+                            payment_method, delivery_fee, delivery_method, fulfilled_by)
         VALUES (${userId}, 'pending', ${totalWithDelivery}, ${finalAddress}, ${phone},
-                ${finalPaymentMethod}, ${deliveryFee}, ${deliveryMethod})
+                ${finalPaymentMethod}, ${deliveryFee}, ${deliveryMethod}, ${fulfilledBy})
         RETURNING id, status, total, payment_method, delivery_fee, delivery_method, created_at
       `;
 
       const subtotalsByShop = {};
 
       for (const { product, quantity } of resolvedItems) {
-        // ✅ CORRECTION CRITIQUE : ${quantity} (pas ${product.quantity})
         await tx`
           INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase)
           VALUES (${newOrder.id}, ${product.id}, ${quantity}, ${product.price})
@@ -159,15 +172,27 @@ export async function POST(request) {
         subtotalsByShop[product.shop_id] = (subtotalsByShop[product.shop_id] || 0) + lineTotal;
       }
 
+      // 💰 Commission 5,5% PRODUITS UNIQUEMENT (jamais sur la livraison)
       for (const [shopId, shopSubtotal] of Object.entries(subtotalsByShop)) {
         const commissionAmount = Math.round(shopSubtotal * COMMISSION_RATE);
-        const payoutAmount = shopSubtotal - commissionAmount;
+        // Si la boutique livre elle-même : la livraison s'ajoute à son payout (0% commission)
+        const deliveryFeeForShop = fulfilledBy === "shop" ? deliveryFee : 0;
+        const payoutAmount = shopSubtotal - commissionAmount + deliveryFeeForShop;
+
         await tx`
           INSERT INTO shop_commission_ledger
             (shop_id, order_id, commission_amount, gross_amount, status,
-             commission_rate, payout_amount, payout_status)
+             commission_rate, payout_amount, payout_status, delivery_fee_amount)
           VALUES (${shopId}, ${newOrder.id}, ${commissionAmount}, ${shopSubtotal}, 'due',
-                  5.5, ${payoutAmount}, 'held')
+                  5.5, ${payoutAmount}, 'held', ${deliveryFeeForShop})
+        `;
+      }
+
+      // 🛵 Si c'est un livreur Kimoxa : l'argent de livraison est tracé à part
+      if (deliveryMethod === "delivery" && deliveryFee > 0 && fulfilledBy === "kimoxa") {
+        await tx`
+          INSERT INTO courier_payouts (order_id, amount, status)
+          VALUES (${newOrder.id}, ${deliveryFee}, 'due')
         `;
       }
 
@@ -176,7 +201,6 @@ export async function POST(request) {
 
     return Response.json({ order }, { status: 201 });
   } catch (err) {
-    // ✅ Log complet pour debug (visible dans Vercel logs)
     console.error("[orders POST]", err);
     return Response.json(
       { error: "Impossible de finaliser la commande." },
