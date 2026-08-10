@@ -8,9 +8,10 @@ export const metadata = {
     template: "%s | Kimoxa",
   },
   description: "Kimoxa, la marketplace multi-vendeurs qui connecte l'Afrique qui vend à l'Afrique qui achète.",
+};
+export const viewport = {
   themeColor: "#241712",
 };
-
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
