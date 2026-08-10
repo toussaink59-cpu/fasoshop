@@ -74,8 +74,13 @@ export async function POST(request) {
     const shippingAddress = sanitizeAddress(body.shippingAddress);
     const phone = String(body.phone || "").trim();
 
-    if (!shippingAddress || shippingAddress.length < 10) {
-      return Response.json({ error: "Adresse trop courte." }, { status: 400 });
+    // ✅ CORRECTION : minimum 5 caractères (au lieu de 10)
+    // pour accepter les adresses courtes type "Kaya, marché central"
+    if (!shippingAddress || shippingAddress.length < 5) {
+      return Response.json(
+        { error: "Adresse trop courte (précisez quartier, rue ou repère)." },
+        { status: 400 }
+      );
     }
     if (!isValidPhone(phone)) {
       return Response.json({ error: "Téléphone invalide." }, { status: 400 });
@@ -141,7 +146,7 @@ export async function POST(request) {
       for (const { product, quantity } of resolvedItems) {
         await tx`
           INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase)
-          VALUES (${newOrder.id}, ${product.id}, ${quantity}, ${product.price})
+          VALUES (${newOrder.id}, ${product.id}, ${product.quantity}, ${product.price})
         `;
 
         // 🔒 6) Décrémentation avec vérification atomique (évite stock négatif)
