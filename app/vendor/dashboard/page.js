@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import VendorBottomNav from "@/app/components/VendorBottomNav";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
+import VendorDeliveryToggle from "@/app/components/VendorDeliveryToggle";
 
 const DOC_LABELS = { cni: "CNI", passeport: "Passeport", permis: "Permis de conduire" };
 
@@ -320,7 +321,7 @@ export default function VendorDashboard() {
     loadStock();
   }
 
-  // === NOUVEAU : compression d'image pour la pièce d'identité ===
+  // === Compression d'image pour la pièce d'identité ===
   async function compressImage(file, maxDim = 900, quality = 0.72) {
     const raw = await new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -363,7 +364,6 @@ export default function VendorDashboard() {
     setDocBusy(false);
   }
 
-  // === MODIFIÉ : envoi avec la photo ===
   async function handleResubmitDocuments(e) {
     e.preventDefault();
     setResubmitError("");
@@ -485,7 +485,7 @@ export default function VendorDashboard() {
 
   return (
     <div className="shell">
-      {/* ===== TOPBAR TEMU ===== */}
+      {/* ===== TOPBAR ===== */}
       <div className="topbar">
         <div className="brand">
           <KimoxaLogo light size={20} /> <span className="role-tag">Vendeur</span>
@@ -605,6 +605,11 @@ export default function VendorDashboard() {
               </button>
             </form>
           </div>
+        )}
+
+        {/*  🏪 Interrupteur livraison par la boutique (visible si boutique active) */}
+        {shop && shop.status === "active" && (
+          <VendorDeliveryToggle />
         )}
 
         {!loading && newOrdersCount > 0 && !newOrdersAlertDismissed && (
