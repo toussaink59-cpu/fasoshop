@@ -27,6 +27,8 @@ export default function AdminPayoutsPage() {
 
   // 🔒 Modale de paiement sécurisé
   const [payingPayout, setPayingPayout] = useState(null);
+  const [serverMode, setServerMode] = useState("manual"); // mode configuré côté serveur
+  const [payMode, setPayMode] = useState("manual"); // mode choisi dans la modale
   const [form, setForm] = useState({
     amountPaid: "",
     paymentMethod: "orange_money",
@@ -44,6 +46,7 @@ export default function AdminPayoutsPage() {
     }
     const data = await res.json();
     setPayouts(data.payouts || []);
+    setServerMode(data.payoutMode || "manual");
     setLoading(false);
   }, [router]);
 
@@ -61,6 +64,7 @@ export default function AdminPayoutsPage() {
 
   function openPayModal(payout) {
     setPayingPayout(payout);
+    setPayMode(serverMode === "auto" ? "auto" : "manual");
     setForm({
       amountPaid: String(payout.payout_amount),
       paymentMethod: "orange_money",
@@ -78,6 +82,11 @@ export default function AdminPayoutsPage() {
   // 🔒 Validation temps réel
   function validate() {
     if (!payingPayout) return "Aucun payout sélectionné.";
+    
+    // Mode auto : le serveur vérifie tout
+    if (payMode === "auto") return "";
+    
+    // Mode manuel : validation côté client
     const amount = Number(form.amountPaid);
     const expected = Number(payingPayout.payout_amount);
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -105,14 +114,18 @@ export default function AdminPayoutsPage() {
     }
 
     // Double confirmation (argent réel)
-    const amount = Number(form.amountPaid);
-    const methodLabel = PAYMENT_METHODS.find((m) => m.value === form.paymentMethod)?.label;
+    const isAuto = payMode === "auto";
+    const amount = isAuto ? Number(payingPayout.payout_amount) : Number(form.amountPaid);
+    const methodLabel = isAuto
+      ? "API automatique"
+      : PAYMENT_METHODS.find((m) => m.value === form.paymentMethod)?.label;
+    
     if (
       !window.confirm(
         `⚠️ CONFIRMATION FINALE\n\n` +
           `Verser ${amount.toLocaleString("fr-FR")} FCFA à ${payingPayout.vendor_name} (${payingPayout.shop_name}) ?\n\n` +
-          `Méthode : ${methodLabel}\n` +
-          `Référence : ${form.transactionReference}\n\n` +
+          `Mode : ${isAuto ? "🤖 Automatique (API)" : "✍️ Manuel"}\n` +
+          `${!isAuto ? `Méthode : ${methodLabel}\nRéférence : ${form.transactionReference}\n\n` : ""}` +
           `Cette action est irréversible.`
       )
     ) {
@@ -126,12 +139,16 @@ export default function AdminPayoutsPage() {
       const res = await fetch(`/api/admin/payouts/${payingPayout.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amountPaid: Number(form.amountPaid),
-          paymentMethod: form.paymentMethod,
-          transactionReference: form.transactionReference.trim(),
-          notes: form.notes.trim() || null,
-        }),
+        body: JSON.stringify(
+          isAuto
+            ? { mode: "auto" }
+            : {
+                amountPaid: Number(form.amountPaid),
+                paymentMethod: form.paymentMethod,
+                transactionReference: form.transactionReference.trim(),
+                notes: form.notes.trim() || null,
+              }
+        ),
       });
       const data = await res.json();
 
@@ -142,7 +159,8 @@ export default function AdminPayoutsPage() {
       }
 
       setMessage(
-        `✅ ${amount.toLocaleString("fr-FR")} FCFA versés à ${payingPayout.vendor_name} via ${methodLabel} (réf: ${form.transactionReference})`
+        `✅ ${amount.toLocaleString("fr-FR")} FCFA versés à ${payingPayout.vendor_name} via ${methodLabel}` +
+          `${data.payout?.reference ? ` (réf: ${data.payout.reference})` : ""}`
       );
       closeModal();
       load();
@@ -164,11 +182,13 @@ export default function AdminPayoutsPage() {
 
   const sum = (list) => list.reduce((t, p) => t + Number(p.payout_amount || 0), 0);
 
-  // 🔒 Indicateur de cohérence montant
+  // 🔒 Indicateur de cohérence montant (mode manuel uniquement)
   const amountNum = Number(form.amountPaid);
   const expectedAmount = payingPayout ? Number(payingPayout.payout_amount) : 0;
   const isAmountMatch =
-    Number.isFinite(amountNum) && Math.abs(amountNum - expectedAmount) / expectedAmount <= 0.01;
+    payMode === "manual" &&
+    Number.isFinite(amountNum) &&
+    Math.abs(amountNum - expectedAmount) / expectedAmount <= 0.01;
 
   function renderRow(p) {
     const ui = STATUS_UI[p.payout_status];
@@ -238,6 +258,11 @@ export default function AdminPayoutsPage() {
             Séquestrés : <strong>{sum(held).toLocaleString("fr-FR")} FCFA</strong> ({held.length}) ·
             Déjà payés : <strong>{sum(paid).toLocaleString("fr-FR")} FCFA</strong> ({paid.length})
           </p>
+          {serverMode === "auto" && (
+            <p style={{ fontSize: "0.8rem", color: "var(--millet-600)", marginTop: 4 }}>
+              🤖 Mode automatique activé — les paiements sont envoyés via l'API CinetPay
+            </p>
+          )}
         </div>
 
         {message && <div className="success-box">{message}</div>}
@@ -332,113 +357,183 @@ export default function AdminPayoutsPage() {
             <form onSubmit={submitPayout}>
               {formError && <div className="error-box" style={{ marginBottom: 12 }}>{formError}</div>}
 
-              {/* Montant payé */}
-              <div className="form-group" style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4, fontWeight: 600 }}>
-                  Montant payé *
-                </label>
-                <input
-                  type="number"
-                  step="1"
-                  min="0"
-                  value={form.amountPaid}
-                  onChange={(e) => setForm({ ...form, amountPaid: e.target.value })}
-                  required
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: `2px solid ${form.amountPaid && !isAmountMatch ? "#dc2626" : isAmountMatch ? "#16a34a" : "var(--border)"}`,
-                    borderRadius: 8,
-                    fontSize: "1rem",
-                    fontWeight: 600,
-                  }}
-                  placeholder={String(payingPayout.payout_amount)}
-                />
-                {form.amountPaid && isAmountMatch && (
-                  <small style={{ color: "#16a34a", fontSize: "0.75rem" }}>✓ Montant cohérent</small>
-                )}
-                {form.amountPaid && !isAmountMatch && (
-                  <small style={{ color: "#dc2626", fontSize: "0.75rem" }}>
-                    ✗ Doit correspondre à {expectedAmount.toLocaleString("fr-FR")} FCFA (±1%)
-                  </small>
-                )}
-              </div>
+              {/* 🆕 SÉLECTEUR DE MODE (visible seulement si auto activé côté serveur) */}
+              {serverMode === "auto" && (
+                <div className="form-group" style={{ marginBottom: 16 }}>
+                  <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 8, fontWeight: 600 }}>
+                    Mode de paiement *
+                  </label>
+                  <div className="payment-options">
+                    <label className={`payment-option ${payMode === "auto" ? "selected" : ""}`}>
+                      <input
+                        type="radio"
+                        name="payMode"
+                        value="auto"
+                        checked={payMode === "auto"}
+                        onChange={() => setPayMode("auto")}
+                      />
+                      <div>
+                        <div className="payment-option-title">🤖 Automatique (API payout)</div>
+                        <div className="payment-option-desc">
+                          Argent envoyé instantanément au Mobile Money du vendeur, référence fournie par l'API.
+                        </div>
+                      </div>
+                    </label>
+                    <label className={`payment-option ${payMode === "manual" ? "selected" : ""}`}>
+                      <input
+                        type="radio"
+                        name="payMode"
+                        value="manual"
+                        checked={payMode === "manual"}
+                        onChange={() => setPayMode("manual")}
+                      />
+                      <div>
+                        <div className="payment-option-title">✍️ Manuel</div>
+                        <div className="payment-option-desc">
+                          Vous envoyez l'argent puis saisissez la référence (secours, espèces, virement).
+                        </div>
+                      </div>
+                    </label>
+                  </div>
+                </div>
+              )}
 
-              {/* Méthode de paiement */}
-              <div className="form-group" style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4, fontWeight: 600 }}>
-                  Méthode de paiement *
-                </label>
-                <select
-                  value={form.paymentMethod}
-                  onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
-                  required
+              {/* 🆕 RÉCAPITULATIF DESTINATION (mode auto uniquement) */}
+              {payMode === "auto" && (
+                <div
                   style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid var(--border)",
+                    background: "#ecfdf5",
+                    border: "1px dashed #10b981",
                     borderRadius: 8,
-                    fontSize: "0.95rem",
+                    padding: 12,
+                    marginBottom: 16,
+                    fontSize: "0.85rem",
                   }}
                 >
-                  {PAYMENT_METHODS.map((m) => (
-                    <option key={m.value} value={m.value}>{m.label}</option>
-                  ))}
-                </select>
-              </div>
+                  📱 <strong>Destination :</strong> {payingPayout.mobile_money_number || payingPayout.vendor_phone}
+                  {" · "}
+                  {payingPayout.mobile_money_provider === "moov" ? "Moov Money" : "Orange Money"}
+                  <br />
+                  <small style={{ color: "var(--ink-400)", display: "block", marginTop: 4 }}>
+                    La référence de transaction sera générée automatiquement par l'API.
+                  </small>
+                </div>
+              )}
 
-              {/* Référence de transaction */}
-              <div className="form-group" style={{ marginBottom: 12 }}>
-                <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4, fontWeight: 600 }}>
-                  Référence de transaction *
-                </label>
-                <input
-                  type="text"
-                  value={form.transactionReference}
-                  onChange={(e) => setForm({ ...form, transactionReference: e.target.value })}
-                  required
-                  minLength={5}
-                  maxLength={100}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                    fontSize: "0.95rem",
-                    fontFamily: "monospace",
-                  }}
-                  placeholder="Ex: OM-2026-08-12-78451"
-                />
-                <small style={{ color: "var(--ink-400)", fontSize: "0.75rem" }}>
-                  Numéro de transaction Mobile Money ou virement (min 5 caractères)
-                </small>
-              </div>
+              {/* CHAMPS MANUELS (visibles seulement en mode manuel) */}
+              {payMode === "manual" && (
+                <>
+                  {/* Montant payé */}
+                  <div className="form-group" style={{ marginBottom: 12 }}>
+                    <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4, fontWeight: 600 }}>
+                      Montant payé *
+                    </label>
+                    <input
+                      type="number"
+                      step="1"
+                      min="0"
+                      value={form.amountPaid}
+                      onChange={(e) => setForm({ ...form, amountPaid: e.target.value })}
+                      required
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        border: `2px solid ${form.amountPaid && !isAmountMatch ? "#dc2626" : isAmountMatch ? "#16a34a" : "var(--border)"}`,
+                        borderRadius: 8,
+                        fontSize: "1rem",
+                        fontWeight: 600,
+                      }}
+                      placeholder={String(payingPayout.payout_amount)}
+                    />
+                    {form.amountPaid && isAmountMatch && (
+                      <small style={{ color: "#16a34a", fontSize: "0.75rem" }}>✓ Montant cohérent</small>
+                    )}
+                    {form.amountPaid && !isAmountMatch && (
+                      <small style={{ color: "#dc2626", fontSize: "0.75rem" }}>
+                        ✗ Doit correspondre à {expectedAmount.toLocaleString("fr-FR")} FCFA (±1%)
+                      </small>
+                    )}
+                  </div>
 
-              {/* Notes */}
-              <div className="form-group" style={{ marginBottom: 16 }}>
-                <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4, fontWeight: 600 }}>
-                  Notes <span style={{ fontWeight: 400, color: "var(--ink-400)" }}>(optionnel)</span>
-                </label>
-                <textarea
-                  value={form.notes}
-                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                  maxLength={500}
-                  rows={3}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    border: "1px solid var(--border)",
-                    borderRadius: 8,
-                    fontSize: "0.95rem",
-                    resize: "vertical",
-                    fontFamily: "inherit",
-                  }}
-                  placeholder="Informations complémentaires..."
-                />
-                <small style={{ color: "var(--ink-400)", fontSize: "0.75rem" }}>
-                  {form.notes.length}/500 caractères
-                </small>
-              </div>
+                  {/* Méthode de paiement */}
+                  <div className="form-group" style={{ marginBottom: 12 }}>
+                    <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4, fontWeight: 600 }}>
+                      Méthode de paiement *
+                    </label>
+                    <select
+                      value={form.paymentMethod}
+                      onChange={(e) => setForm({ ...form, paymentMethod: e.target.value })}
+                      required
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        border: "1px solid var(--border)",
+                        borderRadius: 8,
+                        fontSize: "0.95rem",
+                      }}
+                    >
+                      {PAYMENT_METHODS.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Référence de transaction */}
+                  <div className="form-group" style={{ marginBottom: 12 }}>
+                    <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4, fontWeight: 600 }}>
+                      Référence de transaction *
+                    </label>
+                    <input
+                      type="text"
+                      value={form.transactionReference}
+                      onChange={(e) => setForm({ ...form, transactionReference: e.target.value })}
+                      required
+                      minLength={5}
+                      maxLength={100}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        border: "1px solid var(--border)",
+                        borderRadius: 8,
+                        fontSize: "0.95rem",
+                        fontFamily: "monospace",
+                      }}
+                      placeholder="Ex: OM-2026-08-12-78451"
+                    />
+                    <small style={{ color: "var(--ink-400)", fontSize: "0.75rem" }}>
+                      Numéro de transaction Mobile Money ou virement (min 5 caractères)
+                    </small>
+                  </div>
+
+                  {/* Notes */}
+                  <div className="form-group" style={{ marginBottom: 16 }}>
+                    <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4, fontWeight: 600 }}>
+                      Notes <span style={{ fontWeight: 400, color: "var(--ink-400)" }}>(optionnel)</span>
+                    </label>
+                    <textarea
+                      value={form.notes}
+                      onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                      maxLength={500}
+                      rows={3}
+                      style={{
+                        width: "100%",
+                        padding: "10px 12px",
+                        border: "1px solid var(--border)",
+                        borderRadius: 8,
+                        fontSize: "0.95rem",
+                        resize: "vertical",
+                        fontFamily: "inherit",
+                      }}
+                      placeholder="Informations complémentaires..."
+                    />
+                    <small style={{ color: "var(--ink-400)", fontSize: "0.75rem" }}>
+                      {form.notes.length}/500 caractères
+                    </small>
+                  </div>
+                </>
+              )}
 
               {/* Actions */}
               <div style={{ display: "flex", gap: 8 }}>
@@ -454,7 +549,11 @@ export default function AdminPayoutsPage() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={submitting || !form.amountPaid || !isAmountMatch || form.transactionReference.trim().length < 5}
+                  disabled={
+                    submitting ||
+                    (payMode === "manual" &&
+                      (!form.amountPaid || !isAmountMatch || form.transactionReference.trim().length < 5))
+                  }
                   style={{ flex: 2 }}
                 >
                   {submitting ? "Versement..." : `✅ Confirmer le versement`}
