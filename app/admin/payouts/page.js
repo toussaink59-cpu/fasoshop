@@ -70,16 +70,16 @@ export default function AdminPayoutsPage() {
   }, [load, router]);
 
   function openPayModal(payout) {
-    setPayingPayout(payout);
-    setPayMode(serverMode === "auto" ? "auto" : "manual");
-    setForm({
-      amountPaid: String(payout.payout_amount),
-      paymentMethod: "orange_money",
-      transactionReference: "",
-      notes: "",
-    });
-    setFormError("");
-  }
+  setPayingPayout(payout);
+  setPayMode(serverMode === "auto" ? "auto" : "manual");
+  setForm({
+    amountPaid: String(Math.round(Number(payout.payout_amount))),   // ✅ nombre rond, sans ",00"
+    paymentMethod: "orange_money",
+    transactionReference: "",
+    notes: "",
+  });
+  setFormError("");
+}
 
   function closeModal() {
     setPayingPayout(null);
