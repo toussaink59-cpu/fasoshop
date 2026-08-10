@@ -22,13 +22,14 @@ const PAYMENT_METHODS = [
 export default function AdminPayoutsPage() {
   const router = useRouter();
   const [payouts, setPayouts] = useState([]);
+  const [couriers, setCouriers] = useState([]); // 🆕 payouts livreurs
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
-  // 🔒 Modale de paiement sécurisé
+  // 🔒 Modale de paiement vendeur sécurisé
   const [payingPayout, setPayingPayout] = useState(null);
-  const [serverMode, setServerMode] = useState("manual"); // mode configuré côté serveur
-  const [payMode, setPayMode] = useState("manual"); // mode choisi dans la modale
+  const [serverMode, setServerMode] = useState("manual");
+  const [payMode, setPayMode] = useState("manual");
   const [form, setForm] = useState({
     amountPaid: "",
     paymentMethod: "orange_money",
@@ -38,6 +39,11 @@ export default function AdminPayoutsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
+  // 🔒 Modale de paiement livreur 🆕
+  const [payingCourier, setPayingCourier] = useState(null);
+  const [courierRef, setCourierRef] = useState("");
+  const [courierError, setCourierError] = useState("");
+
   const load = useCallback(async () => {
     const res = await fetch("/api/admin/payouts");
     if (res.status === 401 || res.status === 403) {
@@ -46,6 +52,7 @@ export default function AdminPayoutsPage() {
     }
     const data = await res.json();
     setPayouts(data.payouts || []);
+    setCouriers(data.couriers || []); // 🆕
     setServerMode(data.payoutMode || "manual");
     setLoading(false);
   }, [router]);
@@ -79,14 +86,10 @@ export default function AdminPayoutsPage() {
     setFormError("");
   }
 
-  // 🔒 Validation temps réel
+  // 🔒 Validation temps réel (payout vendeur)
   function validate() {
     if (!payingPayout) return "Aucun payout sélectionné.";
-    
-    // Mode auto : le serveur vérifie tout
     if (payMode === "auto") return "";
-    
-    // Mode manuel : validation côté client
     const amount = Number(form.amountPaid);
     const expected = Number(payingPayout.payout_amount);
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -113,13 +116,12 @@ export default function AdminPayoutsPage() {
       return;
     }
 
-    // Double confirmation (argent réel)
     const isAuto = payMode === "auto";
     const amount = isAuto ? Number(payingPayout.payout_amount) : Number(form.amountPaid);
     const methodLabel = isAuto
       ? "API automatique"
       : PAYMENT_METHODS.find((m) => m.value === form.paymentMethod)?.label;
-    
+
     if (
       !window.confirm(
         `⚠️ CONFIRMATION FINALE\n\n` +
@@ -171,6 +173,40 @@ export default function AdminPayoutsPage() {
     }
   }
 
+  // 🛵 Paiement livreur 🆕
+  async function submitCourier(e) {
+    e.preventDefault();
+    if (courierRef.trim().length < 5) {
+      setCourierError("Référence requise (min 5 caractères).");
+      return;
+    }
+    setSubmitting(true);
+    setCourierError("");
+    try {
+      const res = await fetch(`/api/admin/courier-payouts/${payingCourier.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ transactionReference: courierRef.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setCourierError(data.error || "Erreur lors du paiement.");
+        setSubmitting(false);
+        return;
+      }
+      setMessage(
+        `✅ ${Number(payingCourier.amount).toLocaleString("fr-FR")} FCFA versés au livreur (commande #${payingCourier.order_id}, réf: ${courierRef.trim()})`
+      );
+      setPayingCourier(null);
+      setCourierRef("");
+      load();
+    } catch {
+      setCourierError("Impossible de contacter le serveur.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -180,9 +216,12 @@ export default function AdminPayoutsPage() {
   const held = payouts.filter((p) => p.payout_status === "held");
   const paid = payouts.filter((p) => p.payout_status === "paid");
 
-  const sum = (list) => list.reduce((t, p) => t + Number(p.payout_amount || 0), 0);
+  const couriersDue = couriers.filter((c) => c.status === "due");
+  const couriersPaid = couriers.filter((c) => c.status === "paid");
 
-  // 🔒 Indicateur de cohérence montant (mode manuel uniquement)
+  const sum = (list) => list.reduce((t, p) => t + Number(p.payout_amount || 0), 0);
+  const sumCourier = (list) => list.reduce((t, c) => t + Number(c.amount || 0), 0);
+
   const amountNum = Number(form.amountPaid);
   const expectedAmount = payingPayout ? Number(payingPayout.payout_amount) : 0;
   const isAmountMatch =
@@ -190,8 +229,9 @@ export default function AdminPayoutsPage() {
     Number.isFinite(amountNum) &&
     Math.abs(amountNum - expectedAmount) / expectedAmount <= 0.01;
 
-  function renderRow(p) {
+  function renderVendorRow(p) {
     const ui = STATUS_UI[p.payout_status];
+    const deliveryFee = Number(p.delivery_fee_amount || 0);
     return (
       <div className="order-card" key={p.id} style={{ marginBottom: 10 }}>
         <div className="order-head">
@@ -214,6 +254,12 @@ export default function AdminPayoutsPage() {
             <span className="order-item-name">Commission Kimoxa (5,5%)</span>
             <span className="order-item-qty">− {Number(p.commission_amount).toLocaleString("fr-FR")} FCFA</span>
           </div>
+          {deliveryFee > 0 && (
+            <div className="order-item-row">
+              <span className="order-item-name">🚚 Livraison incluse (boutique livre)</span>
+              <span className="order-item-qty">+ {deliveryFee.toLocaleString("fr-FR")} FCFA</span>
+            </div>
+          )}
           <div className="order-item-row">
             <span className="order-item-name"><strong>Net vendeur</strong></span>
             <span className="order-item-qty"><strong>{Number(p.payout_amount).toLocaleString("fr-FR")} FCFA</strong></span>
@@ -237,6 +283,47 @@ export default function AdminPayoutsPage() {
     );
   }
 
+  function renderCourierRow(c) {
+    const isPaid = c.status === "paid";
+    return (
+      <div className="order-card" key={c.id} style={{ marginBottom: 10 }}>
+        <div className="order-head">
+          <div>
+            <strong>🛵 Commande #{c.order_id}</strong>
+            <span className="order-date">{c.shipping_address}</span>
+          </div>
+          <span
+            className="status-pill"
+            style={{
+              border: "1px solid var(--border)",
+              background: isPaid ? "var(--vendor-earnings-paid-bg, #ecfdf5)" : "#fef3c7",
+            }}
+          >
+            {isPaid ? "💸 Payé" : `⏳ À payer · ${Number(c.amount).toLocaleString("fr-FR")} FCFA`}
+          </span>
+        </div>
+        {!isPaid && (
+          <button
+            className="btn btn-primary order-contact-btn"
+            style={{ marginTop: 8 }}
+            onClick={() => {
+              setPayingCourier(c);
+              setCourierRef("");
+              setCourierError("");
+            }}
+          >
+            💸 Payer le livreur
+          </button>
+        )}
+        {isPaid && c.paid_at && (
+          <p style={{ margin: "8px 0 0", fontSize: "0.75rem", color: "var(--ink-400)" }}>
+            💸 Payé le {new Date(c.paid_at).toLocaleString("fr-FR")} · Réf: {c.payment_reference || "—"}
+          </p>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="shell">
       <div className="topbar">
@@ -254,9 +341,13 @@ export default function AdminPayoutsPage() {
         <div className="vendor-dashboard-header">
           <h1>💸 Gestion des payouts</h1>
           <p>
-            À payer : <strong>{sum(toPay).toLocaleString("fr-FR")} FCFA</strong> ({toPay.length}) ·
+            <strong>Vendeurs</strong> — À payer : <strong>{sum(toPay).toLocaleString("fr-FR")} FCFA</strong> ({toPay.length}) ·
             Séquestrés : <strong>{sum(held).toLocaleString("fr-FR")} FCFA</strong> ({held.length}) ·
             Déjà payés : <strong>{sum(paid).toLocaleString("fr-FR")} FCFA</strong> ({paid.length})
+          </p>
+          <p style={{ marginTop: 4 }}>
+            <strong>🛵 Livreurs</strong> — À payer : <strong>{sumCourier(couriersDue).toLocaleString("fr-FR")} FCFA</strong> ({couriersDue.length}) ·
+            Déjà payés : <strong>{sumCourier(couriersPaid).toLocaleString("fr-FR")} FCFA</strong> ({couriersPaid.length})
           </p>
           {serverMode === "auto" && (
             <p style={{ fontSize: "0.8rem", color: "var(--millet-600)", marginTop: 4 }}>
@@ -271,20 +362,51 @@ export default function AdminPayoutsPage() {
           <p>Chargement...</p>
         ) : (
           <>
-            <h2 style={{ fontSize: "1rem", margin: "16px 0 8px" }}>✅ À payer maintenant ({toPay.length})</h2>
-            {toPay.length === 0 ? <p style={{ fontSize: "0.85rem", color: "var(--ink-400)" }}>Aucun payout en attente de versement.</p> : toPay.map(renderRow)}
+            {/* ===== VENDEURS ===== */}
+            <h2 style={{ fontSize: "1rem", margin: "16px 0 8px" }}>🏪 Vendeurs — à payer maintenant ({toPay.length})</h2>
+            {toPay.length === 0 ? (
+              <p style={{ fontSize: "0.85rem", color: "var(--ink-400)" }}>Aucun payout en attente de versement.</p>
+            ) : (
+              toPay.map(renderVendorRow)
+            )}
 
-            <h2 style={{ fontSize: "1rem", margin: "20px 0 8px" }}>🔒 Séquestrés — en attente de livraison ({held.length})</h2>
-            {held.length === 0 ? <p style={{ fontSize: "0.85rem", color: "var(--ink-400)" }}>Aucun fonds séquestré.</p> : held.map(renderRow)}
+            <h2 style={{ fontSize: "1rem", margin: "20px 0 8px" }}>🔒 Vendeurs — séquestrés ({held.length})</h2>
+            {held.length === 0 ? (
+              <p style={{ fontSize: "0.85rem", color: "var(--ink-400)" }}>Aucun fonds séquestré.</p>
+            ) : (
+              held.map(renderVendorRow)
+            )}
 
-            <h2 style={{ fontSize: "1rem", margin: "20px 0 8px" }}>💸 Historique des versements ({paid.length})</h2>
-            {paid.length === 0 ? <p style={{ fontSize: "0.85rem", color: "var(--ink-400)" }}>Aucun versement effectué.</p> : paid.map(renderRow)}
+            {/* ===== LIVREURS ===== */}
+            <h2 style={{ fontSize: "1rem", margin: "24px 0 8px" }}>🛵 Livreurs à payer ({couriersDue.length})</h2>
+            {couriersDue.length === 0 ? (
+              <p style={{ fontSize: "0.85rem", color: "var(--ink-400)" }}>
+                Aucun livreur en attente de paiement. L'argent de livraison ne s'affiche ici que pour les commandes livrées par Kimoxa (pas par la boutique elle-même).
+              </p>
+            ) : (
+              couriersDue.map(renderCourierRow)
+            )}
+
+            {/* ===== HISTORIQUES ===== */}
+            <h2 style={{ fontSize: "1rem", margin: "24px 0 8px" }}>💸 Historique — vendeurs payés ({paid.length})</h2>
+            {paid.length === 0 ? (
+              <p style={{ fontSize: "0.85rem", color: "var(--ink-400)" }}>Aucun versement vendeur effectué.</p>
+            ) : (
+              paid.map(renderVendorRow)
+            )}
+
+            {couriersPaid.length > 0 && (
+              <>
+                <h2 style={{ fontSize: "1rem", margin: "24px 0 8px" }}>💸 Historique — livreurs payés ({couriersPaid.length})</h2>
+                {couriersPaid.map(renderCourierRow)}
+              </>
+            )}
           </>
         )}
       </div>
       <AdminBottomNav />
 
-      {/* 🔒 MODALE DE PAIEMENT SÉCURISÉ */}
+      {/* 🔒 MODALE DE PAIEMENT VENDEUR */}
       {payingPayout && (
         <div
           style={{
@@ -322,7 +444,6 @@ export default function AdminPayoutsPage() {
               </p>
             </div>
 
-            {/* Récapitulatif */}
             <div
               style={{
                 background: "#faf7f2",
@@ -340,6 +461,12 @@ export default function AdminPayoutsPage() {
                 <span>Commission Kimoxa (5,5%)</span>
                 <span>− {Number(payingPayout.commission_amount).toLocaleString("fr-FR")} FCFA</span>
               </div>
+              {Number(payingPayout.delivery_fee_amount || 0) > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: "0.85rem" }}>
+                  <span>🚚 Livraison (boutique livre)</span>
+                  <span>+ {Number(payingPayout.delivery_fee_amount).toLocaleString("fr-FR")} FCFA</span>
+                </div>
+              )}
               <div
                 style={{
                   display: "flex",
@@ -357,7 +484,6 @@ export default function AdminPayoutsPage() {
             <form onSubmit={submitPayout}>
               {formError && <div className="error-box" style={{ marginBottom: 12 }}>{formError}</div>}
 
-              {/* 🆕 SÉLECTEUR DE MODE (visible seulement si auto activé côté serveur) */}
               {serverMode === "auto" && (
                 <div className="form-group" style={{ marginBottom: 16 }}>
                   <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 8, fontWeight: 600 }}>
@@ -398,7 +524,6 @@ export default function AdminPayoutsPage() {
                 </div>
               )}
 
-              {/* 🆕 RÉCAPITULATIF DESTINATION (mode auto uniquement) */}
               {payMode === "auto" && (
                 <div
                   style={{
@@ -420,10 +545,8 @@ export default function AdminPayoutsPage() {
                 </div>
               )}
 
-              {/* CHAMPS MANUELS (visibles seulement en mode manuel) */}
               {payMode === "manual" && (
                 <>
-                  {/* Montant payé */}
                   <div className="form-group" style={{ marginBottom: 12 }}>
                     <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4, fontWeight: 600 }}>
                       Montant payé *
@@ -455,7 +578,6 @@ export default function AdminPayoutsPage() {
                     )}
                   </div>
 
-                  {/* Méthode de paiement */}
                   <div className="form-group" style={{ marginBottom: 12 }}>
                     <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4, fontWeight: 600 }}>
                       Méthode de paiement *
@@ -480,7 +602,6 @@ export default function AdminPayoutsPage() {
                     </select>
                   </div>
 
-                  {/* Référence de transaction */}
                   <div className="form-group" style={{ marginBottom: 12 }}>
                     <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4, fontWeight: 600 }}>
                       Référence de transaction *
@@ -507,7 +628,6 @@ export default function AdminPayoutsPage() {
                     </small>
                   </div>
 
-                  {/* Notes */}
                   <div className="form-group" style={{ marginBottom: 16 }}>
                     <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4, fontWeight: 600 }}>
                       Notes <span style={{ fontWeight: 400, color: "var(--ink-400)" }}>(optionnel)</span>
@@ -535,7 +655,6 @@ export default function AdminPayoutsPage() {
                 </>
               )}
 
-              {/* Actions */}
               <div style={{ display: "flex", gap: 8 }}>
                 <button
                   type="button"
@@ -557,6 +676,104 @@ export default function AdminPayoutsPage() {
                   style={{ flex: 2 }}
                 >
                   {submitting ? "Versement..." : `✅ Confirmer le versement`}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 🛵 MODALE DE PAIEMENT LIVREUR */}
+      {payingCourier && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 16,
+          }}
+          onClick={() => setPayingCourier(null)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: "white",
+              borderRadius: 12,
+              padding: 24,
+              maxWidth: 420,
+              width: "100%",
+              boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+            }}
+          >
+            <h2 style={{ margin: "0 0 8px", fontSize: "1.1rem" }}>🛵 Paiement du livreur</h2>
+            <p style={{ margin: "0 0 4px", fontSize: "0.85rem", color: "var(--ink-500)" }}>
+              Commande #{payingCourier.order_id}
+            </p>
+            <p style={{ margin: "0 0 12px", fontSize: "0.8rem", color: "var(--ink-400)" }}>
+              {payingCourier.shipping_address}
+            </p>
+            <div
+              style={{
+                background: "#ecfdf5",
+                border: "1px dashed #10b981",
+                borderRadius: 8,
+                padding: 12,
+                marginBottom: 16,
+                textAlign: "center",
+              }}
+            >
+              <div style={{ fontSize: "0.85rem", color: "var(--ink-500)" }}>Montant à verser</div>
+              <div style={{ fontSize: "1.5rem", fontWeight: 700, color: "var(--ink-900)" }}>
+                {Number(payingCourier.amount).toLocaleString("fr-FR")} FCFA
+              </div>
+            </div>
+            {courierError && <div className="error-box" style={{ marginBottom: 12 }}>{courierError}</div>}
+            <form onSubmit={submitCourier}>
+              <div className="form-group" style={{ marginBottom: 16 }}>
+                <label style={{ display: "block", fontSize: "0.85rem", marginBottom: 4, fontWeight: 600 }}>
+                  Référence de paiement *
+                </label>
+                <input
+                  type="text"
+                  value={courierRef}
+                  onChange={(e) => setCourierRef(e.target.value)}
+                  minLength={5}
+                  maxLength={100}
+                  required
+                  style={{
+                    width: "100%",
+                    padding: "10px 12px",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                    fontFamily: "monospace",
+                  }}
+                  placeholder="Ex: OM-2026-08-12-12345"
+                />
+                <small style={{ color: "var(--ink-400)", fontSize: "0.75rem" }}>
+                  Numéro de transaction Mobile Money versé au livreur (min 5 caractères)
+                </small>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  type="button"
+                  className="btn btn-ghost"
+                  onClick={() => setPayingCourier(null)}
+                  disabled={submitting}
+                  style={{ flex: 1 }}
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={submitting || courierRef.trim().length < 5}
+                  style={{ flex: 2 }}
+                >
+                  {submitting ? "Paiement..." : "✅ Confirmer"}
                 </button>
               </div>
             </form>
