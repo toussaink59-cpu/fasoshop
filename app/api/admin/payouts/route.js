@@ -1,5 +1,6 @@
 import sql from "@/lib/db";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
+import { payoutMode } from "@/lib/payouts";
 
 const MAX_RESULTS_PER_PAGE = 100;
 
@@ -39,6 +40,8 @@ export async function GET(request) {
     const payouts = await sql`
       SELECT l.id, l.order_id, l.shop_id,
              s.name AS shop_name,
+             s.mobile_money_number,
+             s.mobile_money_provider,
              v.full_name AS vendor_name, v.phone AS vendor_phone,
              l.gross_amount, l.commission_amount, l.payout_amount,
              l.payout_status, l.payout_released_at, l.payout_paid_at
@@ -56,7 +59,7 @@ export async function GET(request) {
       VALUES (${userId}, 'view_payouts', 'payout', ${clientKey(request)})
     `.catch(() => {});
 
-    return Response.json({ payouts, limit, offset });
+    return Response.json({ payouts, limit, offset, payoutMode: payoutMode() });
   } catch (err) {
     console.error("[admin/payouts GET]", err.message);
     return Response.json({ error: "Impossible de charger les payouts." }, { status: 500 });
