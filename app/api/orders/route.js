@@ -10,23 +10,20 @@ function detectCityFromAddress(address) {
   return address ? "Autre" : "";
 }
 
-// 🔒 Sanitization : supprime caractères dangereux
 function sanitizeAddress(str) {
   if (typeof str !== "string") return "";
   return str
-    .replace(/[;<>$`\\]/g, "")           // injection SQL/JS
-    .replace(/--/g, "")                  // commentaires SQL
+    .replace(/[;<>$`\\]/g, "")
+    .replace(/--/g, "")
     .replace(/\b(drop|select|insert|update|delete|union|exec)\b/gi, "")
     .trim()
-    .slice(0, 300);                      // longueur max raisonnable
+    .slice(0, 300);
 }
 
-// 🔒 Validation téléphone : +226 XX XX XX XX ou international
 function isValidPhone(phone) {
   return /^\+?[0-9\s\-()]{8,20}$/.test(phone);
 }
 
-// 🔒 Validation items
 function validateItems(items) {
   if (!Array.isArray(items) || items.length === 0) {
     throw new Error("Panier vide.");
@@ -51,12 +48,10 @@ export async function POST(request) {
   const userId = request.headers.get("x-user-id");
   const userRole = request.headers.get("x-user-role");
 
-  // 🔒 1) Seul un acheteur peut commander (admin exclu par sécurité)
   if (!userId || userRole !== "buyer") {
     return Response.json({ error: "Accès refusé." }, { status: 403 });
   }
 
-  // 🔒 2) Rate limiting : max 5 commandes par minute par IP
   const key = `order:${clientKey(request)}`;
   if (!rateLimit(key, { limit: 5, windowMs: 60_000 })) {
     return Response.json(
@@ -68,14 +63,10 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    // 🔒 3) Validation stricte des entrées
     const items = validateItems(body.items);
-
     const shippingAddress = sanitizeAddress(body.shippingAddress);
     const phone = String(body.phone || "").trim();
 
-    // ✅ CORRECTION : minimum 5 caractères (au lieu de 10)
-    // pour accepter les adresses courtes type "Kaya, marché central"
     if (!shippingAddress || shippingAddress.length < 5) {
       return Response.json(
         { error: "Adresse trop courte (précisez quartier, rue ou repère)." },
@@ -105,7 +96,6 @@ export async function POST(request) {
       let subtotal = 0;
       const resolvedItems = [];
 
-      // 🔒 4) Verrou FOR UPDATE + vérification statut + stock atomique
       for (const { productId, quantity } of items) {
         const [product] = await tx`
           SELECT id, name, price, stock_quantity, shop_id, status
@@ -115,9 +105,10 @@ export async function POST(request) {
         `;
 
         if (!product) {
-          throw new Error(`Produit introuvable.`);
+          throw new Error("Produit introuvable.");
         }
-        if (product.status !== "active") {
+        // ✅ Sécurité : si status NULL, on accepte (backward compat)
+        if (product.status && product.status !== "active") {
           throw new Error(`"${product.name}" n'est plus disponible.`);
         }
         if (product.stock_quantity < quantity) {
@@ -128,7 +119,6 @@ export async function POST(request) {
         resolvedItems.push({ product, quantity });
       }
 
-      // 🔒 5) Frais livraison RECALCULÉS côté serveur (anti-fraude)
       const city = detectCityFromAddress(finalAddress);
       const deliveryFee = getDeliveryFee(city, subtotal, deliveryMethod);
       const totalWithDelivery = subtotal + deliveryFee;
@@ -144,12 +134,12 @@ export async function POST(request) {
       const subtotalsByShop = {};
 
       for (const { product, quantity } of resolvedItems) {
+        // ✅ CORRECTION CRITIQUE : ${quantity} (pas ${product.quantity})
         await tx`
           INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase)
-          VALUES (${newOrder.id}, ${product.id}, ${product.quantity}, ${product.price})
+          VALUES (${newOrder.id}, ${product.id}, ${quantity}, ${product.price})
         `;
 
-        // 🔒 6) Décrémentation avec vérification atomique (évite stock négatif)
         const [updated] = await tx`
           UPDATE products
           SET stock_quantity = stock_quantity - ${quantity}, updated_at = NOW()
@@ -169,7 +159,6 @@ export async function POST(request) {
         subtotalsByShop[product.shop_id] = (subtotalsByShop[product.shop_id] || 0) + lineTotal;
       }
 
-      // 💰 Commission 5,5% par boutique (sur produits uniquement)
       for (const [shopId, shopSubtotal] of Object.entries(subtotalsByShop)) {
         const commissionAmount = Math.round(shopSubtotal * COMMISSION_RATE);
         const payoutAmount = shopSubtotal - commissionAmount;
@@ -187,8 +176,8 @@ export async function POST(request) {
 
     return Response.json({ order }, { status: 201 });
   } catch (err) {
-    console.error("[orders POST]", err.message);
-    // 🔒 7) Message générique : ne révèle rien à l'attaquant
+    // ✅ Log complet pour debug (visible dans Vercel logs)
+    console.error("[orders POST]", err);
     return Response.json(
       { error: "Impossible de finaliser la commande." },
       { status: 400 }
