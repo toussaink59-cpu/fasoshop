@@ -18,6 +18,16 @@ self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
   if (e.request.method !== "GET" || url.origin !== location.origin) return;
 
+  // Jamais de cache pour les appels API : ce sont souvent des données
+  // personnelles (commandes, revenus, favoris, session...). Les stocker
+  // dans le Cache Storage les laisserait accessibles sur l'appareil même
+  // après déconnexion. Réseau uniquement, aucun fallback hors-ligne ici —
+  // une erreur réseau doit remonter normalement, pas servir de données
+  // périmées ou celles d'un autre utilisateur.
+  if (url.pathname.startsWith("/api/")) {
+    return;
+  }
+
   const isStatic =
     url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/icons/") ||
@@ -39,12 +49,20 @@ self.addEventListener("fetch", (e) => {
       })
     );
   } else {
-    // Pages : réseau d'abord, cache en secours (hors-ligne)
+    // Pages : réseau d'abord, cache en secours (hors-ligne) — mais jamais
+    // si le serveur marque la réponse comme privée/non-cachable (pages
+    // authentifiées : commandes, dashboards vendeur/admin...). Sur un
+    // appareil partagé, mettre ces pages en cache pourrait montrer les
+    // données d'un utilisateur à un autre après déconnexion.
     e.respondWith(
       fetch(e.request)
         .then((res) => {
-          const clone = res.clone();
-          caches.open(CACHE).then((cache) => cache.put(e.request, clone));
+          const cacheControl = res.headers.get("cache-control") || "";
+          const isPrivate = cacheControl.includes("no-store") || cacheControl.includes("private");
+          if (res.ok && !isPrivate) {
+            const clone = res.clone();
+            caches.open(CACHE).then((cache) => cache.put(e.request, clone));
+          }
           return res;
         })
         .catch(async () => {

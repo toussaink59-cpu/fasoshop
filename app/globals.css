@@ -562,15 +562,6 @@ tbody tr:hover {
   .content { padding: 24px 16px 40px; }
   .topbar { padding: 14px 16px; }
 }
-.trust-strip {
-  display: flex;
-  justify-content: center;
-  gap: 36px;
-  flex-wrap: wrap;
-  padding: 20px 28px;
-  background: var(--sand-100);
-  border-bottom: 1px solid var(--border);
-}
 
 .trust-item {
   display: flex;
@@ -639,7 +630,6 @@ tbody tr:hover {
 }
 
 @media (max-width: 640px) {
-  .trust-strip { gap: 18px; padding: 16px; }
   .home-section { padding: 0 16px; }
 }
 /* ============================================
@@ -1384,28 +1374,8 @@ tbody tr:hover {
    Ã€ coller Ã  la fin de app/globals.css
    ============================================ */
 
-.flash-section {
-  max-width: 1080px;
-  margin: 0 auto 48px;
-  padding: 0 28px;
-}
 
-.flash-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 10px;
-  background: linear-gradient(135deg, var(--bissap-600) 0%, var(--ink-900) 100%);
-  padding: 14px 22px;
-  border-radius: var(--radius) var(--radius) 0 0;
-}
 
-.flash-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
 
 .flash-title h2 {
   color: var(--sand-50);
@@ -1413,14 +1383,7 @@ tbody tr:hover {
   margin: 0;
 }
 
-.flash-lightning {
-  font-size: 1.3rem;
-}
 
-.flash-timer {
-  color: var(--sand-50);
-  font-size: 0.85rem;
-}
 
 .flash-timer strong {
   font-family: var(--font-mono);
@@ -1441,39 +1404,10 @@ tbody tr:hover {
   overflow: hidden;
 }
 
-.flash-card {
-  position: relative;
-  background: white;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  color: var(--ink-900);
-}
 
-.flash-stock-bar {
-  margin-top: 6px;
-}
 
-.flash-stock-track {
-  height: 6px;
-  border-radius: 4px;
-  background: var(--sand-100);
-  overflow: hidden;
-}
 
-.flash-stock-fill {
-  height: 100%;
-  background: var(--bissap-600);
-  border-radius: 4px;
-}
 
-.flash-stock-label {
-  font-size: 0.72rem;
-  color: var(--ink-400);
-  margin-top: 3px;
-  display: block;
-}
 
 @media (max-width: 640px) {
   .flash-grid {
@@ -1937,13 +1871,6 @@ tbody tr:hover {
     font-size: 0.76rem;
   }
 
-  .trust-strip {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    justify-items: start;
-    gap: 14px 10px;
-    padding: 16px 20px;
-  }
 
   .trust-item {
     font-size: 0.78rem;
@@ -1973,9 +1900,6 @@ tbody tr:hover {
     font-size: 0.72rem;
   }
 
-  .trust-strip {
-    grid-template-columns: 1fr;
-  }
 }
 
 /* ============================================
@@ -1989,13 +1913,6 @@ tbody tr:hover {
 }
 
 @media (max-width: 640px) {
-  .trust-strip {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 12px 10px !important;
-    padding: 16px 18px !important;
-    justify-content: initial !important;
-  }
 
   .trust-item {
     font-size: 0.76rem;
@@ -2020,11 +1937,7 @@ tbody tr:hover {
   }
 }
 
-@media (max-width: 400px) {
-  .trust-strip {
-    grid-template-columns: 1fr !important;
-  }
-}
+
 
 /* ============================================
    Correctifs mobile v2 : grille confiance renforcÃ©e,
@@ -2037,22 +1950,12 @@ tbody tr:hover {
 }
 
 @media (max-width: 640px) {
-  .trust-strip {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 12px 10px !important;
-    padding: 16px 18px !important;
-    justify-content: initial !important;
-  }
 
   .trust-item {
     font-size: 0.76rem;
     gap: 6px;
   }
 
-  .mega-menu-label-full {
-    display: none;
-  }
 
   .mega-menu-label-short {
     display: inline;
@@ -2068,11 +1971,7 @@ tbody tr:hover {
   }
 }
 
-@media (max-width: 400px) {
-  .trust-strip {
-    grid-template-columns: 1fr !important;
-  }
-}
+
 
 /* ============================================
    Hero Carousel premium â€” remplace l'ancien banner-carousel
@@ -3268,13 +3167,24 @@ tbody tr:hover {
    PHASE 2 â€” Hero compact, cartes de confiance, sections homepage
    ============================================ */
 
-/* ---- Cartes de confiance (remplace l'ancienne bande texte simple) ---- */
+/* ---- Cartes de confiance (remplace l'ancienne bande texte simple) ----
+   CONSOLIDÉ (était 14 définitions éparpillées avec !important en cascade
+   sur plusieurs sections du fichier — comportement final reconstitué et
+   vérifié par lecture de cascade, à confirmer visuellement) */
 .trust-strip {
-  display: flex;
-  gap: 12px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 16px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  padding: 8px 12px;
+  overflow: visible;
+  background: var(--sand-100);
+  border-bottom: 1px solid var(--border);
+}
+
+@media (min-width: 768px) {
+  .trust-strip {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 .trust-strip::-webkit-scrollbar {
@@ -3312,13 +3222,7 @@ tbody tr:hover {
   color: var(--ink-400);
 }
 
-@media (min-width: 768px) {
-  .trust-strip {
-    justify-content: center;
-    flex-wrap: wrap;
-    overflow: visible;
-  }
-}
+
 
 /* ---- Lien "Voir tout" des sections homepage ---- */
 .section-see-all {
@@ -3791,18 +3695,12 @@ tbody tr:hover {
 .pill { padding: 6px 14px; font-size: 0.78rem; }
 
 /* Cartes de confiance : grille 2x2 sur mobile, ligne serrÃ©e sur desktop */
-.trust-strip { padding: 8px 12px; gap: 8px; }
 .trust-card { padding: 8px 12px; }
 .trust-card .trust-icon { font-size: 1.1rem; }
 .trust-card-title { font-size: 0.78rem; margin: 0; }
 .trust-card-desc { font-size: 0.68rem; margin: 2px 0 0; }
 
 @media (max-width: 767px) {
-  .trust-strip {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
   .trust-card { flex-direction: column; text-align: center; gap: 4px; }
 }
 
@@ -3823,13 +3721,6 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 /* ===== COMPRESSION v2 â€” PRIORITÃ‰ MAXIMALE (tous Ã©crans) ===== */
 
 /* Cartes de confiance : grille 2x2 mobile / 4 en ligne desktop */
-.trust-strip {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 8px !important;
-  padding: 8px 12px !important;
-  overflow: visible !important;
-}
 .trust-card {
   min-width: 0 !important;
   flex: none !important;
@@ -3843,9 +3734,7 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 .trust-card-title { font-size: 0.75rem !important; }
 .trust-card-desc { font-size: 0.65rem !important; }
 
-@media (min-width: 768px) {
-  .trust-strip { grid-template-columns: repeat(4, 1fr) !important; }
-}
+
 
 /* Barre de recherche ultra-compacte */
 .site-header-search-row { padding: 4px 8px 6px !important; }
@@ -6645,346 +6534,6 @@ select, input { max-width: 100%; box-sizing: border-box; }
   animation-play-state: paused;
 }
 
-/* Barre de progression de l'autoplay */
-.hero-progress {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: rgba(252, 250, 246, 0.2);
-  z-index: 4;
-}
-.hero-progress-fill {
-  height: 100%;
-  width: 0;
-  background: var(--gold-500);
-  animation: hero-progress 5s linear forwards;
-}
-@keyframes hero-progress {
-  from { width: 0; }
-  to { width: 100%; }
-}
-.hero-carousel.is-paused .hero-progress-fill {
-  animation-play-state: paused;
-}
-
-/* Badge promo flottant */
-.hero-badge {
-  position: absolute;
-  top: 16px;
-  right: 16px;
-  z-index: 3;
-  background: var(--bissap-600);
-  color: #fff;
-  font-weight: 800;
-  font-size: 1rem;
-  padding: 10px 18px;
-  border-radius: 14px;
-  transform: rotate(6deg);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
-  animation: hero-badge-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1);
-}
-@keyframes hero-badge-pop {
-  from { transform: rotate(6deg) scale(0); }
-  to { transform: rotate(6deg) scale(1); }
-}
-
-/* Mobile : la photo devient le FOND de la slide (texte lisible par-dessus) */
-@media (max-width: 767px) {
-  .hero-slide.has-image .hero-slide-visual {
-    display: block;
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-  }
-  .hero-slide.has-image .hero-slide-image {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    border-radius: 16px;
-    box-shadow: none;
-  }
-  .hero-slide.has-image::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(180deg, rgba(36, 23, 18, 0.3) 0%, rgba(36, 23, 18, 0.8) 100%);
-    border-radius: 16px;
-    z-index: 1;
-  }
-  .hero-slide.has-image .hero-slide-text {
-    position: relative;
-    z-index: 2;
-  }
-  .hero-badge {
-    top: 10px;
-    right: 10px;
-    font-size: 0.8rem;
-    padding: 7px 12px;
-  }
-}
-/* =====================================================
-   CARROUSEL IMMERSIF — RESET TOTAL (priorité absolue)
-   Neutralise TOUTES les anciennes règles hero-* en conflit
-===================================================== */
-.hero-carousel {
-  position: relative !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  height: clamp(380px, 50vw, 560px) !important;
-  min-height: 0 !important;
-  margin: 0 !important;
-  border-radius: 0 !important;
-  overflow: hidden !important;
-  background: #140a05 !important;
-  touch-action: pan-y !important;
-}
-.hero-carousel .hero-slide {
-  position: absolute !important;
-  inset: 0 !important;
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  min-height: 0 !important;
-  max-height: none !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  border-radius: 0 !important;
-  text-align: left !important;
-}
-/* Photo plein écran, bien cadrée */
-.hero-carousel .hero-slide-bg {
-  position: absolute !important;
-  inset: 0 !important;
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  object-position: center 35% !important;
-  display: block !important;
-  border-radius: 0 !important;
-  z-index: 1 !important;
-  animation: heroKenBurns 9s ease-out forwards !important;
-}
-@keyframes heroKenBurns {
-  from { transform: scale(1.06); }
-  to { transform: scale(1); }
-}
-.hero-carousel .hero-slide-fallback {
-  position: absolute !important;
-  inset: 0 !important;
-  background: linear-gradient(135deg, #241712 0%, #c08a1e 140%) !important;
-  z-index: 1 !important;
-}
-/* Voile sombre progressif (texte lisible) */
-.hero-carousel .hero-slide-overlay {
-  position: absolute !important;
-  inset: 0 !important;
-  display: block !important;
-  background: linear-gradient(90deg,
-    rgba(20, 10, 5, 0.92) 0%,
-    rgba(20, 10, 5, 0.7) 30%,
-    rgba(20, 10, 5, 0.35) 60%,
-    rgba(20, 10, 5, 0.08) 100%) !important;
-  z-index: 2 !important;
-  border-radius: 0 !important;
-}
-/* Contenu texte par-dessus */
-.hero-carousel .hero-slide-content {
-  position: absolute !important;
-  inset: 0 !important;
-  display: flex !important;
-  flex-direction: column !important;
-  justify-content: center !important;
-  align-items: flex-start !important;
-  padding: 0 clamp(24px, 6vw, 80px) !important;
-  z-index: 3 !important;
-  color: #fff !important;
-  max-width: none !important;
-  margin: 0 !important;
-}
-.hero-carousel .hero-kicker {
-  display: inline-block !important;
-  padding: 5px 14px !important;
-  background: rgba(255, 255, 255, 0.16) !important;
-  border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  border-radius: 999px !important;
-  font-family: var(--font-mono) !important;
-  font-size: 0.72rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.14em !important;
-  text-transform: uppercase !important;
-  margin: 0 0 14px !important;
-  color: #fff !important;
-}
-.hero-carousel .hero-title {
-  font-family: var(--font-display) !important;
-  font-size: clamp(2.4rem, 6vw, 4.2rem) !important;
-  font-weight: 800 !important;
-  line-height: 0.95 !important;
-  letter-spacing: -0.02em !important;
-  margin: 0 0 10px !important;
-  color: #fff !important;
-  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.5) !important;
-}
-.hero-carousel .hero-subtitle {
-  font-size: clamp(0.95rem, 2vw, 1.3rem) !important;
-  font-weight: 400 !important;
-  line-height: 1.35 !important;
-  opacity: 0.92 !important;
-  max-width: 480px !important;
-  margin: 0 0 26px !important;
-  color: #fff !important;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4) !important;
-}
-.hero-carousel .hero-cta {
-  display: inline-flex !important;
-  align-items: center !important;
-  gap: 10px !important;
-  padding: 15px 30px !important;
-  background: #fff !important;
-  color: #1a0f0a !important;
-  border-radius: 999px !important;
-  font-weight: 800 !important;
-  font-size: 1rem !important;
-  text-decoration: none !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35) !important;
-  transition: transform 0.2s ease, box-shadow 0.2s ease !important;
-}
-.hero-carousel .hero-cta:hover {
-  transform: translateY(-3px) scale(1.03) !important;
-}
-/* Badge promo géant */
-.hero-carousel .hero-badge {
-  position: absolute !important;
-  top: clamp(16px, 4vw, 40px) !important;
-  right: clamp(16px, 4vw, 40px) !important;
-  z-index: 4 !important;
-  padding: 12px 26px !important;
-  color: #fff !important;
-  font-family: var(--font-display) !important;
-  font-size: clamp(1.2rem, 3vw, 1.9rem) !important;
-  font-weight: 900 !important;
-  border-radius: 14px !important;
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
-  transform: rotate(-4deg) !important;
-}
-/* Flèches */
-.hero-carousel .hero-arrow {
-  position: absolute !important;
-  top: 50% !important;
-  transform: translateY(-50%) !important;
-  z-index: 5 !important;
-  width: 46px !important;
-  height: 46px !important;
-  border-radius: 50% !important;
-  border: none !important;
-  background: rgba(255, 255, 255, 0.18) !important;
-  color: #fff !important;
-  font-size: 1.9rem !important;
-  line-height: 1 !important;
-  cursor: pointer !important;
-  opacity: 1 !important;
-  display: block !important;
-}
-.hero-carousel .hero-arrow-left { left: 18px !important; right: auto !important; }
-.hero-carousel .hero-arrow-right { right: 18px !important; left: auto !important; }
-/* Indicateurs allongés */
-.hero-carousel .hero-indicators {
-  position: absolute !important;
-  bottom: 20px !important;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  z-index: 5 !important;
-  display: flex !important;
-  gap: 8px !important;
-}
-.hero-carousel .hero-indicator {
-  width: 24px !important;
-  height: 4px !important;
-  border: none !important;
-  border-radius: 2px !important;
-  background: rgba(255, 255, 255, 0.4) !important;
-  cursor: pointer !important;
-  padding: 0 !important;
-  display: block !important;
-  transition: all 0.3s ease !important;
-}
-.hero-carousel .hero-indicator.is-active {
-  width: 48px !important;
-  background: #fff !important;
-}
-/* Barre de progression dorée */
-.hero-carousel .hero-progress {
-  position: absolute !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  height: 3px !important;
-  background: rgba(255, 255, 255, 0.12) !important;
-  z-index: 6 !important;
-  display: block !important;
-}
-.hero-carousel .hero-progress-fill {
-  height: 100% !important;
-  width: 0 !important;
-  background: var(--gold-500) !important;
-  display: block !important;
-  animation: heroProgress 5.5s linear forwards !important;
-}
-@keyframes heroProgress {
-  from { width: 0; }
-  to { width: 100%; }
-}
-.hero-carousel.is-paused .hero-progress-fill {
-  animation-play-state: paused !important;
-}
-/* Fondu entre slides */
-.hero-carousel .hero-slide-enter {
-  animation: heroFadeIn 0.8s ease-out forwards !important;
-  z-index: 2 !important;
-}
-.hero-carousel .hero-slide-exit {
-  animation: heroFadeOut 0.8s ease-out forwards !important;
-  z-index: 1 !important;
-}
-@keyframes heroFadeIn { from { opacity: 0; } to { opacity: 1; } }
-@keyframes heroFadeOut { from { opacity: 1; } to { opacity: 0; } }
-
-/* ===== MOBILE ===== */
-@media (max-width: 767px) {
-  .hero-carousel {
-    height: 430px !important;
-    margin: 0 !important;
-    width: 100% !important;
-    border-radius: 0 !important;
-  }
-  .hero-carousel .hero-slide-overlay {
-    background: linear-gradient(0deg,
-      rgba(20, 10, 5, 0.9) 0%,
-      rgba(20, 10, 5, 0.55) 45%,
-      rgba(20, 10, 5, 0.2) 75%,
-      rgba(20, 10, 5, 0.05) 100%) !important;
-  }
-  .hero-carousel .hero-slide-content {
-    justify-content: flex-end !important;
-    align-items: center !important;
-    text-align: center !important;
-    padding: 24px 20px 64px !important;
-  }
-  .hero-carousel .hero-kicker { font-size: 0.66rem !important; padding: 4px 12px !important; margin-bottom: 10px !important; }
-  .hero-carousel .hero-title { font-size: 2.3rem !important; margin-bottom: 6px !important; }
-  .hero-carousel .hero-subtitle { font-size: 0.95rem !important; margin-bottom: 18px !important; }
-  .hero-carousel .hero-cta { padding: 13px 26px !important; font-size: 0.92rem !important; }
-  .hero-carousel .hero-badge { top: 12px !important; right: 12px !important; padding: 8px 16px !important; font-size: 1.05rem !important; border-radius: 10px !important; }
-  .hero-carousel .hero-arrow { width: 34px !important; height: 34px !important; font-size: 1.4rem !important; }
-  .hero-carousel .hero-arrow-left { left: 8px !important; }
-  .hero-carousel .hero-arrow-right { right: 8px !important; }
-  .hero-carousel .hero-indicators { bottom: 14px !important; }
-  .hero-carousel .hero-indicator { width: 18px !important; height: 3px !important; }
-  .hero-carousel .hero-indicator.is-active { width: 32px !important; }
-}
 /* =====================================================
    RETOUR ARRIÈRE — carrousel compact restauré (priorité max)
 ===================================================== */
