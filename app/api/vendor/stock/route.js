@@ -1,10 +1,45 @@
 import sql from "@/lib/db";
+import { rateLimit, clientKey } from "@/lib/rate-limit";
 
 const ALLOWED_CONDITIONS = ["neuf", "quasi_neuf", "occasion"];
+const MAX_PRICE = 100_000_000; // 100 millions FCFA max (limite raisonnable)
+const MAX_STOCK = 100_000;     // 100 000 unités max
+const MAX_NAME_LENGTH = 200;
+const MAX_DESCRIPTION_LENGTH = 5000;
+const MAX_BRAND_LENGTH = 100;
+const MAX_IMAGES = 10;
 
-// GET /api/vendor/stock
+// 🔒 Sanitization : supprime caractères dangereux
+function sanitize(str, maxLength = 200) {
+  if (typeof str !== "string") return "";
+  return str
+    .replace(/[<>"'`$\\]/g, "")           // XSS/SQL injection
+    .replace(/--/g, "")                  // SQL comments
+    .replace(/\b(drop|select|insert|update|delete|union|exec|script)\b/gi, "")
+    .trim()
+    .slice(0, maxLength);
+}
+
+// 🔒 Validation URL image
+function isValidImageUrl(url) {
+  if (typeof url !== "string") return false;
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" && /\.(jpg|jpeg|png|webp|gif)$/i.test(parsed.pathname);
+  } catch {
+    return false;
+  }
+}
+
+// GET /api/vendor/stock — vendeur voit SEULEMENT ses produits
 export async function GET(request) {
   const userId = request.headers.get("x-user-id");
+  const userRole = request.headers.get("x-user-role");
+
+  if (!userId || (userRole !== "vendor" && userRole !== "admin")) {
+    return Response.json({ error: "Accès refusé." }, { status: 403 });
+  }
+
   const products = await sql`
     SELECT p.id, p.name, p.sku, p.price, p.compare_at_price, p.stock_quantity, p.low_stock_threshold,
            p.flash_sale_ends_at, p.flash_sale_stock_snapshot, p.condition, p.brand,
@@ -22,75 +57,122 @@ export async function GET(request) {
   return Response.json({ products });
 }
 
-// POST /api/vendor/stock
-// body: { name, description?, price, compareAtPrice?, sku?, stockQuantity, lowStockThreshold?, categoryId? }
-// La boutique doit être vérifiée (status = 'active') pour pouvoir publier des produits.
+// POST /api/vendor/stock — création produit avec validation militaire
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
+  const userRole = request.headers.get("x-user-role");
+
+  // 🔒 1) Seul vendeur ou admin peut créer
+  if (!userId || (userRole !== "vendor" && userRole !== "admin")) {
+    return Response.json({ error: "Accès refusé." }, { status: 403 });
+  }
+
+  // 🔒 2) Rate limit : max 5 produits par minute
+  const key = `product:${clientKey(request)}`;
+  if (!rateLimit(key, { limit: 5, windowMs: 60_000 })) {
+    return Response.json(
+      { error: "Trop de créations. Réessayez dans une minute." },
+      { status: 429 }
+    );
+  }
+
   try {
     const body = await request.json();
-    const { name, description, price, compareAtPrice, sku, stockQuantity, lowStockThreshold, categoryId, images, condition, brand } = body;
 
-    if (!name || price === undefined) {
-      return Response.json(
-        { error: "Le nom et le prix du produit sont requis." },
-        { status: 400 }
-      );
+    // 🔒 3) Validation stricte des champs
+    const name = sanitize(body.name, MAX_NAME_LENGTH);
+    const description = sanitize(body.description, MAX_DESCRIPTION_LENGTH);
+    const brand = sanitize(body.brand, MAX_BRAND_LENGTH);
+    const sku = sanitize(body.sku, 50);
+
+    const price = Number(body.price);
+    const compareAtPrice = body.compareAtPrice ? Number(body.compareAtPrice) : null;
+    const stockQuantity = Number(body.stockQuantity) || 0;
+    const lowStockThreshold = Number(body.lowStockThreshold) || 5;
+    const categoryId = body.categoryId ? Number(body.categoryId) : null;
+    const condition = ALLOWED_CONDITIONS.includes(body.condition) ? body.condition : "neuf";
+
+    // Validation prix
+    if (!name || name.length < 3) {
+      return Response.json({ error: "Nom invalide." }, { status: 400 });
+    }
+    if (!Number.isFinite(price) || price <= 0 || price > MAX_PRICE) {
+      return Response.json({ error: "Prix invalide." }, { status: 400 });
     }
 
-    const finalCondition = ALLOWED_CONDITIONS.includes(condition) ? condition : "neuf";
-
-    if (compareAtPrice && Number(compareAtPrice) <= Number(price)) {
-      return Response.json(
-        { error: "Le prix barré doit être supérieur au prix de vente." },
-        { status: 400 }
-      );
+    // Validation stock
+    if (!Number.isInteger(stockQuantity) || stockQuantity < 0 || stockQuantity > MAX_STOCK) {
+      return Response.json({ error: "Stock invalide." }, { status: 400 });
+    }
+    if (!Number.isInteger(lowStockThreshold) || lowStockThreshold < 0 || lowStockThreshold > MAX_STOCK) {
+      return Response.json({ error: "Seuil de stock invalide." }, { status: 400 });
     }
 
+    // Validation prix barré
+    if (compareAtPrice !== null) {
+      if (!Number.isFinite(compareAtPrice) || compareAtPrice <= price || compareAtPrice > MAX_PRICE) {
+        return Response.json({ error: "Prix barré invalide." }, { status: 400 });
+      }
+    }
+
+    // 🔒 4) Validation images (URLs HTTPS, max 10)
+    let images = [];
+    if (Array.isArray(body.images)) {
+      images = body.images.slice(0, MAX_IMAGES).filter(isValidImageUrl);
+    }
+
+    // 🔒 5) Vérification boutique (doit appartenir au vendeur + active)
     const [shop] = await sql`
       SELECT id, status FROM shops WHERE vendor_id = ${userId} LIMIT 1
     `;
 
-    if (!shop) {
-      return Response.json(
-        { error: "Aucune boutique associée à ce compte vendeur." },
-        { status: 404 }
-      );
+    if (!shop || shop.status !== "active") {
+      return Response.json({ error: "Accès refusé." }, { status: 403 });
     }
 
-    if (shop.status !== "active") {
-      const messages = {
-        pending: "Votre boutique est en attente de vérification par notre équipe. Vous pourrez publier des produits une fois validée.",
-        rejected: "Votre demande de compte vendeur n'a pas été validée. Corrigez vos informations depuis votre tableau de bord.",
-        suspended: "Votre boutique est actuellement suspendue. Contactez le support pour plus d'informations.",
-      };
-      return Response.json(
-        { error: messages[shop.status] || "Votre boutique n'est pas encore active." },
-        { status: 403 }
-      );
-    }
-
-    const initialStock = Number(stockQuantity) || 0;
-
-    const [product] = await sql`
-      INSERT INTO products (shop_id, name, description, price, compare_at_price, sku, stock_quantity, low_stock_threshold, category_id, images, condition, brand)
-      VALUES (${shop.id}, ${name}, ${description || null}, ${price}, ${compareAtPrice || null}, ${sku || null}, ${initialStock}, ${lowStockThreshold || 5}, ${categoryId || null}, ${JSON.stringify(images || [])}, ${finalCondition}, ${brand || null})
-      RETURNING id, name, price, stock_quantity, images, condition, brand
-    `;
-
-    if (initialStock > 0) {
-      await sql`
-        INSERT INTO stock_movements (product_id, type, quantity, reason, created_by)
-        VALUES (${product.id}, 'restock', ${initialStock}, 'Stock initial à la création du produit', ${userId})
+    // 🔒 6) Validation categoryId (doit exister si fourni)
+    if (categoryId !== null) {
+      const [category] = await sql`
+        SELECT id FROM categories WHERE id = ${categoryId}
       `;
+      if (!category) {
+        return Response.json({ error: "Catégorie invalide." }, { status: 400 });
+      }
     }
+
+    // 🔒 7) Création produit (transaction pour cohérence)
+    const [product] = await sql.begin(async (tx) => {
+      const [newProduct] = await tx`
+        INSERT INTO products (shop_id, name, description, price, compare_at_price, sku, 
+                              stock_quantity, low_stock_threshold, category_id, images, 
+                              condition, brand, status)
+        VALUES (${shop.id}, ${name}, ${description || null}, ${price}, ${compareAtPrice}, 
+                ${sku || null}, ${stockQuantity}, ${lowStockThreshold}, ${categoryId}, 
+                ${JSON.stringify(images)}, ${condition}, ${brand || null}, 'active')
+        RETURNING id, name, price, stock_quantity, images, condition, brand
+      `;
+
+      if (stockQuantity > 0) {
+        await tx`
+          INSERT INTO stock_movements (product_id, type, quantity, reason, created_by)
+          VALUES (${newProduct.id}, 'restock', ${stockQuantity}, 
+                  'Stock initial à la création du produit', ${userId})
+        `;
+      }
+
+      // 🔒 8) Audit log (traçabilité)
+      await tx`
+        INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
+        VALUES (${userId}, 'create_product', 'product', ${newProduct.id}, 
+                ${clientKey(request)})
+      `.catch(() => {}); // non bloquant si table n'existe pas encore
+
+      return newProduct;
+    });
 
     return Response.json({ product }, { status: 201 });
   } catch (err) {
-    console.error("Erreur création produit:", err);
-    return Response.json(
-      { error: "Erreur serveur lors de la création du produit." },
-      { status: 500 }
-    );
+    console.error("[vendor/stock POST]", err.message);
+    return Response.json({ error: "Impossible de créer le produit." }, { status: 500 });
   }
 }
