@@ -1,24 +1,64 @@
 import sql from "@/lib/db";
+import { rateLimit, clientKey } from "@/lib/rate-limit";
 
-// GET /api/admin/payouts — liste tous les payouts (à payer, séquestrés, payés)
+const MAX_RESULTS_PER_PAGE = 100;
+
+// GET /api/admin/payouts — liste les payouts (paginé, sécurisé)
 export async function GET(request) {
   const userId = request.headers.get("x-user-id");
-  const [user] = await sql`SELECT role FROM users WHERE id = ${userId}`;
-  if (!user || user.role !== "admin") {
+  const userRole = request.headers.get("x-user-role");
+
+  // 🔒 1) Vérification rôle explicite (défense en profondeur)
+  if (!userId || userRole !== "admin") {
     return Response.json({ error: "Accès refusé." }, { status: 403 });
   }
 
-  const payouts = await sql`
-    SELECT l.id, l.order_id, l.shop_id,
-           s.name AS shop_name,
-           v.full_name AS vendor_name, v.phone AS vendor_phone,
-           l.gross_amount, l.commission_amount, l.payout_amount,
-           l.payout_status, l.payout_released_at, l.payout_paid_at
-    FROM shop_commission_ledger l
-    JOIN shops s ON s.id = l.shop_id
-    JOIN users v ON v.id = s.vendor_id
-    ORDER BY CASE l.payout_status WHEN 'released' THEN 0 WHEN 'held' THEN 1 ELSE 2 END,
-             COALESCE(l.payout_released_at, l.payout_paid_at) DESC NULLS LAST
-  `;
-  return Response.json({ payouts });
+  // 🔒 2) Rate limit : max 10 consultations par minute (même pour admin)
+  const key = `admin-payouts:${clientKey(request)}`;
+  if (!rateLimit(key, { limit: 10, windowMs: 60_000 })) {
+    return Response.json(
+      { error: "Trop de requêtes. Réessayez dans une minute." },
+      { status: 429 }
+    );
+  }
+
+  try {
+    // 🔒 3) Vérification que l'admin existe et n'est pas suspendu
+    const [admin] = await sql`
+      SELECT id, role, status FROM users WHERE id = ${userId}
+    `;
+    if (!admin || admin.role !== "admin" || admin.status === "suspended") {
+      return Response.json({ error: "Accès refusé." }, { status: 403 });
+    }
+
+    // 🔒 4) Pagination (évite de charger 100 000 lignes d'un coup)
+    const url = new URL(request.url);
+    const limit = Math.min(Number(url.searchParams.get("limit")) || MAX_RESULTS_PER_PAGE, MAX_RESULTS_PER_PAGE);
+    const offset = Math.max(Number(url.searchParams.get("offset")) || 0, 0);
+
+    const payouts = await sql`
+      SELECT l.id, l.order_id, l.shop_id,
+             s.name AS shop_name,
+             v.full_name AS vendor_name, v.phone AS vendor_phone,
+             l.gross_amount, l.commission_amount, l.payout_amount,
+             l.payout_status, l.payout_released_at, l.payout_paid_at
+      FROM shop_commission_ledger l
+      JOIN shops s ON s.id = l.shop_id
+      JOIN users v ON v.id = s.vendor_id
+      ORDER BY CASE l.payout_status WHEN 'released' THEN 0 WHEN 'held' THEN 1 ELSE 2 END,
+               COALESCE(l.payout_released_at, l.payout_paid_at) DESC NULLS LAST
+      LIMIT ${limit} OFFSET ${offset}
+    `;
+
+    // 🔒 5) Audit log (traçabilité consultation payouts — donnée très sensible)
+    sql`
+      INSERT INTO security_audit_log (user_id, action, resource_type, ip_address)
+      VALUES (${userId}, 'view_payouts', 'payout', ${clientKey(request)})
+    `.catch(() => {});
+
+    return Response.json({ payouts, limit, offset });
+  } catch (err) {
+    console.error("[admin/payouts GET]", err.message);
+    return Response.json({ error: "Impossible de charger les payouts." }, { status: 500 });
+  }
 }
