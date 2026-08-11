@@ -61,6 +61,10 @@ export async function POST(request) {
   }
 
   try {
+    // 🆕 Expiration lazy : libère le stock des commandes expirées avant de créer
+    const { cancelExpiredOrders } = await import("@/lib/queries/cancelExpiredOrders");
+    await cancelExpiredOrders();
+
     const body = await request.json();
 
     const items = validateItems(body.items);
@@ -139,9 +143,10 @@ export async function POST(request) {
 
       const [newOrder] = await tx`
         INSERT INTO orders (buyer_id, status, total, shipping_address, phone,
-                            payment_method, delivery_fee, delivery_method, fulfilled_by)
+                            payment_method, delivery_fee, delivery_method, fulfilled_by, expires_at)
         VALUES (${userId}, 'pending', ${totalWithDelivery}, ${finalAddress}, ${phone},
-                ${finalPaymentMethod}, ${deliveryFee}, ${deliveryMethod}, ${fulfilledBy})
+                ${finalPaymentMethod}, ${deliveryFee}, ${deliveryMethod}, ${fulfilledBy},
+                NOW() + INTERVAL '24 hours')
         RETURNING id, status, total, payment_method, delivery_fee, delivery_method, created_at
       `;
 
@@ -211,6 +216,11 @@ export async function POST(request) {
 
 export async function GET(request) {
   const userId = request.headers.get("x-user-id");
+
+  // 🆕 Expiration lazy : annule les commandes expirées avant de lister
+  const { cancelExpiredOrders } = await import("@/lib/queries/cancelExpiredOrders");
+  await cancelExpiredOrders();
+
   const { getBuyerOrders } = await import("@/lib/queries/orders");
   const orders = await getBuyerOrders(userId);
   return Response.json({ orders });
