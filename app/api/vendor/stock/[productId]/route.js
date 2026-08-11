@@ -147,6 +147,12 @@ export async function DELETE(request, { params }) {
     `;
 
     if (orderCount > 0) {
+      // 🔒 Anti-arnaque : tracer les tentatives de suppression d'un produit vendu
+      await sql`
+        INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
+        VALUES (${userId}, 'delete_product_denied', 'product', ${productId}, ${clientKey(request)})
+      `.catch(() => {});
+
       return Response.json(
         {
           error: "Ce produit a déjà été commandé au moins une fois et ne peut pas être supprimé définitivement, pour préserver l'historique des commandes. Vous pouvez en revanche mettre son stock à 0 pour qu'il ne soit plus disponible à l'achat.",
