@@ -398,6 +398,15 @@ export default function AdminShopsPage() {
                         🚫 Suspendre
                       </button>
                     )}
+                    {s.status === "suspended" && (
+                      <button
+                        className="btn btn-primary"
+                        disabled={updatingShopId === s.id}
+                        onClick={() => handleApprove(s.id)}
+                      >
+                        ✅ Réactiver
+                      </button>
+                    )}
                     {s.status === "rejected" && (
                       <button
                         className="btn btn-primary"
