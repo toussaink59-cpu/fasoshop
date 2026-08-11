@@ -1,7 +1,6 @@
 // Middleware Edge — protège les routes sensibles.
-// Vérifie le JWT httpOnly ET le statut de l'utilisateur/boutique.
-// Bloque : comptes suspendus, vendors rejected/suspended.
-// Exception : vendors pending/rejected peuvent PATCH /api/vendor/shop pour soumettre KYC.
+// Vérifie le JWT httpOnly ET le statut EN TEMPS RÉEL via la base de données.
+// Une suspension est donc effective IMMÉDIATEMENT, même avec un ancien cookie.
 
 import { NextResponse } from "next/server";
 import { verifyToken, AUTH_COOKIE_NAME } from "./lib/auth";
@@ -11,7 +10,7 @@ const KYC_ERROR = { error: "Activez votre boutique avant d'accéder à cette pag
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
-  const method = request.method; // GET, POST, PATCH, DELETE...
+  const method = request.method;
 
   const isVendorRoute = pathname.startsWith("/api/vendor");
   const isAdminRoute = pathname.startsWith("/api/admin");
@@ -21,15 +20,9 @@ export async function middleware(request) {
   const isConversationsRoute = pathname.startsWith("/api/conversations");
   const isFavoritesRoute = pathname.startsWith("/api/favorites");
 
-  // Routes publiques non concernées : laisser passer sans auth
   if (
-    !isVendorRoute &&
-    !isAdminRoute &&
-    !isOrdersRoute &&
-    !isProductsRoute &&
-    !isAddressesRoute &&
-    !isConversationsRoute &&
-    !isFavoritesRoute
+    !isVendorRoute && !isAdminRoute && !isOrdersRoute && !isProductsRoute &&
+    !isAddressesRoute && !isConversationsRoute && !isFavoritesRoute
   ) {
     return NextResponse.next();
   }
@@ -41,70 +34,54 @@ export async function middleware(request) {
     if (!token) return NextResponse.next();
     const payload = await verifyToken(token);
     if (!payload) return NextResponse.next();
-    const requestHeaders = new Headers(request.headers);
-    requestHeaders.set("x-user-id", String(payload.userId));
-    requestHeaders.set("x-user-role", String(payload.role));
-    return NextResponse.next({ request: { headers: requestHeaders } });
+    const h = new Headers(request.headers);
+    h.set("x-user-id", String(payload.userId));
+    h.set("x-user-role", String(payload.role));
+    return NextResponse.next({ request: { headers: h } });
   }
 
-  // 🔒 Toutes les autres routes : authentification obligatoire
-  if (!token) {
-    return NextResponse.json(AUTH_ERROR, { status: 401 });
-  }
-
+  // 🔒 Authentification obligatoire
+  if (!token) return NextResponse.json(AUTH_ERROR, { status: 401 });
   const payload = await verifyToken(token);
-  if (!payload) {
-    return NextResponse.json(AUTH_ERROR, { status: 401 });
-  }
+  if (!payload) return NextResponse.json(AUTH_ERROR, { status: 401 });
 
-  // 🔒 BLOCAGE global : compte utilisateur suspendu
-  if (payload.status === "suspended") {
-    return NextResponse.json(AUTH_ERROR, { status: 403 });
-  }
+  // Pré-vérification rapide (JWT)
+  if (payload.status === "suspended") return NextResponse.json(AUTH_ERROR, { status: 403 });
 
-  // 🔒 Vérifications de rôle strictes
-  if (isAdminRoute && payload.role !== "admin") {
-    return NextResponse.json(AUTH_ERROR, { status: 403 });
-  }
+  // 🛡️ Rôles stricts
+  if (isAdminRoute && payload.role !== "admin") return NextResponse.json(AUTH_ERROR, { status: 403 });
+  if (isVendorRoute && payload.role !== "vendor" && payload.role !== "admin") return NextResponse.json(AUTH_ERROR, { status: 403 });
 
-  if (isVendorRoute && payload.role !== "vendor" && payload.role !== "admin") {
-    return NextResponse.json(AUTH_ERROR, { status: 403 });
-  }
+  // 🆕 VÉRIFICATION TEMPS RÉEL en base (rend les suspensions immédiates)
+  const checkRes = await fetch(
+    new URL(`/api/internal/session-status?uid=${encodeURIComponent(payload.userId)}`, request.url),
+    { headers: { "x-internal-secret": process.env.INTERNAL_STATUS_SECRET || "" } }
+  );
+  const st = checkRes.ok ? await checkRes.json().catch(() => null) : null;
+  if (!st) return NextResponse.json(AUTH_ERROR, { status: 403 }); // fail closed
 
-  // 🏪 Vendors : vérification statut boutique
+  // Compte utilisateur suspendu → blocage immédiat (tous rôles)
+  if (st.user_status === "suspended") return NextResponse.json(AUTH_ERROR, { status: 403 });
+
+  // 🏪 Boutique non active → blocage (sauf PATCH KYC pour soumettre/resoumettre)
   if (isVendorRoute && payload.role === "vendor") {
-    // Exception KYC : PATCH /api/vendor/shop reste ouvert aux pending/rejected
     const isKycPatch = pathname === "/api/vendor/shop" && method === "PATCH";
-    const shopStatus = payload.shopStatus || "pending";
-
-    if (!isKycPatch) {
-      if (shopStatus === "suspended") {
-        return NextResponse.json(KYC_ERROR, { status: 403 });
-      }
-      if (shopStatus === "rejected") {
-        return NextResponse.json(KYC_ERROR, { status: 403 });
-      }
-      if (shopStatus === "pending") {
-        return NextResponse.json(KYC_ERROR, { status: 403 });
-      }
-      // shopStatus === "active" → OK, on continue
+    if (!isKycPatch && st.shop_status !== "active") {
+      return NextResponse.json(KYC_ERROR, { status: 403 });
     }
   }
 
-  // 🛒 Routes acheteur : bloquer vendeurs et admins non-admin
+  // 🛒 Routes acheteur réservées
   const isBuyerOnly = isOrdersRoute || isAddressesRoute || isFavoritesRoute;
   if (isBuyerOnly && payload.role !== "buyer" && payload.role !== "admin") {
     return NextResponse.json(AUTH_ERROR, { status: 403 });
   }
 
-  // 💬 Conversations : accessibles à tous les rôles (acheteur ET vendeur discutent)
-
-  // ✅ Headers vérifiés injectés pour les routes
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-user-id", String(payload.userId));
-  requestHeaders.set("x-user-role", String(payload.role));
-
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  // ✅ Headers vérifiés injectés
+  const h = new Headers(request.headers);
+  h.set("x-user-id", String(payload.userId));
+  h.set("x-user-role", String(payload.role));
+  return NextResponse.next({ request: { headers: h } });
 }
 
 export const config = {
