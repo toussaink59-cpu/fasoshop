@@ -69,7 +69,13 @@ export async function POST(request) {
         { status: 403 }
       );
     }
-
+    // 🔒 BLOCAGE des vendors dont la boutique est suspendue
+    if (user.role === "vendor" && user.shop_status === "suspended") {
+      return Response.json(
+        { error: "Votre boutique est suspendue. Contactez le support." },
+        { status: 403 }
+      );
+    }
     // 🔒 Vendors sans boutique (anomalie) : bloquer
     if (user.role === "vendor" && !user.shop_id) {
       return Response.json(
