@@ -1,6 +1,8 @@
 // Middleware Edge — protège les routes sensibles.
 // Vérifie le JWT httpOnly ET le statut EN TEMPS RÉEL via la base de données.
 // Une suspension est donc effective IMMÉDIATEMENT, même avec un ancien cookie.
+// Exception KYC : un vendor non actif peut LIRE (GET) et METTRE À JOUR (PATCH)
+// son propre dossier boutique pour consulter son statut et corriger sa demande.
 
 import { NextResponse } from "next/server";
 import { verifyToken, AUTH_COOKIE_NAME } from "./lib/auth";
@@ -52,7 +54,7 @@ export async function middleware(request) {
   if (isAdminRoute && payload.role !== "admin") return NextResponse.json(AUTH_ERROR, { status: 403 });
   if (isVendorRoute && payload.role !== "vendor" && payload.role !== "admin") return NextResponse.json(AUTH_ERROR, { status: 403 });
 
-  // 🆕 VÉRIFICATION TEMPS RÉEL en base (rend les suspensions immédiates)
+  // 🔄 VÉRIFICATION TEMPS RÉEL en base (rend les suspensions immédiates)
   const checkRes = await fetch(
     new URL(`/api/internal/session-status?uid=${encodeURIComponent(payload.userId)}`, request.url),
     { headers: { "x-internal-secret": process.env.INTERNAL_STATUS_SECRET || "" } }
@@ -63,10 +65,11 @@ export async function middleware(request) {
   // Compte utilisateur suspendu → blocage immédiat (tous rôles)
   if (st.user_status === "suspended") return NextResponse.json(AUTH_ERROR, { status: 403 });
 
-  // 🏪 Boutique non active → blocage (sauf PATCH KYC pour soumettre/resoumettre)
+  // 🏪 Boutique non active → blocage, SAUF son propre dossier boutique (GET + PATCH KYC)
   if (isVendorRoute && payload.role === "vendor") {
-    const isKycPatch = pathname === "/api/vendor/shop" && method === "PATCH";
-    if (!isKycPatch && st.shop_status !== "active") {
+    const isKycAllowed =
+      pathname === "/api/vendor/shop" && (method === "GET" || method === "PATCH");
+    if (!isKycAllowed && st.shop_status !== "active") {
       return NextResponse.json(KYC_ERROR, { status: 403 });
     }
   }
