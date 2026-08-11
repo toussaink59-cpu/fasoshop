@@ -1,6 +1,12 @@
 import sql from "@/lib/db";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
-import { sendPayout, payoutMode } from "@/lib/payouts";
+import {
+  payoutMode,
+  validatePayout,
+  prepareAttempt,
+  sendPayout,
+  checkPayoutStatus,
+} from "@/lib/payouts";
 
 const ALLOWED_PAYMENT_METHODS = ["orange_money", "moov_money", "bank_transfer", "cash"];
 
@@ -9,9 +15,36 @@ function sanitize(str, maxLength = 200) {
   return str.replace(/[<>"'`$\\]/g, "").trim().slice(0, maxLength);
 }
 
-// POST /api/admin/payouts/[id]
-// mode "auto"   : l'API payout envoie l'argent + retourne la référence
-// mode "manual" : l'admin saisit la référence (secours / espèces / virement)
+// Finalise le payout côté DB (transaction courte, sans appel réseau dedans)
+async function finalizeLedgerPaid(ledgerId, userId, ip, { amount, method, reference, notes }) {
+  return sql.begin(async (tx) => {
+    const [ledger] = await tx`
+      SELECT id, payout_status FROM shop_commission_ledger
+      WHERE id = ${ledgerId}
+      FOR UPDATE
+    `;
+    if (!ledger) throw Object.assign(new Error("Payout introuvable."), { code: "not_found" });
+    if (ledger.payout_status === "paid") throw Object.assign(new Error("already_paid"), { code: "already_paid" });
+    if (ledger.payout_status !== "released") throw Object.assign(new Error("Payout non disponible."), { code: "bad_status" });
+
+    await tx`
+      UPDATE shop_commission_ledger
+      SET payout_status = 'paid', payout_paid_at = NOW()
+      WHERE id = ${ledgerId}
+    `;
+    await tx`
+      INSERT INTO admin_payout_transactions
+        (ledger_id, admin_id, amount_paid, payment_method, transaction_reference, notes, ip_address)
+      VALUES (${ledgerId}, ${userId}, ${amount}, ${method}, ${reference}, ${notes || null}, ${ip})
+    `;
+    await tx`
+      INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
+      VALUES (${userId}, 'payout_paid_auto', 'payout', ${ledgerId}, ${ip})
+    `.catch(() => {});
+    return true;
+  });
+}
+
 export async function POST(request, { params }) {
   const userId = request.headers.get("x-user-id");
   const userRole = request.headers.get("x-user-role");
@@ -39,104 +72,150 @@ export async function POST(request, { params }) {
 
     const body = await request.json().catch(() => ({}));
     const wantAuto = body.mode === "auto" && payoutMode() === "auto";
+    const ip = clientKey(request);
 
-    // ===== Validation mode manuel =====
-    let amountPaid = null;
-    let paymentMethod = "";
-    let transactionReference = "";
-    let notes = "";
+    // ================= MODE AUTO =================
+    if (wantAuto) {
+      // --- Pré-lecture (hors transaction) ---
+      const [ledger] = await sql`
+        SELECT id, payout_amount, payout_status, shop_id
+        FROM shop_commission_ledger WHERE id = ${ledgerId}
+      `;
+      if (!ledger || ledger.payout_status !== "released") {
+        return Response.json({ error: "Payout non disponible pour paiement." }, { status: 400 });
+      }
+      const [shop] = await sql`
+        SELECT mobile_money_number, mobile_money_provider FROM shops WHERE id = ${ledger.shop_id}
+      `;
+      const provider = shop?.mobile_money_provider === "moov" ? "moov_money" : "orange_money";
 
-    if (!wantAuto) {
-      amountPaid = Number(body.amountPaid);
-      paymentMethod = String(body.paymentMethod || "").toLowerCase();
-      transactionReference = sanitize(body.transactionReference, 100);
-      notes = sanitize(body.notes, 500);
+      // --- Validation métier stricte (problème 1) ---
+      const v = validatePayout({
+        amount: Number(ledger.payout_amount),
+        phone: shop?.mobile_money_number,
+        provider,
+      });
+      if (!v.ok) return Response.json({ error: v.error }, { status: 400 });
 
-      if (!Number.isFinite(amountPaid) || amountPaid <= 0) {
-        return Response.json({ error: "Montant payé invalide." }, { status: 400 });
+      // --- Idempotence (problème 2) ---
+      const prep = await prepareAttempt({
+        resourceType: "ledger",
+        resourceId: ledgerId,
+        amount: v.amount,
+        phone: v.phoneLocal,
+        provider,
+      });
+
+      if (!prep.canSend) {
+        if (prep.reason === "already_paid") {
+          return Response.json({ error: "Ce payout a déjà été payé." }, { status: 400 });
+        }
+        // pending AVEC référence : check de statut OBLIGATOIRE avant quoi que ce soit
+        const chk = await checkPayoutStatus(prep.attempt);
+        if (chk.status === "succeeded") {
+          // L'argent était parti : on finalise proprement côté DB
+          try {
+            await finalizeLedgerPaid(ledgerId, userId, ip, {
+              amount: v.amount, method: provider, reference: chk.reference, notes: "Finalisé après check de statut.",
+            });
+            return Response.json({ ok: true, payout: { reference: chk.reference, recovered: true } });
+          } catch (e) {
+            return Response.json({ error: "Paiement confirmé chez le fournisseur; régularisation DB requise." }, { status: 409 });
+          }
+        }
+        if (chk.status === "failed") {
+          return Response.json({ error: "La tentative précédente a échoué. Vous pouvez relancer le paiement." }, { status: 400 });
+        }
+        return Response.json({ error: "Un paiement est déjà en cours pour ce payout. Réessayez dans quelques minutes." }, { status: 409 });
       }
-      if (!ALLOWED_PAYMENT_METHODS.includes(paymentMethod)) {
-        return Response.json({ error: "Méthode de paiement invalide." }, { status: 400 });
+
+      // --- Envoi (hors transaction SQL) ---
+      const sent = await sendPayout({
+        idempotencyKey: prep.idempotencyKey,
+        amount: v.amount,
+        phoneLocal: v.phoneLocal,
+        provider,
+        description: `Payout Kimoxa #${ledgerId}`,
+      });
+
+      if (sent.status === "succeeded") {
+        try {
+          await finalizeLedgerPaid(ledgerId, userId, ip, {
+            amount: v.amount, method: provider, reference: sent.reference, notes: null,
+          });
+        } catch (e) {
+          // Argent parti mais DB non finalisée → alerte admin, ne jamais renvoyer
+          console.error("[payout] SUCCÈS FOURNISSEUR MAIS ÉCHEC DB :", ledgerId, sent.reference);
+          return Response.json({ error: "Paiement envoyé; régularisation interne en cours (ne pas renvoyer)." }, { status: 409 });
+        }
+        return Response.json({ ok: true, payout: { reference: sent.reference } });
       }
-      if (!transactionReference || transactionReference.length < 5) {
-        return Response.json({ error: "Référence de transaction requise." }, { status: 400 });
+
+      if (sent.status === "failed") {
+        return Response.json({ error: `Paiement refusé : ${sent.error}` }, { status: 400 });
       }
+
+      // unconfirmed : on ne renvoie JAMAIS (problèmes 2 + 3)
+      return Response.json({ error: sent.error }, { status: 409 });
     }
 
-    const result = await sql.begin(async (tx) => {
+    // ================= MODE MANUEL (inchangé, sécurisé) =================
+    const amountPaid = Number(body.amountPaid);
+    const paymentMethod = String(body.paymentMethod || "").toLowerCase();
+    const transactionReference = sanitize(body.transactionReference, 100);
+    const notes = sanitize(body.notes, 500);
+
+    if (!Number.isFinite(amountPaid) || amountPaid <= 0) {
+      return Response.json({ error: "Montant payé invalide." }, { status: 400 });
+    }
+    if (!ALLOWED_PAYMENT_METHODS.includes(paymentMethod)) {
+      return Response.json({ error: "Méthode de paiement invalide." }, { status: 400 });
+    }
+    if (!transactionReference || transactionReference.length < 5) {
+      return Response.json({ error: "Référence de transaction requise." }, { status: 400 });
+    }
+
+    await sql.begin(async (tx) => {
       const [ledger] = await tx`
-        SELECT l.id, l.payout_amount, l.payout_status, l.shop_id
-        FROM shop_commission_ledger l
-        WHERE l.id = ${ledgerId}
+        SELECT id, payout_amount, payout_status, shop_id
+        FROM shop_commission_ledger WHERE id = ${ledgerId}
         FOR UPDATE
       `;
       if (!ledger) throw new Error("Payout introuvable.");
       if (ledger.payout_status !== "released") throw new Error("Payout non disponible pour paiement.");
 
+      const expected = Number(ledger.payout_amount);
+      if (Math.abs(amountPaid - expected) / expected > 0.01) {
+        throw new Error("Le montant payé ne correspond pas au montant dû.");
+      }
       const [shop] = await tx`
-        SELECT mobile_money_number, mobile_money_provider FROM shops WHERE id = ${ledger.shop_id}
+        SELECT mobile_money_number FROM shops WHERE id = ${ledger.shop_id}
       `;
-
-      let finalAmount = amountPaid;
-      let finalMethod = paymentMethod;
-      let finalReference = transactionReference;
-
-      if (wantAuto) {
-        // 🤖 AUTO : l'argent part via l'API, la référence revient toute seule
-        if (!shop || !shop.mobile_money_number) {
-          throw new Error("Le vendeur n'a pas de numéro Mobile Money — utilisez le mode manuel.");
-        }
-        finalMethod = shop.mobile_money_provider === "moov" ? "moov_money" : "orange_money";
-        finalAmount = Number(ledger.payout_amount);
-
-        const sent = await sendPayout({
-          amount: finalAmount,
-          phone: shop.mobile_money_number,
-          provider: finalMethod,
-          description: `Payout Kimoxa #${ledgerId}`,
-        });
-        if (!sent.ok) {
-          throw new Error(`Paiement auto échoué : ${sent.error} — utilisez le mode manuel.`);
-        }
-        finalReference = sent.reference;
-      } else {
-        // ✍️ MANUEL : cohérence montant + moyen de paiement vendeur
-        const expected = Number(ledger.payout_amount);
-        if (Math.abs(finalAmount - expected) / expected > 0.01) {
-          throw new Error("Le montant payé ne correspond pas au montant dû.");
-        }
-        if ((finalMethod === "orange_money" || finalMethod === "moov_money") && (!shop || !shop.mobile_money_number)) {
-          throw new Error("Le vendeur n'a pas de moyen de paiement configuré.");
-        }
+      if ((paymentMethod === "orange_money" || paymentMethod === "moov_money") && !shop?.mobile_money_number) {
+        throw new Error("Le vendeur n'a pas de moyen de paiement configuré.");
       }
 
       await tx`
-        UPDATE shop_commission_ledger
-        SET payout_status = 'paid', payout_paid_at = NOW()
+        UPDATE shop_commission_ledger SET payout_status = 'paid', payout_paid_at = NOW()
         WHERE id = ${ledgerId}
       `;
-
       await tx`
         INSERT INTO admin_payout_transactions
           (ledger_id, admin_id, amount_paid, payment_method, transaction_reference, notes, ip_address)
-        VALUES (${ledgerId}, ${userId}, ${finalAmount}, ${finalMethod}, ${finalReference}, ${notes || null}, ${clientKey(request)})
+        VALUES (${ledgerId}, ${userId}, ${amountPaid}, ${paymentMethod}, ${transactionReference}, ${notes || null}, ${ip})
       `;
-
       await tx`
         INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
-        VALUES (${userId}, ${wantAuto ? "payout_paid_auto" : "payout_paid_manual"}, 'payout', ${ledgerId}, ${clientKey(request)})
+        VALUES (${userId}, 'payout_paid_manual', 'payout', ${ledgerId}, ${ip})
       `.catch(() => {});
-
-      return { ledgerId, amountPaid: finalAmount, paymentMethod: finalMethod, reference: finalReference, auto: wantAuto };
     });
 
-    return Response.json({ ok: true, payout: result }, { status: 200 });
+    return Response.json({ ok: true, payout: { reference: transactionReference } });
   } catch (err) {
     console.error("[admin/payouts POST]", err.message);
-    const msg = String(err.message || "");
-    return Response.json(
-      { error: msg.includes("manuel") || msg.includes("Payout") ? msg : "Impossible de traiter le paiement." },
-      { status: 400 }
-    );
+    if (err.code === "already_paid") {
+      return Response.json({ error: "Ce payout a déjà été payé." }, { status: 400 });
+    }
+    return Response.json({ error: "Impossible de traiter le paiement." }, { status: 400 });
   }
 }

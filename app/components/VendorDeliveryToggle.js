@@ -1,26 +1,40 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 // 🏪 Interrupteur : la boutique livre elle-même ses commandes.
 // Activé → les frais de livraison vont à la boutique.
-// Désactivé → les frais de livraison vont aux livreurs Kimoxa.
+// Désactivé → les frais vont aux livreurs Kimoxa.
 export default function VendorDeliveryToggle() {
+  const router = useRouter();
   const [enabled, setEnabled] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     fetch("/api/vendor/shop/delivery")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => { if (d) setEnabled(Boolean(d.enabled)); })
-      .catch(() => {})
+      .then(async (r) => {
+        if (r.status === 401 || r.status === 403) {
+          router.push("/login");
+          return null;
+        }
+        if (!r.ok) throw new Error("Chargement impossible.");
+        return r.json();
+      })
+      .then((d) => {
+        if (d) setEnabled(Boolean(d.enabled));
+      })
+      .catch(() => setError("Impossible de charger le réglage."))
       .finally(() => setLoading(false));
-  }, []);
+  }, [router]);
 
   async function toggle() {
+    if (saving) return;
     setSaving(true);
+    setError("");
     setMsg("");
     const next = !enabled;
     try {
@@ -29,20 +43,31 @@ export default function VendorDeliveryToggle() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ enabled: next }),
       });
+
+      if (res.status === 401 || res.status === 403) {
+        router.push("/login");
+        return;
+      }
+
+      const data = await res.json().catch(() => ({}));
+
       if (res.ok) {
-        setEnabled(next);
+        // ✅ Source de vérité = serveur, pas la valeur optimiste client
+        setEnabled(Boolean(data.enabled));
         setMsg(
-          next
+          data.enabled
             ? "✅ Vous livrez vous-même : les frais de livraison seront ajoutés à vos payouts."
             : "✅ Livraison confiée aux livreurs Kimoxa."
         );
       } else {
-        setMsg("❌ Impossible de modifier le réglage.");
+        // ✅ Affiche le message serveur (précis)
+        setError(data.error || "Impossible de modifier le réglage.");
       }
     } catch {
-      setMsg("❌ Impossible de contacter le serveur.");
+      setError("Impossible de contacter le serveur.");
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   }
 
   return (
@@ -64,7 +89,8 @@ export default function VendorDeliveryToggle() {
           {saving ? "..." : enabled ? "✅ Activé" : "Désactivé"}
         </button>
       </div>
-      {msg && <p style={{ margin: "8px 0 0", fontSize: "0.78rem", color: "var(--ink-700)" }}>{msg}</p>}
+      {error && <p style={{ margin: "8px 0 0", fontSize: "0.78rem", color: "#dc2626" }}>{error}</p>}
+      {msg && !error && <p style={{ margin: "8px 0 0", fontSize: "0.78rem", color: "#16a34a" }}>{msg}</p>}
     </div>
   );
 }

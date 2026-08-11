@@ -16,21 +16,26 @@ export async function POST(request) {
       );
     }
 
-    // Limite par IP ET par email visé : empêche à la fois le brute-force
-    // massif depuis une seule IP, et le ciblage distribué d'un seul compte.
+    // Limite par IP ET par email visé
     const ipKey = `login:${clientKey(request)}`;
     const emailKey = `login-email:${email}`;
-    if (!rateLimit(ipKey, { limit: 10, windowMs: 60_000 }) || !rateLimit(emailKey, { limit: 8, windowMs: 60_000 })) {
+    if (
+      !rateLimit(ipKey, { limit: 10, windowMs: 60_000 }) ||
+      !rateLimit(emailKey, { limit: 8, windowMs: 60_000 })
+    ) {
       return Response.json(
         { error: "Trop de tentatives. Réessayez dans une minute." },
         { status: 429 }
       );
     }
 
+    // 🔒 Récupère user + shop (si vendor) en une seule requête
     const [user] = await sql`
-      SELECT id, email, password_hash, full_name, role
-      FROM users
-      WHERE email = ${email}
+      SELECT u.id, u.email, u.password_hash, u.full_name, u.role, u.status AS user_status,
+             s.id AS shop_id, s.status AS shop_status
+      FROM users u
+      LEFT JOIN shops s ON s.vendor_id = u.id
+      WHERE u.email = ${email}
     `;
 
     if (!user) {
@@ -40,6 +45,7 @@ export async function POST(request) {
       );
     }
 
+    // 🔒 Vérification mot de passe
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       return Response.json(
@@ -48,7 +54,46 @@ export async function POST(request) {
       );
     }
 
-    const token = await signToken({ userId: user.id, role: user.role });
+    // 🔒 BLOCAGE des comptes suspendus (tous rôles)
+    if (user.user_status === "suspended") {
+      return Response.json(
+        { error: "Votre compte est suspendu. Contactez le support." },
+        { status: 403 }
+      );
+    }
+
+    // 🔒 BLOCAGE des vendors rejected (boutique non validée, définitivement)
+    if (user.role === "vendor" && user.shop_status === "rejected") {
+      return Response.json(
+        { error: "Votre boutique n'a pas été validée. Contactez le support." },
+        { status: 403 }
+      );
+    }
+    // 🔒 BLOCAGE des vendors dont la boutique est suspendue
+    if (user.role === "vendor" && user.shop_status === "suspended") {
+      return Response.json(
+        { error: "Votre boutique est suspendue. Contactez le support." },
+        { status: 403 }
+      );
+    }
+    // 🔒 Vendors sans boutique (anomalie) : bloquer
+    if (user.role === "vendor" && !user.shop_id) {
+      return Response.json(
+        { error: "Erreur de compte vendeur. Contactez le support." },
+        { status: 403 }
+      );
+    }
+
+    // 🔒 Émission du JWT enrichi (status user + shopStatus si vendor)
+    const token = await signToken({
+      userId: user.id,
+      role: user.role,
+      status: user.user_status,
+      ...(user.role === "vendor" && {
+        shopId: user.shop_id,
+        shopStatus: user.shop_status,
+      }),
+    });
 
     const response = Response.json({
       user: {
@@ -56,8 +101,11 @@ export async function POST(request) {
         email: user.email,
         fullName: user.full_name,
         role: user.role,
+        status: user.user_status,
+        shopStatus: user.shop_status, // utile pour le front (pending = bandeau KYC)
       },
     });
+
     response.headers.set(
       "Set-Cookie",
       `${AUTH_COOKIE_NAME}=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Lax${
