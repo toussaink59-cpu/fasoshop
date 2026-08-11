@@ -2,6 +2,7 @@
 -- KIMOXA — schema.sql : SOURCE DE VÉRITÉ
 -- Généré le 2026-08-11 depuis la base Neon de production
 -- + migration 001 intégrée (marquée [M001])
+-- + migration 002 intégrée (marquée [M002])
 -- Règle : tout changement futur = fichier dans migrations/
 -- =====================================================
 
@@ -118,11 +119,13 @@ CREATE TABLE orders (
   delivery_fee NUMERIC NOT NULL DEFAULT 0,
   delivery_method TEXT NOT NULL DEFAULT 'delivery',
   fulfilled_by TEXT NOT NULL DEFAULT 'kimoxa',
+  expires_at TIMESTAMPTZ, -- [M002] expiration des commandes pending (24 h)
   CONSTRAINT orders_status_check CHECK (status IN ('pending','paid','shipped','delivered','cancelled'))
 );
 CREATE INDEX idx_orders_buyer_id ON orders(buyer_id);      -- [M001]
 CREATE INDEX idx_orders_status ON orders(status);          -- [M001]
 CREATE INDEX idx_orders_created_at ON orders(created_at DESC); -- [M001]
+CREATE INDEX idx_orders_expires_at ON orders(expires_at) WHERE status = 'pending'; -- [M002]
 
 -- ---------- ORDER ITEMS ----------
 CREATE TABLE order_items (
