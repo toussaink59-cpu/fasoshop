@@ -2,12 +2,22 @@ import bcrypt from "bcryptjs";
 import sql from "@/lib/db";
 import { signToken, AUTH_COOKIE_NAME } from "@/lib/auth";
 import { COUNTRIES } from "@/lib/countries";
+import { rateLimit, clientKey } from "@/lib/rate-limit";
 
 // POST /api/auth/register
 // Inscription simple. La pièce d'identité du vendeur est soumise
 // APRÈS connexion, depuis le dashboard (alerte 🪪), puis validée par l'admin.
 export async function POST(request) {
   try {
+    // Limite par IP : empêche la création massive automatisée de comptes.
+    const key = `register:${clientKey(request)}`;
+    if (!rateLimit(key, { limit: 5, windowMs: 60_000 })) {
+      return Response.json(
+        { error: "Trop de tentatives. Réessayez dans une minute." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json();
     const {
       firstName, lastName, email, password, confirmPassword, phone, role,

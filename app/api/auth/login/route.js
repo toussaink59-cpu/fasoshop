@@ -1,6 +1,7 @@
 import bcrypt from "bcryptjs";
 import sql from "@/lib/db";
 import { signToken, AUTH_COOKIE_NAME } from "@/lib/auth";
+import { rateLimit, clientKey } from "@/lib/rate-limit";
 
 // POST /api/auth/login
 // body: { email, password }
@@ -12,6 +13,17 @@ export async function POST(request) {
       return Response.json(
         { error: "Email et mot de passe requis." },
         { status: 400 }
+      );
+    }
+
+    // Limite par IP ET par email visé : empêche à la fois le brute-force
+    // massif depuis une seule IP, et le ciblage distribué d'un seul compte.
+    const ipKey = `login:${clientKey(request)}`;
+    const emailKey = `login-email:${email}`;
+    if (!rateLimit(ipKey, { limit: 10, windowMs: 60_000 }) || !rateLimit(emailKey, { limit: 8, windowMs: 60_000 })) {
+      return Response.json(
+        { error: "Trop de tentatives. Réessayez dans une minute." },
+        { status: 429 }
       );
     }
 
