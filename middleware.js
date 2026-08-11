@@ -1,15 +1,17 @@
 // Middleware Edge — protège les routes sensibles.
-// Vérifie le JWT httpOnly et injecte l'utilisateur vérifié dans les headers.
-// Les routes buyer (orders, addresses, favorites) sont restreintes aux acheteurs
-// pour empêcher un vendeur d'accéder à des commandes qui ne le concernent pas.
+// Vérifie le JWT httpOnly ET le statut de l'utilisateur/boutique.
+// Bloque : comptes suspendus, vendors rejected/suspended.
+// Exception : vendors pending/rejected peuvent PATCH /api/vendor/shop pour soumettre KYC.
+
 import { NextResponse } from "next/server";
 import { verifyToken, AUTH_COOKIE_NAME } from "./lib/auth";
 
-// Message générique pour toutes les erreurs d'auth (ne révèle rien aux attaquants)
 const AUTH_ERROR = { error: "Accès refusé." };
+const KYC_ERROR = { error: "Activez votre boutique avant d'accéder à cette page." };
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  const method = request.method; // GET, POST, PATCH, DELETE...
 
   const isVendorRoute = pathname.startsWith("/api/vendor");
   const isAdminRoute = pathname.startsWith("/api/admin");
@@ -34,11 +36,11 @@ export async function middleware(request) {
 
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
-  // 🌐 Catalogue : public, mais on attache l'utilisateur si connecté
+  // 🌐 Catalogue produits : public, attache l'utilisateur si connecté
   if (isProductsRoute) {
     if (!token) return NextResponse.next();
     const payload = await verifyToken(token);
-    if (!payload) return NextResponse.next(); // token invalide mais catalogue = OK
+    if (!payload) return NextResponse.next();
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set("x-user-id", String(payload.userId));
     requestHeaders.set("x-user-role", String(payload.role));
@@ -55,7 +57,12 @@ export async function middleware(request) {
     return NextResponse.json(AUTH_ERROR, { status: 401 });
   }
 
-  // 🛡️ Vérifications de rôle strictes
+  // 🔒 BLOCAGE global : compte utilisateur suspendu
+  if (payload.status === "suspended") {
+    return NextResponse.json(AUTH_ERROR, { status: 403 });
+  }
+
+  // 🔒 Vérifications de rôle strictes
   if (isAdminRoute && payload.role !== "admin") {
     return NextResponse.json(AUTH_ERROR, { status: 403 });
   }
@@ -64,15 +71,33 @@ export async function middleware(request) {
     return NextResponse.json(AUTH_ERROR, { status: 403 });
   }
 
+  // 🏪 Vendors : vérification statut boutique
+  if (isVendorRoute && payload.role === "vendor") {
+    // Exception KYC : PATCH /api/vendor/shop reste ouvert aux pending/rejected
+    const isKycPatch = pathname === "/api/vendor/shop" && method === "PATCH";
+    const shopStatus = payload.shopStatus || "pending";
+
+    if (!isKycPatch) {
+      if (shopStatus === "suspended") {
+        return NextResponse.json(KYC_ERROR, { status: 403 });
+      }
+      if (shopStatus === "rejected") {
+        return NextResponse.json(KYC_ERROR, { status: 403 });
+      }
+      if (shopStatus === "pending") {
+        return NextResponse.json(KYC_ERROR, { status: 403 });
+      }
+      // shopStatus === "active" → OK, on continue
+    }
+  }
+
   // 🛒 Routes acheteur : bloquer vendeurs et admins non-admin
-  // (un vendeur ne doit pas pouvoir lister les commandes des acheteurs)
   const isBuyerOnly = isOrdersRoute || isAddressesRoute || isFavoritesRoute;
   if (isBuyerOnly && payload.role !== "buyer" && payload.role !== "admin") {
     return NextResponse.json(AUTH_ERROR, { status: 403 });
   }
 
   // 💬 Conversations : accessibles à tous les rôles (acheteur ET vendeur discutent)
-  // isConversationsRoute passe simplement
 
   // ✅ Headers vérifiés injectés pour les routes
   const requestHeaders = new Headers(request.headers);
