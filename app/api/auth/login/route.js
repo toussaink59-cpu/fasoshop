@@ -1,122 +1,144 @@
-import bcrypt from "bcryptjs";
-import sql from "@/lib/db";
-import { signToken, AUTH_COOKIE_NAME } from "@/lib/auth";
-import { rateLimit, clientKey } from "@/lib/rate-limit";
+import { NextResponse } from 'next/server';
+import { compare } from 'bcryptjs';
+import { sign } from 'jsonwebtoken';
+import { db } from '@/lib/db';
+import { loginLimiter, createNextRateLimit } from '@/lib/rate-limit';
 
-// POST /api/auth/login
-// body: { email, password }
+// Middleware rate limiting
+const limiterMiddleware = createNextRateLimit(loginLimiter);
+
 export async function POST(request) {
   try {
-    const { email, password } = await request.json();
+    // Appliquer le rate limiting
+    const limitResponse = await limiterMiddleware(request);
+    if (limitResponse) {
+      return limitResponse;
+    }
 
+    const body = await request.json();
+    const { email, password } = body;
+
+    // Validation des inputs
     if (!email || !password) {
-      return Response.json(
-        { error: "Email et mot de passe requis." },
+      return NextResponse.json(
+        { error: 'Email et mot de passe requis' },
         { status: 400 }
       );
     }
 
-    // Limite par IP ET par email visé
-    const ipKey = `login:${clientKey(request)}`;
-    const emailKey = `login-email:${email}`;
-    if (
-      !rateLimit(ipKey, { limit: 10, windowMs: 60_000 }) ||
-      !rateLimit(emailKey, { limit: 8, windowMs: 60_000 })
-    ) {
-      return Response.json(
-        { error: "Trop de tentatives. Réessayez dans une minute." },
-        { status: 429 }
+    if (typeof email !== 'string' || typeof password !== 'string') {
+      return NextResponse.json(
+        { error: 'Format invalide' },
+        { status: 400 }
       );
     }
 
-    // 🔒 Récupère user + shop (si vendor) en une seule requête
-    const [user] = await sql`
-      SELECT u.id, u.email, u.password_hash, u.full_name, u.role, u.status AS user_status,
-             s.id AS shop_id, s.status AS shop_status
-      FROM users u
-      LEFT JOIN shops s ON s.vendor_id = u.id
-      WHERE u.email = ${email}
-    `;
-
-    if (!user) {
-      return Response.json(
-        { error: "Email ou mot de passe incorrect." },
-        { status: 401 }
+    // Nettoyer les inputs (trim)
+    const cleanEmail = email.trim().toLowerCase();
+    
+    // Validation basique de l'email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      return NextResponse.json(
+        { error: 'Format d\'email invalide' },
+        { status: 400 }
       );
     }
 
-    // 🔒 Vérification mot de passe
-    const valid = await bcrypt.compare(password, user.password_hash);
-    if (!valid) {
-      return Response.json(
-        { error: "Email ou mot de passe incorrect." },
-        { status: 401 }
+    // Vérification longueur mot de passe
+    if (password.length < 6) {
+      return NextResponse.json(
+        { error: 'Le mot de passe doit contenir au moins 6 caractères' },
+        { status: 400 }
       );
     }
 
-    // 🔒 BLOCAGE des comptes suspendus (tous rôles)
-    if (user.user_status === "suspended") {
-      return Response.json(
-        { error: "Votre compte est suspendu. Contactez le support." },
-        { status: 403 }
-      );
-    }
-
-    // 🔒 BLOCAGE des vendors rejected (boutique non validée, définitivement)
-    if (user.role === "vendor" && user.shop_status === "rejected") {
-      return Response.json(
-        { error: "Votre boutique n'a pas été validée. Contactez le support." },
-        { status: 403 }
-      );
-    }
-    // 🔒 BLOCAGE des vendors dont la boutique est suspendue
-    if (user.role === "vendor" && user.shop_status === "suspended") {
-      return Response.json(
-        { error: "Votre boutique est suspendue. Contactez le support." },
-        { status: 403 }
-      );
-    }
-    // 🔒 Vendors sans boutique (anomalie) : bloquer
-    if (user.role === "vendor" && !user.shop_id) {
-      return Response.json(
-        { error: "Erreur de compte vendeur. Contactez le support." },
-        { status: 403 }
-      );
-    }
-
-    // 🔒 Émission du JWT enrichi (status user + shopStatus si vendor)
-    const token = await signToken({
-      userId: user.id,
-      role: user.role,
-      status: user.user_status,
-      ...(user.role === "vendor" && {
-        shopId: user.shop_id,
-        shopStatus: user.shop_status,
-      }),
-    });
-
-    const response = Response.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.full_name,
-        role: user.role,
-        status: user.user_status,
-        shopStatus: user.shop_status, // utile pour le front (pending = bandeau KYC)
+    // Récupérer l'utilisateur depuis la base de données
+    const user = await db.user.findUnique({
+      where: { email: cleanEmail },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        password: true,
+        role: true,
+        isVerified: true,
+        createdAt: true,
       },
     });
 
-    response.headers.set(
-      "Set-Cookie",
-      `${AUTH_COOKIE_NAME}=${token}; HttpOnly; Path=/; Max-Age=604800; SameSite=Lax${
-        process.env.NODE_ENV === "production" ? "; Secure" : ""
-      }`
+    if (!user) {
+      // Délai constant pour éviter le timing attack
+      await new Promise(resolve => setTimeout(resolve, 100));
+      return NextResponse.json(
+        { error: 'Email ou mot de passe incorrect' },
+        { status: 401 }
+      );
+    }
+
+    // Vérifier le mot de passe
+    const isPasswordValid = await compare(password, user.password);
+
+    if (!isPasswordValid) {
+      return NextResponse.json(
+        { error: 'Email ou mot de passe incorrect' },
+        { status: 401 }
+      );
+    }
+
+    // Vérifier si l'utilisateur est vérifié (optionnel)
+    if (!user.isVerified) {
+      return NextResponse.json(
+        { error: 'Compte non vérifié. Veuillez vérifier votre email.' },
+        { status: 403 }
+      );
+    }
+
+    // Générer le token JWT
+    const jwtSecret = process.env.JWT_SECRET;
+    if (!jwtSecret) {
+      console.error('JWT_SECRET non configuré');
+      throw new Error('Configuration serveur invalide');
+    }
+
+    const token = sign(
+      {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      jwtSecret,
+      {
+        expiresIn: '7d',
+        issuer: 'fasoshop',
+      }
     );
+
+    // Créer la réponse avec cookie sécurisé
+    const response = NextResponse.json({
+      success: true,
+      user: {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+    });
+
+    // Définir le cookie HTTP-only
+    response.cookies.set('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60, // 7 jours
+      path: '/',
+    });
+
     return response;
-  } catch (err) {
-    console.error("Erreur login:", err);
-    return Response.json(
-      { error: "Erreur serveur lors de la connexion." },
+  } catch (error) {
+    console.error('Erreur lors de la connexion:', error);
+    return NextResponse.json(
+      { error: 'Erreur interne du serveur' },
       { status: 500 }
     );
   }
