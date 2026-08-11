@@ -2,7 +2,7 @@ import sql from "@/lib/db";
 import { getDeliveryFee } from "@/lib/delivery";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
 
-const COMMISSION_RATE = 0.055;
+const COMMISSION_RATE = 0.09; // ✅ Commission mise à jour à 9%
 
 function detectCityFromAddress(address) {
   const addr = (address || "").toLowerCase();
@@ -177,7 +177,7 @@ export async function POST(request) {
         subtotalsByShop[product.shop_id] = (subtotalsByShop[product.shop_id] || 0) + lineTotal;
       }
 
-      // 💰 Commission 5,5% PRODUITS UNIQUEMENT (jamais sur la livraison)
+      // 💰 Commission 9% PRODUITS UNIQUEMENT (jamais sur la livraison)
       for (const [shopId, shopSubtotal] of Object.entries(subtotalsByShop)) {
         const commissionAmount = Math.round(shopSubtotal * COMMISSION_RATE);
         // Si la boutique livre elle-même : la livraison s'ajoute à son payout (0% commission)
@@ -189,7 +189,7 @@ export async function POST(request) {
             (shop_id, order_id, commission_amount, gross_amount, status,
              commission_rate, payout_amount, payout_status, delivery_fee_amount)
           VALUES (${shopId}, ${newOrder.id}, ${commissionAmount}, ${shopSubtotal}, 'due',
-                  5.5, ${payoutAmount}, 'held', ${deliveryFeeForShop})
+                  9.0, ${payoutAmount}, 'held', ${deliveryFeeForShop})
         `;
       }
 
