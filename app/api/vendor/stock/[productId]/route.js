@@ -1,4 +1,5 @@
 import sql from "@/lib/db";
+import { clientKey } from "@/lib/rate-limit";
 
 // PATCH /api/vendor/stock/:productId
 // Met à jour le stock, le prix barré et/ou la vente flash d'un produit —
@@ -92,6 +93,12 @@ export async function PATCH(request, { params }) {
       RETURNING id, name, stock_quantity, price, compare_at_price, flash_sale_ends_at, flash_sale_stock_snapshot
     `;
 
+    // 🔒 Audit log de la modification produit
+    await sql`
+      INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
+      VALUES (${userId}, 'update_product', 'product', ${productId}, ${clientKey(request)})
+    `.catch(() => {});
+
     if (hasStockChange) {
       await sql`
         INSERT INTO stock_movements (product_id, type, quantity, reason, created_by)
@@ -147,6 +154,12 @@ export async function DELETE(request, { params }) {
         { status: 409 }
       );
     }
+
+    // 🔒 Audit log de la suppression produit
+    await sql`
+      INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
+      VALUES (${userId}, 'delete_product', 'product', ${productId}, ${clientKey(request)})
+    `.catch(() => {});
 
     // Aucun historique de commande : suppression définitive possible.
     await sql`DELETE FROM stock_movements WHERE product_id = ${productId}`;
