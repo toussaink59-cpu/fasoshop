@@ -12,6 +12,7 @@
   "dependencies": {
     "@vercel/blob": "^2.6.1",
     "bcryptjs": "^2.4.3",
+    "express-rate-limit": "^8.6.2",
     "jose": "^5.9.6",
     "next": "^15.0.0",
     "postgres": "^3.4.4",
