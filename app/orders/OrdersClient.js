@@ -18,6 +18,8 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
   const [orders, setOrders] = useState(initialOrders);
   const [contactingKey, setContactingKey] = useState(null);
   const [confirmingKey, setConfirmingKey] = useState(null);
+  // 🆕 État pour le bouton de paiement (anti double-clic)
+  const [payingKey, setPayingKey] = useState(null);
   const [error, setError] = useState("");
   const [orderFilter, setOrderFilter] = useState("all");
 
@@ -40,6 +42,29 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
     }
 
     router.push(`/messages/${data.conversationId}`);
+  }
+
+  // 🆕 Initie le paiement Mobile Money puis redirige vers le portail (sandbox ou réel)
+  async function handlePay(orderId) {
+    setError("");
+    setPayingKey(orderId);
+
+    try {
+      const res = await fetch(`/api/orders/${orderId}/pay`, { method: "POST" });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Erreur lors de l'initiation du paiement.");
+        setPayingKey(null);
+        return;
+      }
+
+      // Redirection vers la page de paiement (sandbox) ou le portail Mobile Money (réel)
+      window.location.href = data.paymentUrl;
+    } catch {
+      setError("Impossible de contacter le service de paiement.");
+      setPayingKey(null);
+    }
   }
 
   async function handleConfirmReceipt(orderId, shopId) {
@@ -90,7 +115,7 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
             <h2>Commande #{confirmedId} confirmée !</h2>
             <p>
               {confirmedMethod === "mobile_money"
-                ? "Nous allons vous contacter au numéro fourni pour finaliser le paiement Mobile Money."
+                ? "Cliquez sur « Payer maintenant » ci-dessous pour finaliser votre paiement Mobile Money."
                 : "Paiement à la livraison — nous vous contacterons au numéro fourni."}
             </p>
             <div className="order-steps">
@@ -171,6 +196,22 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
                     {" · "}
                     {order.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 À la livraison"}
                   </div>
+
+                  {/* 🆕 Bouton Payer — visible UNIQUEMENT si Mobile Money ET commande en attente */}
+                  {order.payment_method === "mobile_money" && order.status === "pending" && (
+                    <div className="order-actions" style={{ marginTop: 10 }}>
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => handlePay(order.id)}
+                        disabled={payingKey === order.id}
+                        style={{ width: "100%" }}
+                      >
+                        💳 {payingKey === order.id
+                          ? "Redirection en cours..."
+                          : `Payer maintenant (${Number(order.total).toLocaleString("fr-FR")} FCFA)`}
+                      </button>
+                    </div>
+                  )}
 
                   {order.subOrders.map((sub) => {
                     const key = `${order.id}-${sub.shopId}`;
