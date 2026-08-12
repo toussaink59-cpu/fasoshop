@@ -343,11 +343,16 @@ function ShopContent({
     setSheetOpen(true);
   }
 
+  // 🔧 CORRECTION 1 : applyFilters — traduit la clé interne "categorySlug"
+  // en paramètre URL "category" attendu par l'API et le server component
   function applyFilters() {
     const params = new URLSearchParams();
     if (q) params.set("q", q);
     Object.entries(draftFilters).forEach(([key, val]) => {
-      if (val) params.set(key, val);
+      if (!val) return;
+      // L'API et le server component attendent "category", pas "categorySlug"
+      const paramKey = key === "categorySlug" ? "category" : key;
+      params.set(paramKey, val);
     });
     if (sort) params.set("sort", sort);
     router.push(`/shop?${params.toString()}`);
@@ -361,11 +366,15 @@ function ShopContent({
     });
   }
 
+  // 🔧 CORRECTION 2 : removeFilter — quand on clique sur le chip "categorySlug",
+  // il faut supprimer le paramètre URL "category" (et non "categorySlug" qui n'existe pas)
   function removeFilter(key) {
     const params = new URLSearchParams(searchParams.toString());
     if (key === "price") {
       params.delete("minPrice");
       params.delete("maxPrice");
+    } else if (key === "categorySlug") {
+      params.delete("category");
     } else {
       params.delete(key);
     }
