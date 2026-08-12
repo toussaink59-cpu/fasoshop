@@ -34,8 +34,8 @@ export default async function HomePage() {
   ]);
 
   // Flux unique façon Temu : tout le catalogue + "Afficher plus"
-  // getProducts retourne maintenant { products, nextCursor, hasMore, total }
-  const feedResult = await getProducts({ sort: "newest" }, user?.id ?? null);
+  // getProducts(filters, limit, cursor, userId) — arguments dans le bon ordre
+  const feedResult = await getProducts({ sort: "newest" }, 24, null, user?.id ?? null);
   const feed = feedResult.products;
 
   return (
