@@ -1,7 +1,7 @@
 // app/api/auth/login/route.js
 import sql from "@/lib/db";
 import { compare } from "bcryptjs";
-import { setAuthToken } from "@/lib/auth";
+import { signToken, AUTH_COOKIE_NAME } from "@/lib/auth";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
 
 export async function POST(request) {
@@ -89,8 +89,9 @@ export async function POST(request) {
     }
 
     // Pour les vendors : vérifier le statut de la boutique
+    let shop = null;
     if (user.role === "vendor") {
-      const [shop] = await sql`
+      [shop] = await sql`
         SELECT id, status FROM shops WHERE vendor_id = ${user.id}
       `;
       if (!shop) {
@@ -113,13 +114,17 @@ export async function POST(request) {
       }
     }
 
-    // Générer le token JWT (utilise jose dans lib/auth.js)
-    const token = await setAuthToken({
+    // Générer le token JWT (jose, enrichi avec infos boutique pour vendors)
+    const tokenPayload = {
       userId: user.id,
-      email: user.email,
       role: user.role,
       status: user.status,
-    });
+    };
+    if (user.role === "vendor" && shop) {
+      tokenPayload.shopId = shop.id;
+      tokenPayload.shopStatus = shop.status;
+    }
+    const token = await signToken(tokenPayload);
 
     // Créer la réponse avec cookie sécurisé
     const response = Response.json({
@@ -132,8 +137,8 @@ export async function POST(request) {
       },
     });
 
-    // Définir le cookie HTTP-only
-    response.cookies.set("token", token, {
+    // Définir le cookie HTTP-only (nom officiel : fasoshop_token)
+    response.cookies.set(AUTH_COOKIE_NAME, token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
