@@ -11,31 +11,26 @@ function SandboxPayContent() {
   const transactionId = searchParams.get("transaction_id");
   const amount = searchParams.get("amount");
   const returnUrl = searchParams.get("return_url");
-  const notifyUrl = searchParams.get("notify_url");
 
   async function simulatePayment(status) {
     try {
-      // Simule l'envoi du webhook au serveur
-      const payload = {
-        transaction_id: transactionId,
-        status,
-        amount: Number(amount),
-      };
-
-      // Import dynamique pour signSandboxPayload
-      const { signSandboxPayload } = await import("@/lib/payment/adapters/sandbox");
-      const signature = signSandboxPayload(payload);
-
-      await fetch(notifyUrl, {
+      // Le navigateur appelle le pont serveur (qui signe côté serveur)
+      const res = await fetch("/api/sandbox/simulate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-signature": signature,
-        },
-        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          transaction_id: transactionId,
+          status,
+          amount: Number(amount),
+        }),
       });
 
-      // Redirige vers la page de confirmation
+      if (!res.ok) {
+        const data = await res.json();
+        alert("Erreur simulation : " + (data.error || res.status));
+        return;
+      }
+
       router.push(returnUrl || "/orders");
     } catch (err) {
       alert("Erreur simulation : " + err.message);
