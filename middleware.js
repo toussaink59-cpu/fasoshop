@@ -31,15 +31,26 @@ export async function middleware(request) {
 
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 
+  // 🔒 FAILLE CRITIQUE CORRIGÉE : x-user-id/x-user-role ne doivent JAMAIS
+  // provenir directement du client. Sans cette ligne, une requête sans
+  // cookie mais avec un en-tête "x-user-id" forgé à la main (curl,
+  // Postman...) traversait le middleware SANS être modifiée sur les
+  // routes /api/products/*, permettant d'usurper n'importe quel
+  // utilisateur (ex: publier/écraser un avis à sa place) sans être
+  // connecté. On repart systématiquement d'une requête "nettoyée", et on
+  // ne redéfinit ces en-têtes que si un JWT valide les authentifie.
+  const cleanHeaders = new Headers(request.headers);
+  cleanHeaders.delete("x-user-id");
+  cleanHeaders.delete("x-user-role");
+
   // 🌐 Catalogue produits : public, attache l'utilisateur si connecté
   if (isProductsRoute) {
-    if (!token) return NextResponse.next();
+    if (!token) return NextResponse.next({ request: { headers: cleanHeaders } });
     const payload = await verifyToken(token);
-    if (!payload) return NextResponse.next();
-    const h = new Headers(request.headers);
-    h.set("x-user-id", String(payload.userId));
-    h.set("x-user-role", String(payload.role));
-    return NextResponse.next({ request: { headers: h } });
+    if (!payload) return NextResponse.next({ request: { headers: cleanHeaders } });
+    cleanHeaders.set("x-user-id", String(payload.userId));
+    cleanHeaders.set("x-user-role", String(payload.role));
+    return NextResponse.next({ request: { headers: cleanHeaders } });
   }
 
   // 🔒 Authentification obligatoire
@@ -81,10 +92,9 @@ export async function middleware(request) {
   }
 
   // ✅ Headers vérifiés injectés
-  const h = new Headers(request.headers);
-  h.set("x-user-id", String(payload.userId));
-  h.set("x-user-role", String(payload.role));
-  return NextResponse.next({ request: { headers: h } });
+  cleanHeaders.set("x-user-id", String(payload.userId));
+  cleanHeaders.set("x-user-role", String(payload.role));
+  return NextResponse.next({ request: { headers: cleanHeaders } });
 }
 
 export const config = {
