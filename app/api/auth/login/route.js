@@ -1,144 +1,157 @@
-import { NextResponse } from 'next/server';
-import { compare } from 'bcryptjs';
-import { sign } from 'jsonwebtoken';
-import { db } from '@/lib/db';
-import { loginLimiter, createNextRateLimit } from '@/lib/rate-limit';
-
-// Middleware rate limiting
-const limiterMiddleware = createNextRateLimit(loginLimiter);
+// app/api/auth/login/route.js
+import sql from "@/lib/db";
+import { compare } from "bcryptjs";
+import { setAuthToken } from "@/lib/auth";
+import { rateLimit, clientKey } from "@/lib/rate-limit";
 
 export async function POST(request) {
   try {
-    // Appliquer le rate limiting
-    const limitResponse = await limiterMiddleware(request);
-    if (limitResponse) {
-      return limitResponse;
-    }
-
     const body = await request.json();
     const { email, password } = body;
 
     // Validation des inputs
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email et mot de passe requis' },
+      return Response.json(
+        { error: "Email et mot de passe requis" },
         { status: 400 }
       );
     }
 
-    if (typeof email !== 'string' || typeof password !== 'string') {
-      return NextResponse.json(
-        { error: 'Format invalide' },
-        { status: 400 }
-      );
+    if (typeof email !== "string" || typeof password !== "string") {
+      return Response.json({ error: "Format invalide" }, { status: 400 });
     }
 
-    // Nettoyer les inputs (trim)
     const cleanEmail = email.trim().toLowerCase();
-    
+
     // Validation basique de l'email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(cleanEmail)) {
-      return NextResponse.json(
-        { error: 'Format d\'email invalide' },
-        { status: 400 }
-      );
+      return Response.json({ error: "Format d'email invalide" }, { status: 400 });
     }
 
     // Vérification longueur mot de passe
     if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'Le mot de passe doit contenir au moins 6 caractères' },
+      return Response.json(
+        { error: "Le mot de passe doit contenir au moins 6 caractères" },
         { status: 400 }
       );
     }
 
+    // 🔒 Rate-limit : 8 tentatives/min par email + 10 tentatives/min par IP
+    const emailKey = `login:email:${cleanEmail}`;
+    const ipKey = `login:ip:${clientKey(request)}`;
+
+    if (!rateLimit(emailKey, { limit: 8, windowMs: 60_000 })) {
+      return Response.json(
+        { error: "Trop de tentatives. Réessayez dans une minute." },
+        { status: 429 }
+      );
+    }
+    if (!rateLimit(ipKey, { limit: 10, windowMs: 60_000 })) {
+      return Response.json(
+        { error: "Trop de tentatives. Réessayez dans une minute." },
+        { status: 429 }
+      );
+    }
+
     // Récupérer l'utilisateur depuis la base de données
-    const user = await db.user.findUnique({
-      where: { email: cleanEmail },
-      select: {
-        id: true,
-        email: true,
-        name: true,
-        password: true,
-        role: true,
-        isVerified: true,
-        createdAt: true,
-      },
-    });
+    const [user] = await sql`
+      SELECT id, email, full_name, password_hash, role, status
+      FROM users
+      WHERE email = ${cleanEmail}
+    `;
 
     if (!user) {
       // Délai constant pour éviter le timing attack
-      await new Promise(resolve => setTimeout(resolve, 100));
-      return NextResponse.json(
-        { error: 'Email ou mot de passe incorrect' },
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      return Response.json(
+        { error: "Email ou mot de passe incorrect" },
         { status: 401 }
       );
     }
 
     // Vérifier le mot de passe
-    const isPasswordValid = await compare(password, user.password);
+    const isPasswordValid = await compare(password, user.password_hash);
 
     if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: 'Email ou mot de passe incorrect' },
+      return Response.json(
+        { error: "Email ou mot de passe incorrect" },
         { status: 401 }
       );
     }
 
-    // Vérifier si l'utilisateur est vérifié (optionnel)
-    if (!user.isVerified) {
-      return NextResponse.json(
-        { error: 'Compte non vérifié. Veuillez vérifier votre email.' },
+    // Vérifier si le compte est suspendu
+    if (user.status === "suspended") {
+      return Response.json(
+        { error: "Votre compte a été suspendu. Contactez le support." },
         { status: 403 }
       );
     }
 
-    // Générer le token JWT
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      console.error('JWT_SECRET non configuré');
-      throw new Error('Configuration serveur invalide');
+    // Pour les vendors : vérifier le statut de la boutique
+    if (user.role === "vendor") {
+      const [shop] = await sql`
+        SELECT id, status FROM shops WHERE vendor_id = ${user.id}
+      `;
+      if (!shop) {
+        return Response.json(
+          { error: "Aucune boutique associée à ce compte." },
+          { status: 403 }
+        );
+      }
+      if (shop.status === "rejected") {
+        return Response.json(
+          { error: "Votre demande de boutique a été refusée." },
+          { status: 403 }
+        );
+      }
+      if (shop.status === "suspended") {
+        return Response.json(
+          { error: "Votre boutique a été suspendue." },
+          { status: 403 }
+        );
+      }
     }
 
-    const token = sign(
-      {
-        userId: user.id,
-        email: user.email,
-        role: user.role,
-      },
-      jwtSecret,
-      {
-        expiresIn: '7d',
-        issuer: 'fasoshop',
-      }
-    );
+    // Générer le token JWT (utilise jose dans lib/auth.js)
+    const token = await setAuthToken({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+      status: user.status,
+    });
 
     // Créer la réponse avec cookie sécurisé
-    const response = NextResponse.json({
+    const response = Response.json({
       success: true,
       user: {
         id: user.id,
         email: user.email,
-        name: user.name,
+        name: user.full_name,
         role: user.role,
       },
     });
 
     // Définir le cookie HTTP-only
-    response.cookies.set('token', token, {
+    response.cookies.set("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60, // 7 jours
-      path: '/',
+      path: "/",
     });
+
+    // 🔒 Audit log de connexion réussie
+    await sql`
+      INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
+      VALUES (${user.id}, 'login_success', 'user', ${user.id}, ${clientKey(request)})
+    `.catch(() => {});
 
     return response;
   } catch (error) {
-    console.error('Erreur lors de la connexion:', error);
-    return NextResponse.json(
-      { error: 'Erreur interne du serveur' },
+    console.error("Erreur lors de la connexion:", error);
+    return Response.json(
+      { error: "Erreur interne du serveur" },
       { status: 500 }
     );
   }
