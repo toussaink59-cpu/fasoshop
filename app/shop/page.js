@@ -50,7 +50,8 @@ export default async function ShopPage({ searchParams }) {
   const user = await getCurrentUser();
 
   const [productResult, shops, categories, brands, cities] = await Promise.all([
-    getProducts(filters, user?.id ?? null),
+    // getProducts(filters, limit, cursor, userId) — arguments dans le bon ordre
+    getProducts(filters, 24, null, user?.id ?? null),
     getActiveShops(),
     getCategoriesTree(),
     getBrands(),
