@@ -391,6 +391,7 @@ export default function CartClient({ initialUser, categories }) {
                   </div>
                 </div>
 
+                {/* ===== MODE DE PAIEMENT (Mobile Money ACTIVÉ) ===== */}
                 <div className="form-group">
                   <label>Mode de paiement</label>
                   <div className="payment-options">
@@ -409,11 +410,20 @@ export default function CartClient({ initialUser, categories }) {
                         </div>
                       </div>
                     </label>
-                    <label className="payment-option" style={{ opacity: 0.5, cursor: "not-allowed" }}>
-                      <input type="radio" name="paymentMethod" value="mobile_money" disabled />
+                    {/* ✅ Mobile Money ACTIVÉ (plus de disabled) */}
+                    <label className={`payment-option ${paymentMethod === "mobile_money" ? "selected" : ""}`}>
+                      <input
+                        type="radio"
+                        name="paymentMethod"
+                        value="mobile_money"
+                        checked={paymentMethod === "mobile_money"}
+                        onChange={() => setPaymentMethod("mobile_money")}
+                      />
                       <div>
                         <div className="payment-option-title">📱 Payer maintenant (Orange Money / Moov Money)</div>
-                        <div className="payment-option-desc">Bientôt disponible — revenez rapidement !</div>
+                        <div className="payment-option-desc">
+                          Paiement sécurisé via Mobile Money — votre commande sera confirmée immédiatement.
+                        </div>
                       </div>
                     </label>
                   </div>

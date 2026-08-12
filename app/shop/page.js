@@ -49,13 +49,18 @@ export default async function ShopPage({ searchParams }) {
 
   const user = await getCurrentUser();
 
-  const [products, shops, categories, brands, cities] = await Promise.all([
-    getProducts(filters, user?.id ?? null),
+  const [productResult, shops, categories, brands, cities] = await Promise.all([
+    // getProducts(filters, limit, cursor, userId) — arguments dans le bon ordre
+    getProducts(filters, 24, null, user?.id ?? null),
     getActiveShops(),
     getCategoriesTree(),
     getBrands(),
     getShopCities(),
   ]);
+
+  // getProducts retourne maintenant { products, nextCursor, hasMore, total }
+  // On extrait le tableau products pour ShopClient
+  const products = productResult.products;
 
   return (
     <ShopClient

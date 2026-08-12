@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
@@ -13,11 +13,16 @@ const STATUS_LABELS = {
   cancelled: "Annulée",
 };
 
-export default function OrdersClient({ initialUser, categories, initialOrders, confirmedId, confirmedMethod }) {
+function OrdersContent({ initialUser, categories, initialOrders, confirmedId, confirmedMethod }) {
   const router = useRouter();
+  // 🆕 Paramètre ?paid=XX : retour après un paiement Mobile Money réussi
+  const searchParams = useSearchParams();
+  const paidId = searchParams.get("paid");
+
   const [orders, setOrders] = useState(initialOrders);
   const [contactingKey, setContactingKey] = useState(null);
   const [confirmingKey, setConfirmingKey] = useState(null);
+  const [payingKey, setPayingKey] = useState(null);
   const [error, setError] = useState("");
   const [orderFilter, setOrderFilter] = useState("all");
 
@@ -40,6 +45,27 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
     }
 
     router.push(`/messages/${data.conversationId}`);
+  }
+
+  async function handlePay(orderId) {
+    setError("");
+    setPayingKey(orderId);
+
+    try {
+      const res = await fetch(`/api/orders/${orderId}/pay`, { method: "POST" });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Erreur lors de l'initiation du paiement.");
+        setPayingKey(null);
+        return;
+      }
+
+      window.location.href = data.paymentUrl;
+    } catch {
+      setError("Impossible de contacter le service de paiement.");
+      setPayingKey(null);
+    }
   }
 
   async function handleConfirmReceipt(orderId, shopId) {
@@ -84,13 +110,41 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
       <SiteHeader initialUser={initialUser} categories={categories} />
       <div className="orders-wrap">
 
+        {/* 🆕 Bannière verte : paiement Mobile Money réussi */}
+        {paidId && (
+          <div className="order-confirm-banner" style={{ background: "#e8f5e9", borderColor: "#2e7d32" }}>
+            <div className="order-confirm-icon">✅</div>
+            <h2>Paiement réussi !</h2>
+            <p>
+              Merci ! Votre paiement Mobile Money de la commande #{paidId} a bien été reçu.
+              Elle passe en préparation — vous serez notifié à chaque étape.
+            </p>
+            <div className="order-steps">
+              <div className="order-step is-active">
+                <span className="order-step-dot">📦</span>
+                En préparation
+              </div>
+              <div className="order-step-line" />
+              <div className="order-step">
+                <span className="order-step-dot">🚚</span>
+                Expédiée
+              </div>
+              <div className="order-step-line" />
+              <div className="order-step">
+                <span className="order-step-dot">✅</span>
+                Livrée
+              </div>
+            </div>
+          </div>
+        )}
+
         {confirmedId && (
           <div className="order-confirm-banner">
             <div className="order-confirm-icon">🎉</div>
             <h2>Commande #{confirmedId} confirmée !</h2>
             <p>
               {confirmedMethod === "mobile_money"
-                ? "Nous allons vous contacter au numéro fourni pour finaliser le paiement Mobile Money."
+                ? "Cliquez sur « Payer maintenant » ci-dessous pour finaliser votre paiement Mobile Money."
                 : "Paiement à la livraison — nous vous contacterons au numéro fourni."}
             </p>
             <div className="order-steps">
@@ -172,6 +226,21 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
                     {order.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 À la livraison"}
                   </div>
 
+                  {order.payment_method === "mobile_money" && order.status === "pending" && (
+                    <div className="order-actions" style={{ marginTop: 10 }}>
+                      <button
+                        className="btn btn-primary"
+                        onClick={() => handlePay(order.id)}
+                        disabled={payingKey === order.id}
+                        style={{ width: "100%" }}
+                      >
+                        💳 {payingKey === order.id
+                          ? "Redirection en cours..."
+                          : `Payer maintenant (${Number(order.total).toLocaleString("fr-FR")} FCFA)`}
+                      </button>
+                    </div>
+                  )}
+
                   {order.subOrders.map((sub) => {
                     const key = `${order.id}-${sub.shopId}`;
                     return (
@@ -231,5 +300,14 @@ export default function OrdersClient({ initialUser, categories, initialOrders, c
       </div>
       <BottomNav user={initialUser} />
     </div>
+  );
+}
+
+// Enveloppe Suspense : obligatoire pour useSearchParams dans Next.js 15
+export default function OrdersClient(props) {
+  return (
+    <Suspense fallback={<div className="shell"><div className="orders-wrap"><p>Chargement...</p></div></div>}>
+      <OrdersContent {...props} />
+    </Suspense>
   );
 }

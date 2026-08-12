@@ -1,34 +1,10 @@
+// app/api/addresses/route.js
 import sql from "@/lib/db";
 import { getUserAddresses } from "@/lib/queries/addresses";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
+import { validateCreateAddress } from "@/lib/validation/address";
 
 const MAX_ADDRESSES_PER_USER = 20;
-const MAX_LABEL_LENGTH = 100;
-const MAX_ADDRESS_LENGTH = 300;
-
-// 🔒 Sanitization : supprime caractères dangereux
-function sanitize(str, maxLength = 200) {
-  if (typeof str !== "string") return "";
-  return str
-    .replace(/[<>"'`$\\]/g, "")
-    .replace(/--/g, "")
-    .replace(/\b(drop|select|insert|update|delete|union|exec|script)\b/gi, "")
-    .trim()
-    .slice(0, maxLength);
-}
-
-// 🔒 Validation téléphone
-function isValidPhone(phone) {
-  if (!phone) return true; // optionnel
-  return /^\+?[0-9\s\-()]{8,20}$/.test(phone);
-}
-
-// 🔒 Validation coordonnées GPS
-function isValidCoordinate(value, min, max) {
-  if (value === null || value === undefined) return true; // optionnel
-  const num = Number(value);
-  return Number.isFinite(num) && num >= min && num <= max;
-}
 
 // GET /api/addresses — acheteur voit SEULEMENT ses adresses
 export async function GET(request) {
@@ -87,29 +63,12 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    // 🔒 3) Sanitization + validation stricte
-    const libelle = sanitize(body.libelle, MAX_LABEL_LENGTH);
-    const adresseTexte = sanitize(body.adresseTexte, MAX_ADDRESS_LENGTH);
-    const phone = body.phone ? sanitize(body.phone, 20) : null;
-    const latitude = body.latitude || null;
-    const longitude = body.longitude || null;
-    const parDefaut = Boolean(body.parDefaut);
-
-    if (!libelle || libelle.length < 3) {
-      return Response.json({ error: "Libellé invalide." }, { status: 400 });
+    // 🔒 3) Validation + sanitization via helper commun
+    const validation = validateCreateAddress(body);
+    if (!validation.valid) {
+      return Response.json({ error: validation.error }, { status: 400 });
     }
-    if (!adresseTexte || adresseTexte.length < 10) {
-      return Response.json({ error: "Adresse trop courte." }, { status: 400 });
-    }
-    if (!isValidPhone(phone)) {
-      return Response.json({ error: "Téléphone invalide." }, { status: 400 });
-    }
-    if (!isValidCoordinate(latitude, -90, 90)) {
-      return Response.json({ error: "Latitude invalide." }, { status: 400 });
-    }
-    if (!isValidCoordinate(longitude, -180, 180)) {
-      return Response.json({ error: "Longitude invalide." }, { status: 400 });
-    }
+    const { libelle, adresseTexte, phone, latitude, longitude, parDefaut } = validation.data;
 
     // 🔒 4) Limite nombre d'adresses par utilisateur
     const [existingCount] = await sql`
@@ -125,7 +84,8 @@ export async function POST(request) {
     const shouldBeDefault = parDefaut || existingCount.count === 0;
 
     // 🔒 5) Transaction pour cohérence
-    const [address] = await sql.begin(async (tx) => {
+    // ⚠️ IMPORTANT : sql.begin() retourne l'objet directement (PAS un tableau)
+    const address = await sql.begin(async (tx) => {
       if (shouldBeDefault) {
         await tx`UPDATE addresses SET par_defaut = false WHERE user_id = ${userId}`;
       }
