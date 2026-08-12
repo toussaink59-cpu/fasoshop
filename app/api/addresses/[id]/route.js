@@ -43,47 +43,24 @@ export async function PATCH(request, { params }) {
     }
 
     // 🔒 5) Transaction pour cohérence (surtout pour parDefaut)
-    const [address] = await sql.begin(async (tx) => {
+    // ⚠️ IMPORTANT : sql.begin() retourne l'objet directement (PAS un tableau)
+    const address = await sql.begin(async (tx) => {
       // Si parDefaut = true, désactiver tous les autres
       if (updates.parDefaut === true) {
         await tx`UPDATE addresses SET par_defaut = false WHERE user_id = ${userId}`;
       }
 
-      // Construire dynamiquement les SET
-      const setClauses = [];
-      const values = [];
-      let paramIndex = 1;
-
-      if (updates.libelle !== undefined) {
-        setClauses.push(`libelle = $${paramIndex}`);
-        values.push(updates.libelle);
-        paramIndex++;
-      }
-      if (updates.adresseTexte !== undefined) {
-        setClauses.push(`adresse_texte = $${paramIndex}`);
-        values.push(updates.adresseTexte);
-        paramIndex++;
-      }
-      if (updates.phone !== undefined) {
-        setClauses.push(`phone = $${paramIndex}`);
-        values.push(updates.phone);
-        paramIndex++;
-      }
-      if (updates.parDefaut !== undefined) {
-        setClauses.push(`par_defaut = $${paramIndex}`);
-        values.push(updates.parDefaut);
-        paramIndex++;
-      }
-
-      values.push(id, userId);
-      const query = `
+      // Mise à jour uniquement des champs fournis (COALESCE)
+      const [updatedAddress] = await tx`
         UPDATE addresses
-        SET ${setClauses.join(", ")}
-        WHERE id = $${paramIndex} AND user_id = $${paramIndex + 1}
+        SET
+          libelle = COALESCE(${updates.libelle ?? null}, libelle),
+          adresse_texte = COALESCE(${updates.adresseTexte ?? null}, adresse_texte),
+          phone = COALESCE(${updates.phone ?? null}, phone),
+          par_defaut = COALESCE(${updates.parDefaut ?? null}, par_defaut)
+        WHERE id = ${id} AND user_id = ${userId}
         RETURNING id, libelle, adresse_texte, phone, par_defaut, latitude, longitude
       `;
-
-      const [updatedAddress] = await tx.unsafe(query, values);
 
       // 🔒 6) Audit log
       await tx`
@@ -126,7 +103,8 @@ export async function DELETE(request, { params }) {
 
   try {
     // 🔒 3) Vérification ownership + suppression dans une transaction
-    const [deleted] = await sql.begin(async (tx) => {
+    // ⚠️ IMPORTANT : sql.begin() retourne l'objet directement (PAS un tableau)
+    const deleted = await sql.begin(async (tx) => {
       const [addr] = await tx`
         DELETE FROM addresses WHERE id = ${id} AND user_id = ${userId} RETURNING id
       `;
