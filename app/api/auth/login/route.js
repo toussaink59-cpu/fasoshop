@@ -1,4 +1,5 @@
 // app/api/auth/login/route.js
+import { NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { compare } from "bcryptjs";
 import { signToken, AUTH_COOKIE_NAME } from "@/lib/auth";
@@ -11,14 +12,14 @@ export async function POST(request) {
 
     // Validation des inputs
     if (!email || !password) {
-      return Response.json(
+      return NextResponse.json(
         { error: "Email et mot de passe requis" },
         { status: 400 }
       );
     }
 
     if (typeof email !== "string" || typeof password !== "string") {
-      return Response.json({ error: "Format invalide" }, { status: 400 });
+      return NextResponse.json({ error: "Format invalide" }, { status: 400 });
     }
 
     const cleanEmail = email.trim().toLowerCase();
@@ -26,12 +27,12 @@ export async function POST(request) {
     // Validation basique de l'email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(cleanEmail)) {
-      return Response.json({ error: "Format d'email invalide" }, { status: 400 });
+      return NextResponse.json({ error: "Format d'email invalide" }, { status: 400 });
     }
 
     // Vérification longueur mot de passe
     if (password.length < 6) {
-      return Response.json(
+      return NextResponse.json(
         { error: "Le mot de passe doit contenir au moins 6 caractères" },
         { status: 400 }
       );
@@ -42,13 +43,13 @@ export async function POST(request) {
     const ipKey = `login:ip:${clientKey(request)}`;
 
     if (!rateLimit(emailKey, { limit: 8, windowMs: 60_000 })) {
-      return Response.json(
+      return NextResponse.json(
         { error: "Trop de tentatives. Réessayez dans une minute." },
         { status: 429 }
       );
     }
     if (!rateLimit(ipKey, { limit: 10, windowMs: 60_000 })) {
-      return Response.json(
+      return NextResponse.json(
         { error: "Trop de tentatives. Réessayez dans une minute." },
         { status: 429 }
       );
@@ -64,7 +65,7 @@ export async function POST(request) {
     if (!user) {
       // Délai constant pour éviter le timing attack
       await new Promise((resolve) => setTimeout(resolve, 100));
-      return Response.json(
+      return NextResponse.json(
         { error: "Email ou mot de passe incorrect" },
         { status: 401 }
       );
@@ -74,7 +75,7 @@ export async function POST(request) {
     const isPasswordValid = await compare(password, user.password_hash);
 
     if (!isPasswordValid) {
-      return Response.json(
+      return NextResponse.json(
         { error: "Email ou mot de passe incorrect" },
         { status: 401 }
       );
@@ -82,7 +83,7 @@ export async function POST(request) {
 
     // Vérifier si le compte est suspendu
     if (user.status === "suspended") {
-      return Response.json(
+      return NextResponse.json(
         { error: "Votre compte a été suspendu. Contactez le support." },
         { status: 403 }
       );
@@ -95,19 +96,19 @@ export async function POST(request) {
         SELECT id, status FROM shops WHERE vendor_id = ${user.id}
       `;
       if (!shop) {
-        return Response.json(
+        return NextResponse.json(
           { error: "Aucune boutique associée à ce compte." },
           { status: 403 }
         );
       }
       if (shop.status === "rejected") {
-        return Response.json(
+        return NextResponse.json(
           { error: "Votre demande de boutique a été refusée." },
           { status: 403 }
         );
       }
       if (shop.status === "suspended") {
-        return Response.json(
+        return NextResponse.json(
           { error: "Votre boutique a été suspendue." },
           { status: 403 }
         );
@@ -126,8 +127,8 @@ export async function POST(request) {
     }
     const token = await signToken(tokenPayload);
 
-    // Créer la réponse avec cookie sécurisé
-    const response = Response.json({
+    // Créer la réponse avec cookie sécurisé (NextResponse = seul à avoir .cookies)
+    const response = NextResponse.json({
       success: true,
       user: {
         id: user.id,
@@ -155,7 +156,7 @@ export async function POST(request) {
     return response;
   } catch (error) {
     console.error("Erreur lors de la connexion:", error);
-    return Response.json(
+    return NextResponse.json(
       { error: "Erreur interne du serveur" },
       { status: 500 }
     );
