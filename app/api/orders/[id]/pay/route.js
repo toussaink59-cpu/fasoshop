@@ -63,7 +63,8 @@ export async function POST(request, { params }) {
       description: `Commande Kimoxa #${order.id}`,
       customerPhoneNumber: order.phone,
       notifyUrl: `${baseUrl}/api/payments/${providerName}/webhook`,
-      returnUrl: `${baseUrl}/orders?confirmed=${order.id}`,
+      // 🔧 CORRECTION : retour vers ?paid=XX pour afficher la bannière verte "Paiement réussi"
+      returnUrl: `${baseUrl}/orders?paid=${order.id}`,
       orderId: order.id,
     });
 
