@@ -97,9 +97,9 @@ export async function POST(request, { params }) {
 
     // 🔒 9) Si succès : met à jour la commande en 'paid' (idempotent car WHERE status = 'pending')
     if (newStatus === "success") {
-      await sql`
+            await sql`
         UPDATE orders
-        SET status = 'paid', updated_at = NOW()
+        SET status = 'paid'
         WHERE id = ${payment.order_id} AND status = 'pending'
       `;
 
