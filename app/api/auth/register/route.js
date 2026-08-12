@@ -52,6 +52,10 @@ export async function POST(request) {
       return NextResponse.json({ error: "Date de naissance requise." }, { status: 400 });
     }
 
+    // 🔧 CORRECTION : normaliser l'email (trim + lowercase)
+    // Évite les comptes dupliqués : "Jean@Example.com" === "jean@example.com"
+    const cleanEmail = email.trim().toLowerCase();
+
     const birthDate = new Date(dateOfBirth);
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
@@ -66,7 +70,8 @@ export async function POST(request) {
       return NextResponse.json({ error: "Le nom de la boutique est requis." }, { status: 400 });
     }
 
-    const existing = await sql`SELECT id FROM users WHERE email = ${email}`;
+    // 🔧 CORRECTION : utiliser cleanEmail pour la vérification de doublon
+    const existing = await sql`SELECT id FROM users WHERE email = ${cleanEmail}`;
     if (existing.length > 0) {
       return NextResponse.json({ error: "Un compte existe déjà avec cet email." }, { status: 409 });
     }
@@ -74,13 +79,14 @@ export async function POST(request) {
     const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // 🔧 CORRECTION : utiliser cleanEmail dans l'INSERT
     const [user] = await sql`
       INSERT INTO users (
         email, password_hash, full_name, first_name, last_name, phone, role,
         date_of_birth, nationality, country_of_residence
       )
       VALUES (
-        ${email}, ${passwordHash}, ${fullName}, ${firstName.trim()}, ${lastName.trim()}, ${phone.trim()}, ${finalRole},
+        ${cleanEmail}, ${passwordHash}, ${fullName}, ${firstName.trim()}, ${lastName.trim()}, ${phone.trim()}, ${finalRole},
         ${dateOfBirth}, ${nationalityCode}, ${countryOfResidenceCode}
       )
       RETURNING id, email, full_name, role
@@ -95,7 +101,7 @@ export async function POST(request) {
 
     const token = await signToken({ userId: user.id, role: user.role });
     const response = NextResponse.json({ user }, { status: 201 });
-    
+
     // Définir le cookie HTTP-only (NextResponse pour cohérence avec login)
     response.cookies.set(AUTH_COOKIE_NAME, token, {
       httpOnly: true,
