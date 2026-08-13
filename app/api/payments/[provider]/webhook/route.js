@@ -1,7 +1,7 @@
 // app/api/payments/[provider]/webhook/route.js
 import sql from "@/lib/db";
 import { getProvider } from "@/lib/payment/provider";
-
+import { sendMail, emailTemplates } from "@/lib/email";
 /**
  * POST /api/payments/[provider]/webhook
  * Reçoit les notifications de paiement du fournisseur.
@@ -102,7 +102,24 @@ export async function POST(request, { params }) {
         SET status = 'paid'
         WHERE id = ${payment.order_id} AND status = 'pending'
       `;
-      
+      // 📧 Email acheteur (non bloquant)
+      try {
+        const [orderInfo] = await sql`
+          SELECT o.id, o.total, u.email
+          FROM orders o
+          JOIN users u ON u.id = o.buyer_id
+          WHERE o.id = ${payment.order_id}
+        `;
+        if (orderInfo?.email) {
+          const tpl = emailTemplates.paymentSuccess({
+            orderId: orderInfo.id,
+            amount: Number(orderInfo.total).toLocaleString("fr-FR"),
+          });
+          await sendMail({ to: orderInfo.email, subject: tpl.subject, html: tpl.html });
+        }
+      } catch (emailErr) {
+        console.error("[webhook] Email non envoyé:", emailErr.message);
+      }
       // Audit log succès
       await sql`
         INSERT INTO security_audit_log (action, resource_type, resource_id, ip_address)

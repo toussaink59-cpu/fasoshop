@@ -1,12 +1,11 @@
 import sql from "@/lib/db";
-import { sendMail } from "@/lib/email";
+import { sendMail, emailTemplates } from "@/lib/email";
 
 // PATCH /api/admin/shops/[id]
 // Change le statut d'une boutique. Réservé aux admins (vérifié par middleware.js).
 // body: { status: "active" | "suspended" | "pending" | "rejected", rejectionReason? }
 // Si status === "rejected", rejectionReason est requis.
-// Envoie une notification (email stub pour l'instant) au vendeur lors d'une
-// validation ou d'un rejet.
+// Envoie une notification HTML au vendeur lors d'une validation ou d'un rejet.
 export async function PATCH(request, { params }) {
   const { id } = await params;
 
@@ -41,24 +40,38 @@ export async function PATCH(request, { params }) {
       return Response.json({ error: "Boutique introuvable." }, { status: 404 });
     }
 
-    // Notifier le vendeur (email stub tant que Resend n'est pas configuré)
+    // 📧 Notifier le vendeur avec templates HTML professionnels
     if (status === "active" || status === "rejected") {
       const [vendor] = await sql`
         SELECT email, full_name FROM users WHERE id = ${shop.vendor_id}
       `;
-      if (vendor) {
-        if (status === "active") {
-          await sendMail({
-            to: vendor.email,
-            subject: "Votre boutique FasoShop a été validée",
-            text: `Bonjour ${vendor.full_name},\n\nVotre boutique "${shop.name}" a été vérifiée et validée. Vous pouvez maintenant publier vos produits sur FasoShop.\n\nL'équipe FasoShop`,
-          });
-        } else {
-          await sendMail({
-            to: vendor.email,
-            subject: "Votre demande de compte vendeur FasoShop n'a pas été validée",
-            text: `Bonjour ${vendor.full_name},\n\nVotre demande de compte vendeur pour la boutique "${shop.name}" n'a pas pu être validée.\nMotif : ${shop.rejection_reason}\n\nVous pouvez corriger les informations et nous contacter pour une nouvelle vérification.\n\nL'équipe FasoShop`,
-          });
+      if (vendor?.email) {
+        try {
+          if (status === "active") {
+            const tpl = emailTemplates.shopApproved({
+              shopName: shop.name,
+              ownerName: vendor.full_name,
+            });
+            await sendMail({
+              to: vendor.email,
+              subject: tpl.subject,
+              html: tpl.html,
+            });
+          } else {
+            const tpl = emailTemplates.shopRejected({
+              shopName: shop.name,
+              ownerName: vendor.full_name,
+              reason: shop.rejection_reason,
+            });
+            await sendMail({
+              to: vendor.email,
+              subject: tpl.subject,
+              html: tpl.html,
+            });
+          }
+        } catch (emailErr) {
+          // Non bloquant : l'email échoue mais la boutique est quand même mise à jour
+          console.error("[admin/shops] Email non envoyé:", emailErr.message);
         }
       }
     }
