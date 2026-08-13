@@ -16,12 +16,16 @@ async function main() {
   const schemaPath = path.join(__dirname, "schema.sql");
   const schema = fs.readFileSync(schemaPath, "utf-8");
 
-  console.log("⏳ Exécution du schéma sur la base Neon...");
+  console.log("⏳ Exécution du schéma sur la base Neon (transaction atomique)...");
+  
   try {
-    await sql.unsafe(schema);
-    console.log("✅ Migration terminée avec succès.");
+    // 🔒 Transaction atomique : tout ou rien (rollback auto si erreur)
+    await sql.begin(async (tx) => {
+      await tx.unsafe(schema);
+    });
+    console.log("✅ Migration terminée avec succès (atomique).");
   } catch (err) {
-    console.error("❌ Erreur pendant la migration :", err.message);
+    console.error("❌ Erreur pendant la migration (rollback automatique) :", err.message);
     process.exit(1);
   } finally {
     await sql.end();

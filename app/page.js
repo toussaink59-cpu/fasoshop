@@ -12,6 +12,9 @@ import HorizontalProductSection from "@/app/components/HorizontalProductSection"
 import CategoryPillBar from "@/app/components/CategoryPillBar";
 import HomeFeed from "@/app/components/HomeFeed";
 
+// ♻️ ISR : régénère la page toutes les 60s (réduit charge DB, améliore TTFB)
+export const revalidate = 60;
+
 export const metadata = {
   title: "Accueil",
   description:
