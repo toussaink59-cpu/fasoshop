@@ -1,28 +1,63 @@
 {
-  "name": "fasoshop",
+
+  "name": "kimoxa", 
+
   "version": "0.1.0",
+
   "private": true,
+
   "scripts": {
+
     "dev": "next dev",
+
     "build": "next build",
+
     "start": "next start",
+
     "lint": "next lint",
+
     "db:migrate": "node db/migrate.js"
+
   },
+
   "dependencies": {
-    "@vercel/blob": "^2.6.1",
+
+    "@vercel/blob": "^2.8.0",
+
     "bcryptjs": "^2.4.3",
+
     "jose": "^5.9.6",
-    "next": "^15.0.0",
+
+    "next": "^15.5.23",
+
     "postgres": "^3.4.4",
+
     "react": "^18.3.1",
+
     "react-dom": "^18.3.1",
+
     "resend": "^6.19.0"
+
   },
+
   "devDependencies": {
+
     "dotenv": "^16.4.5"
+
   },
+
+  "overrides": {
+
+    "postcss": "^8.5.23",
+
+    "sharp": "^0.35.0"
+
+  },
+
   "allowScripts": {
-    "sharp@0.34.5": true
+
+    "sharp": true
+
   }
+
 }
