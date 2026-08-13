@@ -16,9 +16,13 @@
     "next": "^15.0.0",
     "postgres": "^3.4.4",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "resend": "^6.19.0"
   },
   "devDependencies": {
     "dotenv": "^16.4.5"
+  },
+  "allowScripts": {
+    "sharp@0.34.5": true
   }
 }
