@@ -251,7 +251,7 @@ export default function AdminPayoutsPage() {
             <span className="order-item-qty">{Number(p.gross_amount).toLocaleString("fr-FR")} FCFA</span>
           </div>
           <div className="order-item-row">
-            <span className="order-item-name">Commission Kimoxa (5,5%)</span>
+            <span className="order-item-name">Commission Kimoxa</span>
             <span className="order-item-qty">− {Number(p.commission_amount).toLocaleString("fr-FR")} FCFA</span>
           </div>
           {deliveryFee > 0 && (
@@ -458,7 +458,13 @@ export default function AdminPayoutsPage() {
                 <span>{Number(payingPayout.gross_amount).toLocaleString("fr-FR")} FCFA</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4, fontSize: "0.85rem" }}>
-                <span>Commission Kimoxa (5,5%)</span>
+                                <span>
+                  Commission Kimoxa (
+                  {Number(payingPayout.gross_amount) > 0
+                    ? ((Number(payingPayout.commission_amount) / Number(payingPayout.gross_amount)) * 100).toLocaleString("fr-FR", { maximumFractionDigits: 1 })
+                    : "9"}
+                  %)
+                </span>
                 <span>− {Number(payingPayout.commission_amount).toLocaleString("fr-FR")} FCFA</span>
               </div>
               {Number(payingPayout.delivery_fee_amount || 0) > 0 && (

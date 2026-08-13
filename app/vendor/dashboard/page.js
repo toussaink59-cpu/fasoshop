@@ -663,7 +663,7 @@ export default function VendorDashboard() {
             </div>
             <div className="vendor-earnings-summary">
               <span>Total brut vendu : <strong>{Number(earnings.total_gross).toLocaleString("fr-FR")} FCFA</strong></span>
-              <span>Commission Kimoxa (5,5%) : <strong>{Number(earnings.total_commission).toLocaleString("fr-FR")} FCFA</strong></span>
+              <span>Commission Kimoxa : <strong>{Number(earnings.total_commission).toLocaleString("fr-FR")} FCFA</strong></span>
             </div>
           </div>
         )}

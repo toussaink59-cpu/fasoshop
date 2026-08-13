@@ -30,7 +30,7 @@ export default function CGVPage() {
           <h2>💼 Résumé pour les vendeurs</h2>
           <ul>
             <li>🪪 <strong>Vérification d'identité obligatoire</strong> avant de vendre</li>
-            <li>💰 <strong>Commission Kimoxa : 5,5 %</strong> sur chaque vente</li>
+            <li>💰 <strong>Commission Kimoxa : 9%</strong> sur chaque vente</li>
             <li>🔒 <strong>Paiement séquestré</strong> : déblocage après livraison confirmée</li>
             <li>💸 <strong>Payouts Mobile Money</strong> sans limite une fois vérifié</li>
             <li>🚫 <strong>Produits interdits</strong> : contrefaçons, armes, médicaments non autorisés</li>
@@ -80,7 +80,7 @@ export default function CGVPage() {
           <p>
             En contrepartie de la mise à disposition de la plateforme, des outils de paiement,
             de la vérification des acheteurs et du support client, Kimoxa prélève une
-            <strong> commission de 5,5 %</strong> sur le montant brut de chaque vente.
+            <strong> commission de 9%</strong> sur le montant brut de chaque vente.
           </p>
 
           <h3>3.1. Exemple de calcul</h3>
@@ -97,7 +97,7 @@ export default function CGVPage() {
                 <td><strong>10 000 FCFA</strong></td>
               </tr>
               <tr>
-                <td>Commission Kimoxa (5,5 %)</td>
+                <td>Commission Kimoxa (9%)</td>
                 <td>− 550 FCFA</td>
               </tr>
               <tr>

@@ -99,10 +99,10 @@ export default function AdminDashboard() {
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
 
-        {/* 💰 COMMISSIONS KIMOXA 5,5% */}
+        {/* 💰 COMMISSIONS KIMOXA 9% */}
         {earnings && (
           <div className="vendor-earnings-block">
-            <h2 style={{ margin: "0 0 12px", fontSize: "1.1rem" }}>📊 Commissions Kimoxa (5,5%)</h2>
+            <h2 style={{ margin: "0 0 12px", fontSize: "1.1rem" }}>📊 Commissions Kimoxa (9%)</h2>
             <div className="vendor-earnings-grid">
               <div className="vendor-earnings-card vendor-earnings-held">
                 <div className="vendor-earnings-icon">🔒</div>

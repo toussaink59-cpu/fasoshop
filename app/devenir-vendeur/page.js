@@ -12,7 +12,7 @@ export default async function DevenirVendeurPage() {
     { title: "Créez votre compte", desc: "Renseignez le nom de votre boutique, vos coordonnées et votre pièce d'identité." },
     { title: "Vérification", desc: "Notre équipe vérifie vos informations sous peu de temps pour protéger tous les acheteurs." },
     { title: "Publiez vos produits", desc: "Ajoutez vos produits avec photos, prix et stock, en quelques minutes." },
-    { title: "Vendez et soyez payé", desc: "Recevez vos commandes et votre part des ventes via Mobile Money, moins 5,5% de commission." },
+    { title: "Vendez et soyez payé", desc: "Recevez vos commandes et votre part des ventes via Mobile Money, moins 9% de commission." },
   ];
 
   return (
@@ -29,7 +29,7 @@ export default async function DevenirVendeurPage() {
           <div className="trust-item"><span className="trust-icon">🏪</span> Boutiques vérifiées</div>
           <div className="trust-item"><span className="trust-icon">📱</span> Paiement Mobile Money</div>
           <div className="trust-item"><span className="trust-icon">📈</span> Tableau de bord de vente</div>
-          <div className="trust-item"><span className="trust-icon">🤝</span> Commission unique de 5,5%</div>
+          <div className="trust-item"><span className="trust-icon">🤝</span> Commission unique de 9%</div>
         </div>
 
         <div className="panel">
@@ -55,7 +55,7 @@ export default async function DevenirVendeurPage() {
             <thead>
               <tr>
                 <th>Montant de la vente</th>
-                <th>Commission Kimoxa (5,5%)</th>
+                <th>Commission Kimoxa (9%)</th>
                 <th>Vous recevez</th>
               </tr>
             </thead>

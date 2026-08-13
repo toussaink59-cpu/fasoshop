@@ -47,7 +47,7 @@ export default async function AboutPage() {
           <h2>Notre modèle</h2>
           <p>
             L'inscription est gratuite pour les vendeurs. Kimoxa se rémunère uniquement via une
-            commission de 5,5% sur les ventes réalisées, ce qui aligne nos intérêts avec la
+            commission de 9% sur les ventes réalisées, ce qui aligne nos intérêts avec la
             réussite de chaque boutique.
           </p>
 
