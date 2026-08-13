@@ -1,0 +1,2 @@
+# Les scripts shell doivent rester en LF (sinon le hook casse sous Windows)
+.githooks/ text eol=lf
