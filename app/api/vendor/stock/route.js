@@ -140,8 +140,8 @@ export async function POST(request) {
       }
     }
 
-    // 🔒 7) Création produit (transaction pour cohérence)
-    const [product] = await sql.begin(async (tx) => {
+        // 🔒 7) Création produit (transaction pour cohérence)
+    const product = await sql.begin(async (tx) => {
       const [newProduct] = await tx`
         INSERT INTO products (shop_id, name, description, price, compare_at_price, sku, 
                               stock_quantity, low_stock_threshold, category_id, images, 
