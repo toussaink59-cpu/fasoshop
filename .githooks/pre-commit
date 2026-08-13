@@ -1,0 +1,27 @@
+#!/bin/sh
+# =====================================================
+# Pre-commit hook — blocage des secrets (audit C02)
+# Activation : git config core.hooksPath .githooks
+# =====================================================
+
+SECRET_PATTERNS='(JWT_SECRET\s*=|RESEND_API_KEY\s*=|DATABASE_URL\s*=|NEON_DATABASE_URL\s*=|sk_live_[A-Za-z0-9]|re_[A-Za-z0-9]{20,}|-----BEGIN (RSA |EC |OPENSSH )?PRIVATE KEY-----)'
+
+STAGED=$(git diff --cached --no-color --diff-filter=ACMR -- . ":(exclude)*.example")
+
+if [ -z "$STAGED" ]; then
+  exit 0
+fi
+
+MATCHES=$(echo "$STAGED" | grep -E "$SECRET_PATTERNS" | grep '^\+')
+
+if [ -n "$MATCHES" ]; then
+  echo ""
+  echo "❌ COMMIT BLOQUÉ : secret(s) détecté(s) :"
+  echo "$MATCHES"
+  echo ""
+  echo "👉 Les secrets vont dans Vercel / .env.local (jamais dans Git)."
+  echo "👉 Faux positif ? git commit --no-verify"
+  exit 1
+fi
+
+exit 0
