@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AdminBottomNav from "@/app/components/AdminBottomNav";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
-
+import AdminAnalytics from "@/app/components/AdminAnalytics";
+import AdminInsights from "@/app/components/AdminInsights";
 const ORDER_STATUS = {
   pending: { label: "En attente", cls: "status-pending" },
   paid: { label: "Payée", cls: "status-paid" },
@@ -99,39 +100,11 @@ export default function AdminDashboard() {
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
 
-        {/* 💰 COMMISSIONS KIMOXA 9% */}
-        {earnings && (
-          <div className="vendor-earnings-block">
-            <h2 style={{ margin: "0 0 12px", fontSize: "1.1rem" }}>📊 Commissions Kimoxa (9%)</h2>
-            <div className="vendor-earnings-grid">
-              <div className="vendor-earnings-card vendor-earnings-held">
-                <div className="vendor-earnings-icon">🔒</div>
-                <div className="vendor-earnings-amount">
-                  {Number(earnings.held_amount).toLocaleString("fr-FR")} FCFA
-                </div>
-                <div className="vendor-earnings-label">
-                  Séquestrés ({earnings.held_count})
-                </div>
-              </div>
-              <div className="vendor-earnings-card vendor-earnings-released">
-                <div className="vendor-earnings-icon">✅</div>
-                <div className="vendor-earnings-amount">
-                  {Number(earnings.released_amount).toLocaleString("fr-FR")} FCFA
-                </div>
-                <div className="vendor-earnings-label">
-                  À payer aux vendeurs ({earnings.released_count})
-                </div>
-              </div>
-              <div className="vendor-earnings-card vendor-earnings-paid">
-                <div className="vendor-earnings-icon">💰</div>
-                <div className="vendor-earnings-amount">
-                  {Number(earnings.total_commission).toLocaleString("fr-FR")} FCFA
-                </div>
-                <div className="vendor-earnings-label">Commissions cumulées</div>
-              </div>
-            </div>
-          </div>
-        )}
+                {/* 📊 Analytics plateforme (données réelles + états vides) */}
+        <AdminAnalytics />
+
+        {/* 💸🏆⏳ Payouts + top vendeurs + boutiques en attente */}
+        <AdminInsights />
 
         {/* 4 cartes stats */}
         <div className="vendor-stats-grid">

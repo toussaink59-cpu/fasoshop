@@ -90,7 +90,8 @@ export default function VendorAnalytics() {
   const countDel = statuses.filter((s) => s === "delivered").length;
   const totalOrders = statuses.length;
 
-  const hasActivity = totalOrders > 0 || totalGross > 0 || series.some((s) => s.gross > 0);
+  // Vérifie s'il y a des ventes sur les 7 derniers jours
+  const hasRecentSales = series.some((s) => s.gross > 0);
 
   const kpis = [
     { icon: "🛒", label: "Commandes reçues", value: fmt(totalOrders) },
@@ -107,7 +108,7 @@ export default function VendorAnalytics() {
       <div className="va-kpi-grid">
         {kpis.map((k) => (
           <div className="va-kpi" key={k.label}>
-            <div className="icon">{k.icon}</div>
+            <div className="icon" aria-hidden="true">{k.icon}</div>
             <div className="value">{k.value}</div>
             <div className="label">{k.label}</div>
           </div>
@@ -125,12 +126,13 @@ export default function VendorAnalytics() {
         {/* Courbe CA */}
         <div className="va-card">
           <h3>📈 Évolution du chiffre d'affaires (7 jours)</h3>
-          {hasActivity ? (
+          {hasRecentSales ? (
             <AreaChart series={series} />
           ) : (
             <div className="va-empty">
               <div style={{ fontSize: "2rem" }}>📈</div>
-              <p>Vos premières ventes apparaîtront ici.</p>
+              <p>Aucune vente sur les 7 derniers jours.</p>
+              <p style={{ fontSize: "0.75rem", marginTop: 4 }}>Vos ventes récentes apparaîtront ici.</p>
             </div>
           )}
         </div>

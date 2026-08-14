@@ -7155,3 +7155,48 @@ a.side-menu-link:hover::after {
 .va-stars { color: #e6a623; font-size: 0.8rem; }
 .va-comment { margin: 2px 0; font-size: 0.8rem; color: var(--ink-400, #888); }
 .va-seeall { float: right; font-size: 0.75rem; font-weight: 600; color: #2563eb; text-decoration: none; }
+/* ===== Admin Analytics (réutilise Vendor Analytics) ===== */
+.va-kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-bottom: 12px; }
+.va-kpi { background: #fff; border: 1px solid var(--sand-200, #eee); border-radius: 12px; padding: 14px; }
+.va-kpi .icon { font-size: 1.3rem; }
+.va-kpi .value { font-size: 1.2rem; font-weight: 800; margin-top: 4px; }
+.va-kpi .label { font-size: 0.78rem; color: var(--ink-400, #888); }
+.va-row { display: grid; grid-template-columns: 2fr 1fr; gap: 12px; }
+@media (max-width: 800px) { .va-row { grid-template-columns: 1fr; } }
+.va-card { background: #fff; border: 1px solid var(--sand-200, #eee); border-radius: 12px; padding: 16px; }
+.va-card h3 { margin: 0 0 12px; font-size: 1rem; }
+.va-empty { text-align: center; padding: 32px 12px; color: var(--ink-400, #888); }
+.va-row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 0; }
+@media (max-width: 900px) { .va-row3 { grid-template-columns: 1fr; } }
+.va-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.va-list-item { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
+.va-list-main { font-weight: 600; }
+.va-list-sub { font-size: 0.75rem; color: var(--ink-400, #888); }
+.va-badge { border: 1px solid; border-radius: 999px; padding: 2px 10px; font-size: 0.7rem; font-weight: 600; white-space: nowrap; }
+.va-rank { width: 22px; height: 22px; border-radius: 50%; background: #e6a623; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; flex: none; }
+.va-seeall { float: right; font-size: 0.75rem; font-weight: 600; color: #2563eb; text-decoration: none; }
+/* ===== POLISH MOBILE DASHBOARDS ===== */
+.va-section { margin: 16px 0; }
+.va-kpi, .va-card { box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+.va-card > span { font-size: 0.85rem; }
+.va-escrow-row { display: flex; gap: 18px; flex-wrap: wrap; justify-content: space-between; margin-bottom: 12px; }
+.va-center { text-align: center; }
+.va-legend { display: flex; justify-content: center; gap: 12px; font-size: 0.75rem; flex-wrap: wrap; margin-top: 12px; }
+
+@media (max-width: 640px) {
+  .va-section { margin: 12px 0; }
+  .va-kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 10px; }
+  .va-kpi { padding: 12px; border-radius: 10px; }
+  .va-kpi .icon { font-size: 1.05rem; }
+  .va-kpi .value { font-size: 1.02rem; letter-spacing: -0.2px; }
+  .va-kpi .label { font-size: 0.68rem; }
+  .va-card { padding: 14px; border-radius: 10px; }
+  .va-card h3 { font-size: 0.92rem; margin-bottom: 10px; }
+  .va-card > span, .va-escrow-row > span { font-size: 0.8rem; display: block; margin-bottom: 6px; }
+  .va-escrow-row { flex-direction: column; gap: 8px; }
+  .va-row, .va-row3 { gap: 10px; }
+  .va-list-item { font-size: 0.85rem; }
+  .va-empty { padding: 20px 8px; }
+  .va-empty p { font-size: 0.85rem; margin: 4px 0; }
+  .va-legend { gap: 8px; font-size: 0.7rem; }
+}
