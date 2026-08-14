@@ -4,8 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 // 🏪 Interrupteur : la boutique livre elle-même ses commandes.
-// Activé → les frais de livraison vont à la boutique.
-// Désactivé → les frais vont aux livreurs Kimoxa.
 export default function VendorDeliveryToggle() {
   const router = useRouter();
   const [enabled, setEnabled] = useState(false);
@@ -13,6 +11,15 @@ export default function VendorDeliveryToggle() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Détection mobile (SSR-safe)
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth <= 640);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
 
   useEffect(() => {
     fetch("/api/vendor/shop/delivery")
@@ -52,7 +59,6 @@ export default function VendorDeliveryToggle() {
       const data = await res.json().catch(() => ({}));
 
       if (res.ok) {
-        // ✅ Source de vérité = serveur, pas la valeur optimiste client
         setEnabled(Boolean(data.enabled));
         setMsg(
           data.enabled
@@ -60,7 +66,6 @@ export default function VendorDeliveryToggle() {
             : "✅ Livraison confiée aux livreurs Kimoxa."
         );
       } else {
-        // ✅ Affiche le message serveur (précis)
         setError(data.error || "Impossible de modifier le réglage.");
       }
     } catch {
@@ -70,23 +75,52 @@ export default function VendorDeliveryToggle() {
     }
   }
 
+  // Styles adaptatifs (inline, zéro CSS global)
+  const buttonStyle = isMobile
+    ? {
+        minWidth: 40,
+        height: 36,
+        padding: "0 10px",
+        fontSize: "1.1rem",
+        borderRadius: 8,
+      }
+    : {
+        minWidth: 90,
+        padding: "8px 14px",
+        fontSize: "0.85rem",
+        borderRadius: 8,
+      };
+
+  const buttonLabel = isMobile
+    ? (saving ? "…" : enabled ? "✅" : "○")
+    : (saving ? "..." : enabled ? "✅ Activé" : "Désactivé");
+
+  const buttonTitle = enabled
+    ? "Livraison assurée par vous (cliquez pour désactiver)"
+    : "Livraison assurée par Kimoxa (cliquez pour activer)";
+
   return (
-    <div className="order-card" style={{ marginBottom: 12, padding: 14 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
-        <div>
-          <strong>🏪 Je livre moi-même mes commandes</strong>
-          <p style={{ margin: "4px 0 0", fontSize: "0.78rem", color: "var(--ink-400)", lineHeight: 1.5 }}>
-            Si activé, les frais de livraison payés par vos clients vous sont reversés avec vos ventes.
-            Si désactivé, Kimoxa s'occupe de livrer et les frais vont au livreur.
+    <div className="order-card" style={{ marginBottom: 12, padding: isMobile ? 12 : 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: isMobile ? 8 : 10 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <strong style={{ fontSize: isMobile ? "0.85rem" : "0.95rem" }}>
+            🏪 Je livre moi-même mes commandes
+          </strong>
+          <p style={{ margin: "4px 0 0", fontSize: isMobile ? "0.72rem" : "0.78rem", color: "var(--ink-400)", lineHeight: 1.4 }}>
+            {isMobile
+              ? "Frais de livraison reversés si activé."
+              : "Si activé, les frais de livraison payés par vos clients vous sont reversés avec vos ventes. Si désactivé, Kimoxa s'occupe de livrer et les frais vont au livreur."}
           </p>
         </div>
         <button
           className="btn btn-primary"
-          style={{ minWidth: 90 }}
+          style={buttonStyle}
           onClick={toggle}
           disabled={saving || loading}
+          title={buttonTitle}
+          aria-label={buttonTitle}
         >
-          {saving ? "..." : enabled ? "✅ Activé" : "Désactivé"}
+          {buttonLabel}
         </button>
       </div>
       {error && <p style={{ margin: "8px 0 0", fontSize: "0.78rem", color: "#dc2626" }}>{error}</p>}
