@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { getCart, updateQuantity, clearCart, cartTotal } from "@/lib/cart";
 import { getDeliveryFee, formatDeliveryFee, freeDeliveryHint } from "@/lib/delivery";
 import SiteHeader from "@/app/components/SiteHeader";
@@ -15,7 +16,7 @@ export default function CartClient({ initialUser, categories }) {
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
   const [phone, setPhone] = useState("");
-  const [deliveryMethod, setDeliveryMethod] = useState("delivery"); // 🚚 ou 
+  const [deliveryMethod, setDeliveryMethod] = useState("delivery"); // 🚚 ou 🏪
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -180,7 +181,7 @@ export default function CartClient({ initialUser, categories }) {
         shippingAddress,
         phone,
         paymentMethod,
-        deliveryMethod, // 🆕 le serveur recalcule lui-même les frais
+        deliveryMethod, // le serveur recalcule lui-même les frais
         promoCode: promoCode.trim().toUpperCase() || null, // 🎁
       }),
     });
@@ -224,7 +225,7 @@ export default function CartClient({ initialUser, categories }) {
                 <div className="cart-item-card" key={item.productId}>
                   <div className="cart-item-image">
                     {item.image ? (
-                      <img src={item.image} alt={item.name} />
+                      <Image src={item.image} alt={item.name} width={96} height={96} loading="lazy" />
                     ) : (
                       <div className="cart-item-placeholder">📦</div>
                     )}
@@ -281,7 +282,7 @@ export default function CartClient({ initialUser, categories }) {
             <div className="cart-checkout-section">
               <h2>Réception et paiement</h2>
               <form onSubmit={handleCheckout}>
-                {/* ===== 🆕 CHOIX : LIVRAISON ou RETRAIT ===== */}
+                {/* ===== CHOIX : LIVRAISON ou RETRAIT ===== */}
                 <div className="form-group">
                   <label>Mode de réception</label>
                   <div className="payment-options">
@@ -497,7 +498,6 @@ export default function CartClient({ initialUser, categories }) {
                         </div>
                       </div>
                     </label>
-                    {/* ✅ Mobile Money ACTIVÉ (plus de disabled) */}
                     <label className={`payment-option ${paymentMethod === "mobile_money" ? "selected" : ""}`}>
                       <input
                         type="radio"

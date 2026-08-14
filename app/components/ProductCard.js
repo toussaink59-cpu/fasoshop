@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { addToCart, getCart, cartCount } from "@/lib/cart";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
 
@@ -80,7 +81,15 @@ export default function ProductCard({ p, user, compact = false }) {
             <span className="shop-card-badge-new">Nouveau</span>
           ) : null}
           {p.images && p.images.length > 0 ? (
-            <img src={p.images[0]} alt={p.name} className="shop-card-image" loading="lazy" />
+            <Image
+              src={p.images[0]}
+              alt={p.name}
+              width={400}
+              height={400}
+              sizes="(max-width: 700px) 50vw, 220px"
+              className="shop-card-image"
+              loading="lazy"
+            />
           ) : (
             <div className="shop-card-image shop-card-image-placeholder">🛍️</div>
           )}
@@ -95,6 +104,7 @@ export default function ProductCard({ p, user, compact = false }) {
         {CONDITION_LABELS[p.condition] || "Neuf"}
       </span>
 
+      {/* OPTION B : anonymisation — l'acheteur ne voit que "Kimoxa" */}
       <div className="shop-card-shop-row">
         <span className="shop">Kimoxa</span>
         <span className="shop-card-verified" title="Vendeur vérifié">✓</span>
