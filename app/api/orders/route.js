@@ -70,6 +70,7 @@ export async function POST(request) {
     const items = validateItems(body.items);
     const shippingAddress = sanitizeAddress(body.shippingAddress);
     const phone = String(body.phone || "").trim();
+    const promoCode = body.promoCode ? String(body.promoCode).trim().toUpperCase().slice(0, 50) : null; // 🎁
 
     if (!shippingAddress || shippingAddress.length < 5) {
       return Response.json(
@@ -127,6 +128,33 @@ export async function POST(request) {
       const deliveryFee = getDeliveryFee(city, subtotal, deliveryMethod);
       const totalWithDelivery = subtotal + deliveryFee;
 
+      // 🎁 VALIDATION CODE PROMO (revalidation serveur = sécurité)
+      // Règle financière v1 : la remise est supportée par Kimoxa (coût marketing).
+      // Les vendeurs et commissions restent calculés sur le sous-total produits.
+      let discountAmount = 0;
+      let promoCodeId = null;
+      if (promoCode) {
+        const [promo] = await tx`
+          SELECT * FROM promo_codes
+          WHERE code = ${promoCode} AND active = true
+          FOR UPDATE
+        `;
+        if (!promo) throw new Error("Code promo invalide ou désactivé.");
+        if (promo.valid_from && new Date(promo.valid_from) > new Date()) throw new Error("Code pas encore actif.");
+        if (promo.valid_until && new Date(promo.valid_until) < new Date()) throw new Error("Code expiré.");
+        if (promo.usage_limit && promo.usage_count >= promo.usage_limit) throw new Error("Code épuisé.");
+        if (subtotal < Number(promo.min_order_amount)) {
+          throw new Error(`Montant minimum : ${Number(promo.min_order_amount).toLocaleString("fr-FR")} FCFA.`);
+        }
+
+        let d = promo.type === "percentage" ? subtotal * (Number(promo.value) / 100) : Number(promo.value);
+        if (promo.type === "percentage" && promo.max_discount) d = Math.min(d, Number(promo.max_discount));
+        discountAmount = Math.min(Math.round(d), subtotal); // jamais négatif, jamais > sous-total
+        promoCodeId = promo.id;
+      }
+
+      const finalTotal = Math.max(0, totalWithDelivery - discountAmount);
+
       // 💰 QUI LIVRE ? (règle de répartition de l'argent de livraison)
       // - boutique seule ET elle livre elle-même → l'argent part à la boutique
       // - sinon (multi-boutiques ou non) → l'argent part au livreur Kimoxa
@@ -143,10 +171,12 @@ export async function POST(request) {
 
       const [newOrder] = await tx`
         INSERT INTO orders (buyer_id, status, total, shipping_address, phone,
-                            payment_method, delivery_fee, delivery_method, fulfilled_by, expires_at)
-        VALUES (${userId}, 'pending', ${totalWithDelivery}, ${finalAddress}, ${phone},
+                            payment_method, delivery_fee, delivery_method, fulfilled_by, expires_at,
+                            promo_code, discount_amount)
+        VALUES (${userId}, 'pending', ${finalTotal}, ${finalAddress}, ${phone},
                 ${finalPaymentMethod}, ${deliveryFee}, ${deliveryMethod}, ${fulfilledBy},
-                NOW() + INTERVAL '24 hours')
+                NOW() + INTERVAL '24 hours',
+                ${promoCode}, ${discountAmount})
         RETURNING id, status, total, payment_method, delivery_fee, delivery_method, created_at
       `;
 
@@ -201,6 +231,13 @@ export async function POST(request) {
         `;
       }
 
+      // 🎁 Incrémenter le compteur d'utilisations du code promo
+      if (promoCodeId) {
+        await tx`
+          UPDATE promo_codes SET usage_count = usage_count + 1 WHERE id = ${promoCodeId}
+        `;
+      }
+
       return newOrder;
     });
 
@@ -208,7 +245,7 @@ export async function POST(request) {
   } catch (err) {
     console.error("[orders POST]", err);
     return Response.json(
-      { error: "Impossible de finaliser la commande." },
+      { error: err.message && err.message.includes("Code") ? err.message : "Impossible de finaliser la commande." },
       { status: 400 }
     );
   }

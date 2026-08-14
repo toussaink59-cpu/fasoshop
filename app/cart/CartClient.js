@@ -15,12 +15,17 @@ export default function CartClient({ initialUser, categories }) {
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [shippingAddress, setShippingAddress] = useState("");
   const [phone, setPhone] = useState("");
-  const [deliveryMethod, setDeliveryMethod] = useState("delivery"); // 🚚 ou 🏪
+  const [deliveryMethod, setDeliveryMethod] = useState("delivery"); // 🚚 ou 
   const [paymentMethod, setPaymentMethod] = useState("cod");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [locating, setLocating] = useState(false);
   const [locError, setLocError] = useState("");
+  // 🎁 Code promo
+  const [promoCode, setPromoCode] = useState("");
+  const [promoResult, setPromoResult] = useState(null);
+  const [promoError, setPromoError] = useState("");
+  const [promoValidating, setPromoValidating] = useState(false);
 
   useEffect(() => {
     setCart(getCart());
@@ -101,7 +106,7 @@ export default function CartClient({ initialUser, categories }) {
     );
   }
 
-  // ===== CALCULS LIVRAISON / RETRAIT =====
+  // ===== CALCULS LIVRAISON / RETRAIT / PROMO =====
   const subtotal = cartTotal(cart);
   const detectedCity = useMemo(() => {
     const addr = (shippingAddress || "").toLowerCase();
@@ -109,8 +114,42 @@ export default function CartClient({ initialUser, categories }) {
     return shippingAddress ? "Autre" : "";
   }, [shippingAddress]);
   const deliveryFee = getDeliveryFee(detectedCity, subtotal, deliveryMethod);
-  const grandTotal = subtotal + deliveryFee;
+  const discount = promoResult ? promoResult.discount : 0;
+  const grandTotal = Math.max(0, subtotal + deliveryFee - discount);
   const freeHint = freeDeliveryHint(subtotal, deliveryMethod);
+
+  // 🎁 Validation code promo (debounce 500ms après dernière frappe)
+  useEffect(() => {
+    const code = promoCode.trim().toUpperCase();
+    if (!code) {
+      setPromoResult(null);
+      setPromoError("");
+      return;
+    }
+    const timer = setTimeout(async () => {
+      setPromoValidating(true);
+      setPromoError("");
+      try {
+        const res = await fetch("/api/promo-codes/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, amount: subtotal }),
+        });
+        const data = await res.json();
+        if (data.valid) {
+          setPromoResult(data);
+        } else {
+          setPromoResult(null);
+          setPromoError(data.error || "Code invalide.");
+        }
+      } catch {
+        setPromoError("Erreur de validation du code.");
+      } finally {
+        setPromoValidating(false);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [promoCode, subtotal]);
 
   async function handleCheckout(e) {
     e.preventDefault();
@@ -142,6 +181,7 @@ export default function CartClient({ initialUser, categories }) {
         phone,
         paymentMethod,
         deliveryMethod, // 🆕 le serveur recalcule lui-même les frais
+        promoCode: promoCode.trim().toUpperCase() || null, // 🎁
       }),
     });
     const data = await res.json();
@@ -335,6 +375,39 @@ export default function CartClient({ initialUser, categories }) {
                   />
                 </div>
 
+                {/* 🎁 CODE PROMO */}
+                <div className="form-group">
+                  <label htmlFor="promo-code">Code promo (optionnel)</label>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input
+                      id="promo-code"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      placeholder="Ex : BIENVENUE10"
+                      style={{ textTransform: "uppercase", flex: 1 }}
+                    />
+                    {promoResult && (
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        onClick={() => { setPromoCode(""); setPromoResult(null); setPromoError(""); }}
+                        title="Retirer le code"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  {promoValidating && <small style={{ color: "var(--ink-400)" }}>Validation...</small>}
+                  {promoResult && !promoValidating && (
+                    <small style={{ color: "var(--millet-600)", fontWeight: 600 }}>
+                      ✅ Code « {promoResult.code} » appliqué : -{promoResult.discount.toLocaleString("fr-FR")} FCFA
+                    </small>
+                  )}
+                  {promoError && !promoValidating && (
+                    <small style={{ color: "#dc2626" }}>❌ {promoError}</small>
+                  )}
+                </div>
+
                 {/* ===== RÉCAP ===== */}
                 <div
                   style={{
@@ -375,6 +448,20 @@ export default function CartClient({ initialUser, categories }) {
                       {formatDeliveryFee(deliveryFee, deliveryMethod)}
                     </strong>
                   </div>
+                  {discount > 0 && (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontSize: "0.85rem",
+                        marginBottom: "8px",
+                        color: "var(--millet-600)",
+                      }}
+                    >
+                      <span>🎁 Remise ({promoResult.code})</span>
+                      <strong>-{discount.toLocaleString("fr-FR")} FCFA</strong>
+                    </div>
+                  )}
                   <div
                     style={{
                       display: "flex",
