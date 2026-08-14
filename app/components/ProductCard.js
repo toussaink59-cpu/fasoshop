@@ -20,18 +20,16 @@ export function Stars({ rating }) {
 }
 
 // Carte produit standard (catalogue + sections horizontales de l'accueil).
-// OPTION B : l'acheteur voit "Kimoxa" partout, le vrai vendeur reste
-// invisible pour lui mais accessible à l'admin et au vendeur lui-même.
 export default function ProductCard({ p, user, compact = false }) {
   const router = useRouter();
 
-  // CEINTURE DE SÉCURITÉ : masque les produits en rupture de stock
-  // (garantie absolue qu'ils ne s'affichent NULLE PART, quelle que soit la source)
-  if (p.stock_quantity <= 0) return null;
-
+  // ✅ Hooks TOUJOURS appelés (règle des hooks respectée)
   const [favorited, setFavorited] = useState(Boolean(p.is_favorited));
   const [favBusy, setFavBusy] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
+
+  // ✅ Return conditionnel APRÈS les hooks (valide)
+  if (p.stock_quantity <= 0) return null;
 
   async function handleFav(e) {
     e.preventDefault();
@@ -97,7 +95,6 @@ export default function ProductCard({ p, user, compact = false }) {
         {CONDITION_LABELS[p.condition] || "Neuf"}
       </span>
 
-      {/* OPTION B : anonymisation — l'acheteur ne voit que "Kimoxa" */}
       <div className="shop-card-shop-row">
         <span className="shop">Kimoxa</span>
         <span className="shop-card-verified" title="Vendeur vérifié">✓</span>

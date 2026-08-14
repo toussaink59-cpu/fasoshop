@@ -100,12 +100,21 @@ export default function AdminDashboard() {
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
 
-                {/* 📊 Analytics plateforme (données réelles + états vides) */}
+               {/* 📊 Analytics plateforme (données réelles + états vides) */}
         <AdminAnalytics />
 
         {/* 💸🏆⏳ Payouts + top vendeurs + boutiques en attente */}
         <AdminInsights />
 
+        {/* 📤 Exports CSV (compta / gestion) */}
+        <div className="va-card" style={{ marginTop: 12 }}>
+          <h3>📤 Exports CSV (Excel)</h3>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <a className="btn btn-ghost" href="/api/admin/export?kind=orders">🛒 Commandes</a>
+            <a className="btn btn-ghost" href="/api/admin/export?kind=shops">🏪 Boutiques</a>
+            <a className="btn btn-ghost" href="/api/admin/export?kind=payouts">💸 Payouts</a>
+          </div>
+        </div>
         {/* 4 cartes stats */}
         <div className="vendor-stats-grid">
           <div className="vendor-stat-card">

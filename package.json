@@ -42,7 +42,11 @@
 
   "devDependencies": {
 
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+
+    "eslint": "^8.57.1",
+
+    "eslint-config-next": "^15.5.2"
 
   },
 
@@ -56,7 +60,9 @@
 
   "allowScripts": {
 
-    "sharp": true
+    "sharp": true,
+
+    "unrs-resolver@1.12.2": true
 
   }
 
