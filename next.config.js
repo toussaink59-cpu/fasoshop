@@ -1,3 +1,5 @@
+const { withSentryConfig } = require("@sentry/nextjs");
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -32,11 +34,12 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.sentry-cdn.com https://*.ingest.sentry.io",
+              "worker-src 'self' blob:",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data: https://fonts.gstatic.com",
-              "connect-src 'self' https:",
+              "connect-src 'self' https: https://*.ingest.sentry.io https://*.sentry.io",
               "media-src 'self'",
               "object-src 'none'",
               "frame-src 'none'",
@@ -51,4 +54,20 @@ const nextConfig = {
   },
 };
 
-module.exports = nextConfig;
+// ⚙️ Options Sentry (silencieux en dev, upload sourcemaps en build)
+const sentryOptions = {
+  org: "kimoxa",
+  project: "javascript-nextjs",
+  silent: true,
+  hideSourceMaps: true,
+  widenClientFileUpload: true,
+  tunnelRoute: "/monitoring",
+  // ✅ Nouvelle syntaxe (remplace disableLogger)
+  webpack: {
+    treeshake: {
+      removeDebugLogging: true,
+    },
+  },
+};
+
+module.exports = withSentryConfig(nextConfig, sentryOptions);

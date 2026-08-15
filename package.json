@@ -22,6 +22,8 @@
 
   "dependencies": {
 
+    "@sentry/nextjs": "^10.70.0",
+
     "@vercel/blob": "^2.8.0",
 
     "bcryptjs": "^2.4.3",
@@ -62,7 +64,9 @@
 
     "sharp": true,
 
-    "unrs-resolver@1.12.2": true
+    "unrs-resolver@1.12.2": true,
+
+    "@sentry/cli@2.58.6": true
 
   }
 
