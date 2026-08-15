@@ -55,19 +55,17 @@ const nextConfig = {
 };
 
 // ⚙️ Options Sentry (silencieux en dev, upload sourcemaps en build)
+const isDev = process.env.NODE_ENV === "development";
+
 const sentryOptions = {
   org: "kimoxa",
   project: "javascript-nextjs",
   silent: true,
   hideSourceMaps: true,
   widenClientFileUpload: true,
-  tunnelRoute: "/monitoring",
-  // ✅ Nouvelle syntaxe (remplace disableLogger)
-  webpack: {
-    treeshake: {
-      removeDebugLogging: true,
-    },
-  },
+  tunnelRoute: isDev ? undefined : "/monitoring",  // 🆕 désactivé en dev
+  sourcemaps: { disable: isDev },                  // 🆕 pas d'upload sourcemaps en dev
+  webpack: { treeshake: { removeDebugLogging: true } },
 };
 
 module.exports = withSentryConfig(nextConfig, sentryOptions);

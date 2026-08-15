@@ -82,7 +82,7 @@ export default function VendorRevenuePage() {
 
         <div className="panel">
           <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
-            Une commission de 9% est prélevée par FasoShop sur chaque vente confirmée.
+            Une commission de 9% est prélevée par Kimoxa sur chaque vente confirmée.
           </p>
 
           {!revenue ? (
@@ -115,13 +115,44 @@ export default function VendorRevenuePage() {
                 </div>
               )}
 
+              {/* 🆕 BLOC COMMISSIONS — distinction MM vs COD */}
+              <div style={{ marginBottom: 20, padding: "14px 16px", background: "var(--cream-50, #faf7f2)", borderRadius: 10, border: "1px solid var(--border)" }}>
+                <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: "1rem" }}>💰 Commissions Kimoxa (9%)</h3>
+                <p style={{ fontSize: "0.82rem", color: "var(--ink-500)", margin: "0 0 12px 0" }}>
+                  Sur les ventes <strong>Mobile Money</strong> : commission prélevée automatiquement.<br />
+                  Sur les ventes en <strong>espèces</strong> : vous collectez la totalité et devez reverser 9% à Kimoxa.
+                </p>
+
+                <div className="stat-row">
+                  <div className="stat-card" style={{ background: "#f0fdf4", borderColor: "#86efac" }}>
+                    <div className="label" style={{ color: "#166534", fontSize: "0.78rem" }}>✅ Auto-prélevées (Mobile Money)</div>
+                    <div className="value" style={{ color: "#166534" }}>
+                      {Number(revenue.mmCommissionSettled || 0).toLocaleString("fr-FR")} FCFA
+                    </div>
+                  </div>
+                  <div className="stat-card" style={{ background: "#fef9ee", borderColor: "#fcd34d" }}>
+                    <div className="label" style={{ color: "#92400e", fontSize: "0.78rem" }}>⚠️ À reverser (espèces)</div>
+                    <div className="value" style={{ color: "#92400e" }}>
+                      {Number(revenue.codCommissionDue || 0).toLocaleString("fr-FR")} FCFA
+                    </div>
+                  </div>
+                </div>
+
+                {Number(revenue.codCommissionDue || 0) > 0 && (
+                  <div style={{ marginTop: 12, padding: "10px 14px", background: "#fff7ed", border: "1px solid #fdba74", borderRadius: 8, fontSize: "0.82rem", color: "#9a3412" }}>
+                    💡 Pour reverser ces commissions, contactez le support Kimoxa via Mobile Money avec la mention « Commission [nom boutique] ».
+                    Un reçu vous sera envoyé sous 24h.
+                  </div>
+                )}
+              </div>
+
               <div className="stat-row">
                 <div className="stat-card">
                   <div className="label">Ventes brutes</div>
                   <div className="value">{Number(revenue.grossSales).toLocaleString("fr-FR")} FCFA</div>
                 </div>
                 <div className="stat-card">
-                  <div className="label">Commission FasoShop</div>
+                  <div className="label">Commission totale</div>
                   <div className="value">{Number(revenue.totalCommission).toLocaleString("fr-FR")} FCFA</div>
                 </div>
                 <div className="stat-card">

@@ -19,9 +19,8 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
   const [reviewError, setReviewError] = useState("");
   const [reviewSuccess, setReviewSuccess] = useState("");
   const [now, setNow] = useState(() => new Date());
-  const [mainImg, setMainImg] = useState(0); // Galerie interactive
+  const [mainImg, setMainImg] = useState(0);
 
-  // Tic chaque seconde pour le compte à rebours vente flash
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(t);
@@ -59,7 +58,6 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
 
   const user = initialUser;
 
-  // Compte à rebours vente flash
   const flashEnds = product.flash_sale_ends_at ? new Date(product.flash_sale_ends_at) : null;
   const flashActive = flashEnds && flashEnds > now;
   const flashDiff = flashActive ? flashEnds - now : 0;
@@ -68,6 +66,7 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
   const fs = Math.floor((flashDiff % 60000) / 1000);
 
   const images = product.images && product.images.length > 0 ? product.images : [];
+  const deliveryFee = Number(product.delivery_fee) || 0;
 
   return (
     <div className="shell">
@@ -76,10 +75,8 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
       <div className="content">
         <Link href="/shop" className="pdp-back">← Retour au catalogue</Link>
 
-        {/* === LAYOUT 2 COLONNES PC / 1 COL MOBILE === */}
         <div className="pdp-main">
-
-          {/* === COLONNE GAUCHE : galerie photo === */}
+          {/* Galerie */}
           <div className="pdp-gallery">
             <div className="pdp-main-image">
               {hasDiscount(product) && (
@@ -93,6 +90,7 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
                   height={800}
                   sizes="(max-width: 900px) 100vw, 50vw"
                   priority
+                  unoptimized
                 />
               ) : (
                 <div className="pdp-main-image-placeholder">📦</div>
@@ -107,14 +105,14 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
                     onClick={() => setMainImg(idx)}
                     type="button"
                   >
-                    <Image src={url} alt={`Miniature ${idx + 1}`} width={80} height={80} loading="lazy" />
+                    <Image src={url} alt={`Miniature ${idx + 1}`} width={80} height={80} loading="lazy" unoptimized />
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* === COLONNE DROITE : encadré achat === */}
+          {/* Encadré achat */}
           <div className="pdp-buy-box">
             <div className="pdp-title-row">
               <h1>{product.name}</h1>
@@ -126,9 +124,27 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
               </span>
             </div>
 
-            <p className="pdp-shop-name">
-              Vendu par <strong>Kimoxa</strong> <span style={{ color: "var(--gold-600)" }}>✓</span>
-            </p>
+            <Link
+              href={`/boutique/${product.shop_id}`}
+              className="pdp-shop-name"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "8px 12px",
+                background: "var(--cream-100, #faf7f2)",
+                border: "1px solid var(--border, #e5e5e5)",
+                borderRadius: 8,
+                textDecoration: "none",
+                color: "var(--ink-900, #1a1a1a)",
+                marginTop: 4,
+                marginBottom: 12,
+              }}
+            >
+              <span style={{ fontSize: "1.1rem" }}>🏪</span>
+              <span style={{ fontWeight: 600 }}>{product.shop_name || "Boutique partenaire"}</span>
+              <span style={{ color: "var(--gold-600, #c9a44c)", fontWeight: 700 }}>✓</span>
+            </Link>
 
             {product.category_name && (
               <p className="pdp-category">📂 {product.category_name}</p>
@@ -145,14 +161,12 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
               <PriceDisplay product={product} />
             </div>
 
-            {/* ⚡ Vente flash */}
             {flashActive && (
               <div className="pdp-flash">
                 ⚡ <strong>Vente flash :</strong> se termine dans {fh}h {fm}m {fs}s
               </div>
             )}
 
-            {/* 🔥 Stock faible */}
             {product.stock_quantity > 0 && product.stock_quantity <= 5 ? (
               <div className="pdp-stock-low">
                 🔥 Plus que <strong>{product.stock_quantity}</strong> en stock — commandez vite !
@@ -173,16 +187,44 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
                 : "Ajouter au panier"}
             </button>
 
-            {/* 🛡️ Réassurance compacte */}
             <div className="pdp-trust">
-              <span>🚚 Livraison rapide</span>
+              <span>🚚 Livraison vendeur</span>
               <span>📱 Mobile Money</span>
               <span>↩️ 7 jours</span>
+            </div>
+
+            {/* 🚚🏪 OPTIONS LIVRAISON — modèle v3 (le vendeur décide) */}
+            <div
+              style={{
+                marginTop: 16,
+                padding: "12px 14px",
+                background: "#f0f9f0",
+                border: "1px solid #86d68a",
+                borderRadius: 8,
+                fontSize: "0.85rem",
+                color: "#1a4a1a",
+              }}
+            >
+              {product.offers_delivery !== false && (
+                <div style={{ marginBottom: 4 }}>
+                  🚚 <strong>Livraison à domicile par {product.shop_name}</strong> :{" "}
+                  <strong>{deliveryFee === 0 ? "Gratuite" : `${deliveryFee.toLocaleString("fr-FR")} FCFA`}</strong>
+                </div>
+              )}
+              {product.offers_pickup !== false && (
+                <div style={{ marginBottom: 4 }}>
+                  🏪 <strong>Retrait en boutique</strong> :{" "}
+                  <strong style={{ color: "#2f7a3d" }}>Gratuit</strong>
+                </div>
+              )}
+              <div style={{ color: "#3a6b3a", fontSize: "0.8rem" }}>
+                💵 Espèces ou 📱 Mobile Money — paiement sécurisé par Kimoxa.
+              </div>
             </div>
           </div>
         </div>
 
-        {/* === DESCRIPTION (pleine largeur) === */}
+        {/* Description */}
         {product.description && (
           <div className="panel pdp-description">
             <h2>Description</h2>
@@ -190,7 +232,7 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
           </div>
         )}
 
-        {/* === AVIS CLIENTS (pleine largeur) === */}
+        {/* Avis clients */}
         <div className="panel">
           <h2>Avis clients</h2>
 

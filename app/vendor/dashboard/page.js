@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import VendorBottomNav from "@/app/components/VendorBottomNav";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
-import VendorDeliveryToggle from "@/app/components/VendorDeliveryToggle";
 import VendorAnalytics from "@/app/components/VendorAnalytics";
 import VendorInsights from "@/app/components/VendorInsights";
 
@@ -609,9 +608,16 @@ export default function VendorDashboard() {
           </div>
         )}
 
-        {/*  🏪 Interrupteur livraison par la boutique (visible si boutique active) */}
+                {/* 🚚 Modèle v3 : le vendeur livre toujours, prix fixé dans Mon compte */}
         {shop && shop.status === "active" && (
-          <VendorDeliveryToggle />
+          <div className="vendor-alert vendor-alert-info">
+            <strong>🚚 Vous livrez vous-même vos commandes</strong>
+            <p>
+              Fixez votre prix de livraison dans{" "}
+              <a href="/vendor/account" style={{ fontWeight: 600 }}>Mon compte → Options de livraison</a>.
+              Ce montant vous est reversé à 100% (0% de commission Kimoxa).
+            </p>
+          </div>
         )}
 
         {!loading && newOrdersCount > 0 && !newOrdersAlertDismissed && (

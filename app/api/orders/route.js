@@ -1,264 +1,243 @@
+import { NextResponse } from "next/server";
 import sql from "@/lib/db";
-import { getDeliveryFee } from "@/lib/delivery";
-import { rateLimit, clientKey } from "@/lib/rate-limit";
+import { getCurrentUser } from "@/lib/session";
 
-const COMMISSION_RATE = 0.09; // ✅ Commission mise à jour à 9%
-
-function detectCityFromAddress(address) {
-  const addr = (address || "").toLowerCase();
-  if (addr.includes("ouaga") || addr.includes("kadiogo")) return "Ouagadougou";
-  return address ? "Autre" : "";
-}
-
-function sanitizeAddress(str) {
-  if (typeof str !== "string") return "";
-  return str
-    .replace(/[;<>$`\\]/g, "")
-    .replace(/--/g, "")
-    .replace(/\b(drop|select|insert|update|delete|union|exec)\b/gi, "")
-    .trim()
-    .slice(0, 300);
-}
-
-function isValidPhone(phone) {
-  return /^\+?[0-9\s\-()]{8,20}$/.test(phone);
-}
-
-function validateItems(items) {
-  if (!Array.isArray(items) || items.length === 0) {
-    throw new Error("Panier vide.");
-  }
-  if (items.length > 50) {
-    throw new Error("Panier trop volumineux (max 50 articles).");
-  }
-  return items.map((item) => {
-    const productId = Number(item.productId);
-    const quantity = Number(item.quantity);
-    if (!productId || !Number.isInteger(productId) || productId <= 0) {
-      throw new Error("Article invalide.");
-    }
-    if (!Number.isInteger(quantity) || quantity < 1 || quantity > 99) {
-      throw new Error("Quantité invalide (1-99).");
-    }
-    return { productId, quantity };
-  });
-}
+const COMMISSION_RATE = 0.09; // 9%
 
 export async function POST(request) {
-  const userId = request.headers.get("x-user-id");
-  const userRole = request.headers.get("x-user-role");
-
-  if (!userId || userRole !== "buyer") {
-    return Response.json({ error: "Accès refusé." }, { status: 403 });
+  const user = await getCurrentUser();
+  if (!user) {
+    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
-  const key = `order:${clientKey(request)}`;
-  if (!rateLimit(key, { limit: 5, windowMs: 60_000 })) {
-    return Response.json(
-      { error: "Trop de tentatives. Réessayez dans une minute." },
-      { status: 429 }
-    );
-  }
-
+  let body;
   try {
-    // 🆕 Expiration lazy : libère le stock des commandes expirées avant de créer
-    const { cancelExpiredOrders } = await import("@/lib/queries/cancelExpiredOrders");
-    await cancelExpiredOrders();
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
+  }
 
-    const body = await request.json();
+  const { items, shippingAddress, phone, paymentMethod, deliveryMethod, promoCode } = body;
 
-    const items = validateItems(body.items);
-    const shippingAddress = sanitizeAddress(body.shippingAddress);
-    const phone = String(body.phone || "").trim();
-    const promoCode = body.promoCode ? String(body.promoCode).trim().toUpperCase().slice(0, 50) : null; // 🎁
+  // === Validation des entrées ===
+  if (!Array.isArray(items) || items.length === 0) {
+    return NextResponse.json({ error: "Panier vide" }, { status: 400 });
+  }
 
-    if (!shippingAddress || shippingAddress.length < 5) {
-      return Response.json(
-        { error: "Adresse trop courte (précisez quartier, rue ou repère)." },
+  if (deliveryMethod === "delivery" && (!shippingAddress || !shippingAddress.trim())) {
+    return NextResponse.json({ error: "Adresse de livraison requise" }, { status: 400 });
+  }
+
+  if (!phone || !phone.trim()) {
+    return NextResponse.json({ error: "Numéro de téléphone requis" }, { status: 400 });
+  }
+
+  if (!["cod", "mobile_money"].includes(paymentMethod)) {
+    return NextResponse.json({ error: "Mode de paiement invalide" }, { status: 400 });
+  }
+
+  if (!["delivery", "pickup"].includes(deliveryMethod)) {
+    return NextResponse.json({ error: "Mode de livraison invalide" }, { status: 400 });
+  }
+
+  // === 🆕 CAST explicite des IDs (localStorage donne des strings) ===
+  const productIds = items.map((i) => Number(i.productId)).filter((n) => Number.isInteger(n) && n > 0);
+
+  if (productIds.length !== items.length) {
+    return NextResponse.json({ error: "Produits invalides dans le panier" }, { status: 400 });
+  }
+
+  // === Résolution des produits avec stock réel ===
+  const products = await sql`
+    SELECT p.id, p.price, p.stock_quantity, p.name, p.shop_id, p.status
+    FROM products p
+    WHERE p.id = ANY(${productIds}::int[])
+  `;
+
+  const productsMap = Object.fromEntries(products.map((p) => [p.id, p]));
+
+  // Vérif disponibilité + stock
+  for (const item of items) {
+    const pid = Number(item.productId);
+    const p = productsMap[pid];
+    if (!p) {
+      return NextResponse.json({ error: `Produit ${pid} introuvable` }, { status: 400 });
+    }
+    if (p.status !== "active") {
+      return NextResponse.json({ error: `Produit "${p.name}" indisponible` }, { status: 400 });
+    }
+    if (p.stock_quantity < item.quantity) {
+      return NextResponse.json(
+        { error: `Stock insuffisant pour "${p.name}" (${p.stock_quantity} restants)` },
         { status: 400 }
       );
     }
-    if (!isValidPhone(phone)) {
-      return Response.json({ error: "Téléphone invalide." }, { status: 400 });
+  }
+
+  // === Chargement des boutiques ===
+  const shopIds = [...new Set(products.map((p) => p.shop_id))];
+  const shops = await sql`
+    SELECT id, name, status, delivery_fee, offers_delivery, offers_pickup
+    FROM shops
+    WHERE id = ANY(${shopIds}::int[])
+  `;
+  const shopsMap = Object.fromEntries(shops.map((s) => [s.id, s]));
+
+  // Vérif : toutes les boutiques doivent être actives
+  for (const s of shops) {
+    if (s.status !== "active") {
+      return NextResponse.json(
+        { error: `Boutique "${s.name}" temporairement indisponible` },
+        { status: 400 }
+      );
+    }
+  }
+
+  // Vérif : livraison à domicile vs options boutique
+  if (deliveryMethod === "delivery") {
+    for (const s of shops) {
+      if (!s.offers_delivery) {
+        return NextResponse.json(
+          { error: `"${s.name}" ne propose pas la livraison à domicile. Choisissez le retrait.` },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
+  // === Code promo (si fourni) ===
+  let promoDiscount = 0;
+  let promoCodeId = null;
+  if (promoCode) {
+    const [promo] = await sql`
+      SELECT * FROM promo_codes
+      WHERE UPPER(code) = ${promoCode.toUpperCase()}
+        AND is_active = true
+        AND (starts_at IS NULL OR starts_at <= NOW())
+        AND (ends_at IS NULL OR ends_at >= NOW())
+        AND (max_uses IS NULL OR used_count < max_uses)
+    `;
+
+    if (!promo) {
+      return NextResponse.json({ error: "Code promo invalide ou expiré" }, { status: 400 });
     }
 
-    const deliveryMethod = body.deliveryMethod === "pickup" ? "pickup" : "delivery";
-    if (deliveryMethod === "delivery" && !shippingAddress) {
-      return Response.json({ error: "Adresse requise." }, { status: 400 });
+    const subtotalBeforePromo = items.reduce(
+      (sum, i) => sum + Number(productsMap[Number(i.productId)].price) * i.quantity,
+      0
+    );
+
+    if (promo.min_order_amount && subtotalBeforePromo < Number(promo.min_order_amount)) {
+      return NextResponse.json(
+        { error: `Commande minimum : ${Number(promo.min_order_amount).toLocaleString("fr-FR")} FCFA` },
+        { status: 400 }
+      );
     }
 
-    const allowedMethods = ["cod", "mobile_money"];
-    const finalPaymentMethod = allowedMethods.includes(body.paymentMethod)
-      ? body.paymentMethod
-      : "cod";
-
-    const finalAddress =
-      deliveryMethod === "pickup"
-        ? "Retrait au point relais Kimoxa (Ouagadougou)"
-        : shippingAddress;
-
-    const order = await sql.begin(async (tx) => {
-      let subtotal = 0;
-      const resolvedItems = [];
-
-      for (const { productId, quantity } of items) {
-        const [product] = await tx`
-          SELECT id, name, price, stock_quantity, shop_id, status
-          FROM products
-          WHERE id = ${productId}
-          FOR UPDATE
-        `;
-
-        if (!product) {
-          throw new Error("Produit introuvable.");
-        }
-        if (product.status && product.status !== "active") {
-          throw new Error(`"${product.name}" n'est plus disponible.`);
-        }
-        if (product.stock_quantity < quantity) {
-          throw new Error(`Stock insuffisant pour "${product.name}".`);
-        }
-
-        subtotal += Number(product.price) * quantity;
-        resolvedItems.push({ product, quantity });
+    if (promo.discount_type === "percent") {
+      promoDiscount = Math.round(subtotalBeforePromo * Number(promo.discount_value) / 100);
+      if (promo.max_discount_amount) {
+        promoDiscount = Math.min(promoDiscount, Number(promo.max_discount_amount));
       }
+    } else {
+      promoDiscount = Number(promo.discount_value);
+    }
 
-      // 🚚 Frais livraison RECALCULÉS côté serveur (anti-fraude)
-      const city = detectCityFromAddress(finalAddress);
-      const deliveryFee = getDeliveryFee(city, subtotal, deliveryMethod);
-      const totalWithDelivery = subtotal + deliveryFee;
+    promoCodeId = promo.id;
+  }
 
-      // 🎁 VALIDATION CODE PROMO (revalidation serveur = sécurité)
-      // Règle financière v1 : la remise est supportée par Kimoxa (coût marketing).
-      // Les vendeurs et commissions restent calculés sur le sous-total produits.
-      let discountAmount = 0;
-      let promoCodeId = null;
-      if (promoCode) {
-        const [promo] = await tx`
-          SELECT * FROM promo_codes
-          WHERE code = ${promoCode} AND active = true
-          FOR UPDATE
-        `;
-        if (!promo) throw new Error("Code promo invalide ou désactivé.");
-        if (promo.valid_from && new Date(promo.valid_from) > new Date()) throw new Error("Code pas encore actif.");
-        if (promo.valid_until && new Date(promo.valid_until) < new Date()) throw new Error("Code expiré.");
-        if (promo.usage_limit && promo.usage_count >= promo.usage_limit) throw new Error("Code épuisé.");
-        if (subtotal < Number(promo.min_order_amount)) {
-          throw new Error(`Montant minimum : ${Number(promo.min_order_amount).toLocaleString("fr-FR")} FCFA.`);
-        }
+  // === Calcul des frais de livraison PAR BOUTIQUE ===
+  let deliveryFee = 0;
+  if (deliveryMethod === "delivery") {
+    for (const s of shops) {
+      deliveryFee += Number(s.delivery_fee) || 0;
+    }
+  }
 
-        let d = promo.type === "percentage" ? subtotal * (Number(promo.value) / 100) : Number(promo.value);
-        if (promo.type === "percentage" && promo.max_discount) d = Math.min(d, Number(promo.max_discount));
-        discountAmount = Math.min(Math.round(d), subtotal); // jamais négatif, jamais > sous-total
-        promoCodeId = promo.id;
-      }
+  // === Total final ===
+  const subtotalProducts = items.reduce(
+    (sum, i) => sum + Number(productsMap[Number(i.productId)].price) * i.quantity,
+    0
+  );
+  const grandTotal = Math.max(0, subtotalProducts + deliveryFee - promoDiscount);
 
-      const finalTotal = Math.max(0, totalWithDelivery - discountAmount);
-
-      // 💰 QUI LIVRE ? (règle de répartition de l'argent de livraison)
-      // - boutique seule ET elle livre elle-même → l'argent part à la boutique
-      // - sinon (multi-boutiques ou non) → l'argent part au livreur Kimoxa
-      let fulfilledBy = "kimoxa";
-      if (deliveryMethod === "delivery" && deliveryFee > 0) {
-        const shopIds = [...new Set(resolvedItems.map((r) => r.product.shop_id))];
-        if (shopIds.length === 1) {
-          const [shopRow] = await tx`
-            SELECT delivers_own_orders FROM shops WHERE id = ${shopIds[0]}
-          `;
-          if (shopRow && shopRow.delivers_own_orders) fulfilledBy = "shop";
-        }
-      }
-
+  // === Transaction atomique : commande + stock + ledger + promo ===
+  try {
+    const result = await sql.begin(async (tx) => {
+      // 1. Création commande
       const [newOrder] = await tx`
-        INSERT INTO orders (buyer_id, status, total, shipping_address, phone,
-                            payment_method, delivery_fee, delivery_method, fulfilled_by, expires_at,
-                            promo_code, discount_amount)
-        VALUES (${userId}, 'pending', ${finalTotal}, ${finalAddress}, ${phone},
-                ${finalPaymentMethod}, ${deliveryFee}, ${deliveryMethod}, ${fulfilledBy},
-                NOW() + INTERVAL '24 hours',
-                ${promoCode}, ${discountAmount})
-        RETURNING id, status, total, payment_method, delivery_fee, delivery_method, created_at
+        INSERT INTO orders (buyer_id, shipping_address, phone, payment_method,
+                            total, subtotal, delivery_fee, status, delivery_method)
+        VALUES (${user.id}, ${shippingAddress || ""}, ${phone}, ${paymentMethod},
+                ${grandTotal}, ${subtotalProducts}, ${deliveryFee}, 'pending', ${deliveryMethod})
+        RETURNING id, total, subtotal, delivery_fee, status
       `;
 
+      // 2. Items + déstockage
       const subtotalsByShop = {};
+      for (const item of items) {
+        const pid = Number(item.productId);
+        const p = productsMap[pid];
+        const lineTotal = Number(p.price) * item.quantity;
 
-      for (const { product, quantity } of resolvedItems) {
         await tx`
           INSERT INTO order_items (order_id, product_id, quantity, price_at_purchase)
-          VALUES (${newOrder.id}, ${product.id}, ${quantity}, ${product.price})
+          VALUES (${newOrder.id}, ${p.id}, ${item.quantity}, ${Number(p.price)})
         `;
 
-        const [updated] = await tx`
+        const [upd] = await tx`
           UPDATE products
-          SET stock_quantity = stock_quantity - ${quantity}, updated_at = NOW()
-          WHERE id = ${product.id} AND stock_quantity >= ${quantity}
+          SET stock_quantity = stock_quantity - ${item.quantity}
+          WHERE id = ${p.id} AND stock_quantity >= ${item.quantity}
           RETURNING id
         `;
-        if (!updated) {
-          throw new Error(`Stock insuffisant pour "${product.name}" (concurrent).`);
+        if (!upd) {
+          throw new Error(`Stock insuffisant pour "${p.name}" (concurrence)`);
         }
 
-        await tx`
-          INSERT INTO stock_movements (product_id, type, quantity, reason, created_by)
-          VALUES (${product.id}, 'sale', ${-quantity}, ${"Vente - commande #" + newOrder.id}, ${userId})
-        `;
-
-        const lineTotal = Number(product.price) * quantity;
-        subtotalsByShop[product.shop_id] = (subtotalsByShop[product.shop_id] || 0) + lineTotal;
+        if (!subtotalsByShop[p.shop_id]) subtotalsByShop[p.shop_id] = 0;
+        subtotalsByShop[p.shop_id] += lineTotal;
       }
 
-      // 💰 Commission 9% PRODUITS UNIQUEMENT (jamais sur la livraison)
+      // 3. Commission ledger par boutique
       for (const [shopId, shopSubtotal] of Object.entries(subtotalsByShop)) {
         const commissionAmount = Math.round(shopSubtotal * COMMISSION_RATE);
-        // Si la boutique livre elle-même : la livraison s'ajoute à son payout (0% commission)
-        const deliveryFeeForShop = fulfilledBy === "shop" ? deliveryFee : 0;
-        const payoutAmount = shopSubtotal - commissionAmount + deliveryFeeForShop;
+        const shopDeliveryFee =
+          deliveryMethod === "delivery" ? Number(shopsMap[shopId]?.delivery_fee || 0) : 0;
+        const payoutAmount = shopSubtotal - commissionAmount + shopDeliveryFee;
 
         await tx`
           INSERT INTO shop_commission_ledger
             (shop_id, order_id, commission_amount, gross_amount, status,
              commission_rate, payout_amount, payout_status, delivery_fee_amount)
-          VALUES (${shopId}, ${newOrder.id}, ${commissionAmount}, ${shopSubtotal}, 'due',
-                  9.0, ${payoutAmount}, 'held', ${deliveryFeeForShop})
+          VALUES (${Number(shopId)}, ${newOrder.id}, ${commissionAmount}, ${shopSubtotal}, 'due',
+                  9.0, ${payoutAmount}, 'held', ${shopDeliveryFee})
         `;
       }
 
-      // 🛵 Si c'est un livreur Kimoxa : l'argent de livraison est tracé à part
-      if (deliveryMethod === "delivery" && deliveryFee > 0 && fulfilledBy === "kimoxa") {
-        await tx`
-          INSERT INTO courier_payouts (order_id, amount, status)
-          VALUES (${newOrder.id}, ${deliveryFee}, 'due')
-        `;
-      }
-
-      // 🎁 Incrémenter le compteur d'utilisations du code promo
+      // 4. Incrément code promo
       if (promoCodeId) {
         await tx`
-          UPDATE promo_codes SET usage_count = usage_count + 1 WHERE id = ${promoCodeId}
+          UPDATE promo_codes
+          SET used_count = used_count + 1
+          WHERE id = ${promoCodeId}
+        `;
+
+        await tx`
+          INSERT INTO promo_code_uses (promo_code_id, order_id, user_id, discount_amount)
+          VALUES (${promoCodeId}, ${newOrder.id}, ${user.id}, ${promoDiscount})
         `;
       }
 
       return newOrder;
     });
 
-    return Response.json({ order }, { status: 201 });
+    return NextResponse.json({ order: result });
   } catch (err) {
-    console.error("[orders POST]", err);
-    return Response.json(
-      { error: err.message && err.message.includes("Code") ? err.message : "Impossible de finaliser la commande." },
-      { status: 400 }
+    console.error("[orders] POST error:", err);
+    return NextResponse.json(
+      { error: err.message || "Erreur lors de la commande" },
+      { status: 500 }
     );
   }
-}
-
-export async function GET(request) {
-  const userId = request.headers.get("x-user-id");
-
-  // 🆕 Expiration lazy : annule les commandes expirées avant de lister
-  const { cancelExpiredOrders } = await import("@/lib/queries/cancelExpiredOrders");
-  await cancelExpiredOrders();
-
-  const { getBuyerOrders } = await import("@/lib/queries/orders");
-  const orders = await getBuyerOrders(userId);
-  return Response.json({ orders });
 }

@@ -23,6 +23,14 @@ export default function VendorAccountPage() {
   const [mmError, setMmError] = useState("");
   const [cityInput, setCityInput] = useState("");
   const [citySaved, setCitySaved] = useState(false);
+
+  // 🆕 Livraison par la boutique
+  const [deliveryFee, setDeliveryFee] = useState(1500);
+  const [offersDelivery, setOffersDelivery] = useState(true);
+  const [offersPickup, setOffersPickup] = useState(true);
+  const [deliverySaved, setDeliverySaved] = useState(false);
+  const [deliveryError, setDeliveryError] = useState("");
+
   const [resubmitDocType, setResubmitDocType] = useState("cni");
   const [resubmitDocNumber, setResubmitDocNumber] = useState("");
   const [resubmitError, setResubmitError] = useState("");
@@ -50,6 +58,9 @@ export default function VendorAccountPage() {
               setResubmitDocType(d.shop.id_document_type || "cni");
               setResubmitDocNumber(d.shop.id_document_number || "");
               setCityInput(d.shop.city || "");
+              setDeliveryFee(d.shop.delivery_fee ?? 1500);
+              setOffersDelivery(d.shop.offers_delivery ?? true);
+              setOffersPickup(d.shop.offers_pickup ?? true);
             }
           });
       });
@@ -139,6 +150,38 @@ export default function VendorAccountPage() {
     }
   }
 
+  // 🆕 Sauvegarde paramètres livraison
+  async function handleSaveDelivery(e) {
+    e.preventDefault();
+    setDeliveryError("");
+    setDeliverySaved(false);
+
+    if (!offersDelivery && !offersPickup) {
+      setDeliveryError("Vous devez proposer au moins une option (livraison ou retrait).");
+      return;
+    }
+
+    const res = await fetch("/api/vendor/shop", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        deliveryFee: offersDelivery ? Number(deliveryFee) || 0 : 0,
+        offersDelivery,
+        offersPickup,
+      }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      setDeliveryError(data.error || "Erreur lors de l'enregistrement.");
+      return;
+    }
+
+    setShop(data.shop);
+    setDeliverySaved(true);
+    setTimeout(() => setDeliverySaved(false), 2500);
+  }
+
   async function handleLogout() {
     await fetch("/api/auth/logout", { method: "POST" });
     router.push("/login");
@@ -165,7 +208,6 @@ export default function VendorAccountPage() {
       <div className="woven-strip" />
 
       <div className="vendor-account-wrap">
-        {/* Bannière statut */}
         <div className="vendor-status-banner" style={{ borderColor: statusConfig.color }}>
           <div className="vendor-status-icon" style={{ background: statusConfig.color }}>
             {statusConfig.icon}
@@ -177,7 +219,6 @@ export default function VendorAccountPage() {
           {shop?.name && <div className="vendor-shop-name">{shop.name}</div>}
         </div>
 
-        {/* Grille de paramètres */}
         <div className="vendor-settings-grid">
           {/* Vérification identité */}
           {(needsVerification || isRejected) && (
@@ -229,7 +270,6 @@ export default function VendorAccountPage() {
             </div>
           )}
 
-          {/* Statut en attente */}
           {status === "pending" && shop?.id_document_type && (
             <div className="vendor-setting-card">
               <div className="vendor-setting-header">
@@ -242,6 +282,80 @@ export default function VendorAccountPage() {
               <p className="vendor-setting-hint">
                 Vous pourrez publier des produits dès validation.
               </p>
+            </div>
+          )}
+
+          {/* 🆕 PARAMÈTRES LIVRAISON (prioritaire) */}
+          {status === "active" && (
+            <div className="vendor-setting-card" style={{ gridColumn: "1 / -1" }}>
+              <div className="vendor-setting-header">
+                <span className="vendor-setting-icon">🚚</span>
+                <h3>Options de livraison</h3>
+              </div>
+              <p className="vendor-setting-desc">
+                Vous organisez vous-même la livraison. Kimoxa ne s'en occupe pas.
+                Le prix que vous fixez est ce que le client paie pour recevoir son colis.
+              </p>
+
+              {deliveryError && <div className="error-box">{deliveryError}</div>}
+              {deliverySaved && <div className="success-box">Options enregistrées.</div>}
+
+              <form onSubmit={handleSaveDelivery}>
+                {/* Option 1 : livraison à domicile */}
+                <label style={{ display: "flex", gap: 10, padding: 12, background: "var(--cream-50, #faf7f2)", borderRadius: 8, marginBottom: 8, cursor: "pointer" }}>
+                  <input
+  type="checkbox"
+  checked={offersDelivery}
+  onChange={(e) => setOffersDelivery(e.target.checked)}
+  style={{ width: 18, height: 18, marginTop: 4, accentColor: "var(--millet-600, #2f7a3d)", flexShrink: 0 }}
+/>
+                  <div style={{ flex: 1 }}>
+                    <strong>🚚 Livraison à domicile</strong>
+                    <div style={{ fontSize: "0.85rem", color: "var(--ink-500)", marginTop: 2 }}>
+                      Vous livrez vous-même les clients à leur adresse.
+                    </div>
+                  </div>
+                </label>
+
+                {offersDelivery && (
+                  <div style={{ marginLeft: 30, marginBottom: 12 }}>
+                    <label htmlFor="delivery-fee">Prix de livraison (FCFA)</label>
+                    <input
+                      id="delivery-fee"
+                      type="number"
+                      min="0"
+                      max="50000"
+                      value={deliveryFee}
+                      onChange={(e) => setDeliveryFee(e.target.value)}
+                      style={{ maxWidth: 200 }}
+                    />
+                    <div style={{ fontSize: "0.78rem", color: "var(--ink-400)", marginTop: 4 }}>
+                      💡 0 = livraison gratuite · 1 500 FCFA recommandé pour Ouaga
+                      · Ce montant va directement à vous (0% de commission Kimoxa)
+                    </div>
+                  </div>
+                )}
+
+                {/* Option 2 : retrait en boutique */}
+                <label style={{ display: "flex", gap: 10, padding: 12, background: "var(--cream-50, #faf7f2)", borderRadius: 8, cursor: "pointer" }}>
+                 <input
+  type="checkbox"
+  checked={offersPickup}
+  onChange={(e) => setOffersPickup(e.target.checked)}
+  style={{ width: 18, height: 18, marginTop: 4, accentColor: "var(--millet-600, #2f7a3d)", flexShrink: 0 }}
+/>
+                  <div style={{ flex: 1 }}>
+                    <strong>🏪 Retrait en boutique (toujours gratuit)</strong>
+                    <div style={{ fontSize: "0.85rem", color: "var(--ink-500)", marginTop: 2 }}>
+                      Le client vient chercher le colis chez vous — aucune frais à facturer.
+                    </div>
+                  </div>
+                </label>
+
+                <button type="submit" className="btn btn-primary" style={{ marginTop: 12 }}>
+                  Enregistrer mes options
+                </button>
+              </form>
             </div>
           )}
 
@@ -307,7 +421,6 @@ export default function VendorAccountPage() {
             </form>
           </div>
 
-          {/* Suspendu */}
           {status === "suspended" && (
             <div className="vendor-setting-card vendor-alert-card">
               <div className="vendor-setting-header">

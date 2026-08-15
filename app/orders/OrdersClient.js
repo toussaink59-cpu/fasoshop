@@ -246,7 +246,12 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
                     return (
                       <div className="order-sub" key={sub.shopId}>
                         <div className="order-sub-head">
-                          <strong>Kimoxa <span style={{ color: "var(--gold-600)" }}>✓</span></strong>
+                          {/* 🎯 SPRINT A : nom RÉEL de la boutique (plus de "Kimoxa" hardcodé) */}
+                          <strong style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: "1.1rem" }}>🏪</span>
+                            <span>{sub.shopName || "Boutique partenaire"}</span>
+                            <span style={{ color: "var(--gold-600)", fontWeight: 700 }}>✓</span>
+                          </strong>
                           <span className={`status-pill status-${sub.deliveryStatus}`}>
                             {STATUS_LABELS[sub.deliveryStatus] || sub.deliveryStatus}
                           </span>

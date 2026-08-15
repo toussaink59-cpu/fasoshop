@@ -4,6 +4,7 @@ import { getInvoiceData } from "@/lib/queries/invoice";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
 import PrintButton from "@/app/components/PrintButton";
 import Link from "next/link";
+import "./invoice.css";
 
 export const metadata = {
   title: "Facture",
@@ -37,69 +38,98 @@ export default async function InvoicePage({ params }) {
     year: "numeric",
   });
 
-  // ===== CALCUL LIVRAISON =====
   const deliveryFee = Number(invoice.deliveryFee) || 0;
   const subtotalProducts = Number(invoice.total) - deliveryFee;
 
   return (
     <div>
-      {/* Bouton imprimer (masqué à l'impression) */}
+      {/* Toolbar (masqué à l'impression) */}
       <div className="invoice-toolbar print-hide">
         <Link href="/orders" className="btn btn-ghost">← Retour aux commandes</Link>
         <PrintButton />
       </div>
 
+      {/* Feuille facture A4 compacte */}
       <div className="invoice-sheet">
-        {/* En-tête facture */}
+
+        {/* ═══════════ EN-TÊTE ═══════════ */}
         <div className="invoice-header">
-          <div className="invoice-brand">
-            <KimoxaLogo size={32} />
+          <div className="invoice-header-left">
+            <KimoxaLogo size={36} />
+            <div className="invoice-tagline">Achetez local. Vivez grand.</div>
           </div>
-          <div className="invoice-title">
-            <h1>FACTURE</h1>
-            <div className="invoice-number">N° {String(invoice.id).padStart(6, "0")}</div>
-            <div className="invoice-date">{date}</div>
-          </div>
-        </div>
-
-        {/* Bloc client */}
-        <div className="invoice-section">
-          <h2>Client</h2>
-          <div className="invoice-info">
-            <div><strong>{invoice.buyer_name}</strong></div>
-            <div>📍 {invoice.shipping_address}</div>
-            <div>📞 {invoice.phone || invoice.buyer_phone}</div>
-            {invoice.buyer_email && <div>✉️ {invoice.buyer_email}</div>}
+          <div className="invoice-header-right">
+            <div className="invoice-title-text">FACTURE</div>
+            <div className="invoice-number-text">
+              N° <strong>KMX-{String(invoice.id).padStart(6, "0")}</strong>
+            </div>
+            <div className="invoice-date-text">{date}</div>
           </div>
         </div>
 
-        {/* Blocs par boutique (identité réelle obligatoire) */}
-        {invoice.subOrders.map((sub) => (
-          <div className="invoice-section" key={sub.shopId}>
-            <div className="invoice-vendor-header">
+        {/* ═══════════ CLIENT + STATUT GLOBAL (2 colonnes) ═══════════ */}
+        <div className="invoice-meta-row">
+          <div className="invoice-meta-block">
+            <div className="invoice-meta-label">FACTURÉ À</div>
+            <div className="invoice-meta-value">
+              <strong>{invoice.buyer_name}</strong>
+            </div>
+            <div className="invoice-meta-detail">{invoice.shipping_address}</div>
+            <div className="invoice-meta-detail">{invoice.phone || invoice.buyer_phone}</div>
+            {invoice.buyer_email && (
+              <div className="invoice-meta-detail">{invoice.buyer_email}</div>
+            )}
+          </div>
+
+          <div className="invoice-meta-block">
+            <div className="invoice-meta-label">PAIEMENT</div>
+            <div className="invoice-meta-value">
+              {invoice.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 À la réception"}
+            </div>
+            <div className="invoice-meta-detail">
+              Statut : <strong style={{ color: invoice.total > 0 ? "var(--millet-600)" : "var(--ink-600)" }}>
+                {invoice.total > 0 ? "Confirmé" : "En attente"}
+              </strong>
+            </div>
+            <div className="invoice-meta-detail">
+              {invoice.subOrders.length} boutique{invoice.subOrders.length > 1 ? "s" : ""}
+            </div>
+          </div>
+        </div>
+
+        {/* ═══════════ BLOCS PAR BOUTIQUE ═══════════ */}
+        {invoice.subOrders.map((sub, shopIndex) => (
+          <div
+            key={sub.shopId}
+            className="invoice-shop-block"
+            style={{ marginTop: shopIndex === 0 ? 0 : 18 }}
+          >
+            {/* En-tête boutique compact */}
+            <div className="invoice-shop-header">
               <div>
-                <h2>Vendu par</h2>
-                <div className="invoice-info">
-                  <div><strong>{sub.shopName}</strong></div>
-                  <div>Responsable : {sub.vendorName}</div>
-                  {sub.vendorPhone && <div>📞 {sub.vendorPhone}</div>}
-                  {sub.shopCity && <div>📍 {sub.shopCity}, Burkina Faso</div>}
+                <div className="invoice-shop-label">VENDU PAR</div>
+                <div className="invoice-shop-name">
+                  🏪 {sub.shopName} <span className="invoice-verified">✓</span>
+                </div>
+                <div className="invoice-shop-info">
+                  {sub.vendorName}
+                  {sub.shopCity ? ` · ${sub.shopCity}, Burkina Faso` : ""}
+                  {sub.vendorPhone ? ` · ${sub.vendorPhone}` : ""}
                 </div>
               </div>
-              <div className="invoice-status">
-                <span className={`status-pill status-${sub.deliveryStatus}`}>
-                  {STATUS_LABELS[sub.deliveryStatus] || sub.deliveryStatus}
-                </span>
-              </div>
+              <span className={`status-pill status-${sub.deliveryStatus}`}>
+                {STATUS_LABELS[sub.deliveryStatus] || sub.deliveryStatus}
+              </span>
             </div>
 
+            {/* Tableau articles */}
             <table className="invoice-table">
               <thead>
                 <tr>
-                  <th>Article</th>
-                  <th className="text-right">Qté</th>
-                  <th className="text-right">Prix unitaire</th>
-                  <th className="text-right">Total</th>
+                  <th style={{ textAlign: "left" }}>Article</th>
+                  <th style={{ textAlign: "right", width: 60 }}>Qté</th>
+                  <th style={{ textAlign: "right", width: 110 }}>Prix unit.</th>
+                  <th style={{ textAlign: "right", width: 110 }}>Total</th>
                 </tr>
               </thead>
               <tbody>
@@ -108,12 +138,12 @@ export default async function InvoicePage({ params }) {
                   return (
                     <tr key={idx}>
                       <td>{item.productName}</td>
-                      <td className="text-right">{item.quantity}</td>
-                      <td className="text-right">
+                      <td style={{ textAlign: "right" }}>{item.quantity}</td>
+                      <td style={{ textAlign: "right" }}>
                         {item.priceAtPurchase.toLocaleString("fr-FR")} FCFA
                       </td>
-                      <td className="text-right">
-                        <strong>{lineTotal.toLocaleString("fr-FR")} FCFA</strong>
+                      <td style={{ textAlign: "right", fontWeight: 600 }}>
+                        {lineTotal.toLocaleString("fr-FR")} FCFA
                       </td>
                     </tr>
                   );
@@ -121,54 +151,52 @@ export default async function InvoicePage({ params }) {
               </tbody>
               <tfoot>
                 <tr>
-                  <td colSpan={3} className="text-right"><strong>Sous-total boutique</strong></td>
-                  <td className="text-right"><strong>{sub.subtotal.toLocaleString("fr-FR")} FCFA</strong></td>
+                  <td colSpan={3} style={{ textAlign: "right", fontSize: 12 }}>
+                    Sous-total {sub.shopName}
+                  </td>
+                  <td style={{ textAlign: "right", fontWeight: 700 }}>
+                    {sub.subtotal.toLocaleString("fr-FR")} FCFA
+                  </td>
                 </tr>
               </tfoot>
             </table>
           </div>
         ))}
 
-        {/* ===== TOTAL GÉNÉRAL AVEC LIVRAISON ===== */}
-        <div className="invoice-total">
-          {/* Sous-total produits */}
-          <div className="invoice-total-row">
+        {/* ═══════════ TOTAL GÉNÉRAL (aligné à droite) ═══════════ */}
+        <div className="invoice-totals">
+          <div className="invoice-totals-row">
             <span>Sous-total produits</span>
             <span>{subtotalProducts.toLocaleString("fr-FR")} FCFA</span>
           </div>
-
-          {/* Frais de livraison */}
-          <div className="invoice-total-row">
+          <div className="invoice-totals-row">
             <span>🚚 Livraison</span>
-            <span style={{ color: deliveryFee === 0 ? "var(--millet-600)" : "inherit", fontWeight: deliveryFee === 0 ? 700 : 400 }}>
+            <span className={deliveryFee === 0 ? "delivery-free" : ""}>
               {deliveryFee === 0 ? "Gratuite 🎉" : `${deliveryFee.toLocaleString("fr-FR")} FCFA`}
             </span>
           </div>
-
-          {/* Total payé */}
-          <div className="invoice-total-row">
-            <span><strong>Total payé</strong></span>
-            <strong>{Number(invoice.total).toLocaleString("fr-FR")} FCFA</strong>
-          </div>
-
-          {/* Mode de paiement */}
-          <div className="invoice-total-row invoice-payment">
-            <span>Mode de paiement</span>
-            <span>
-              {invoice.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 Paiement à la livraison"}
-            </span>
+          <div className="invoice-totals-row invoice-totals-grand">
+            <span>TOTAL PAYÉ</span>
+            <span>{Number(invoice.total).toLocaleString("fr-FR")} FCFA</span>
           </div>
         </div>
 
-        {/* Mention légale */}
+        {/* ═══════════ MENTION LÉGALE COMPACTE ═══════════ */}
         <div className="invoice-legal">
-          <p><strong>Kimoxa</strong> — Marketplace multi-vendeurs · Burkina Faso</p>
+          <div className="invoice-legal-header">
+            <strong>Kimoxa</strong> — Marketplace multi-vendeurs · Burkina Faso
+          </div>
           <p>
             Kimoxa agit en tant qu'intermédiaire de paiement sécurisé (séquestre).
-            Conformément à la législation en vigueur sur le commerce électronique,
-            l'identité réelle du vendeur professionnel est mentionnée sur cette facture.
+            L'identité réelle du vendeur professionnel est mentionnée sur cette facture
+            conformément à la législation sur le commerce électronique.
           </p>
-          <p>En cas de litige, contactez le support Kimoxa : support@kimoxa.bf</p>
+          <div className="invoice-legal-contact">
+            Support : <strong>support@kimoxa.bf</strong>
+          </div>
+          <div className="invoice-legal-footer">
+            Merci pour votre confiance.
+          </div>
         </div>
       </div>
     </div>
