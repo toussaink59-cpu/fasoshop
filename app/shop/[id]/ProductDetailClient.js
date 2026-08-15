@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { addToCart } from "@/lib/cart";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
 import SiteHeader from "@/app/components/SiteHeader";
@@ -85,7 +86,14 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
                 <span className="pdp-discount-badge">-{discountPercent(product)}%</span>
               )}
               {images.length > 0 ? (
-                <img src={images[mainImg]} alt={product.name} />
+                <Image
+                  src={images[mainImg]}
+                  alt={product.name}
+                  width={800}
+                  height={800}
+                  sizes="(max-width: 900px) 100vw, 50vw"
+                  priority
+                />
               ) : (
                 <div className="pdp-main-image-placeholder">📦</div>
               )}
@@ -99,7 +107,7 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
                     onClick={() => setMainImg(idx)}
                     type="button"
                   >
-                    <img src={url} alt={`Miniature ${idx + 1}`} />
+                    <Image src={url} alt={`Miniature ${idx + 1}`} width={80} height={80} loading="lazy" />
                   </button>
                 ))}
               </div>
@@ -118,7 +126,7 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
               </span>
             </div>
 
-                        <p className="pdp-shop-name">
+            <p className="pdp-shop-name">
               Vendu par <strong>Kimoxa</strong> <span style={{ color: "var(--gold-600)" }}>✓</span>
             </p>
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
 
 function formatCountdown(ms) {
@@ -68,7 +69,15 @@ export default function FlashSaleSection({ initialProducts = [] }) {
                   <span className="badge-discount">-{discountPercent(p)}%</span>
                 )}
                 {p.images && p.images.length > 0 ? (
-                  <img src={p.images[0]} alt={p.name} className="flash-card-image" />
+                  <Image
+                    src={p.images[0]}
+                    alt={p.name}
+                    width={320}
+                    height={320}
+                    sizes="(max-width: 700px) 45vw, 260px"
+                    className="flash-card-image"
+                    loading="lazy"
+                  />
                 ) : (
                   <div className="flash-card-image flash-card-image-placeholder">🛍️</div>
                 )}
