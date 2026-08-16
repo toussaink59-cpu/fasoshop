@@ -1,20 +1,21 @@
 import sql from "@/lib/db";
+import { requireBuyer } from "@/lib/authHelpers";
 
 // POST /api/orders/[id]/confirm-receipt
-// Le CLIENT confirme la réception → statut "delivered" + DÉBLOCAGE du payout vendeur.
-// CORRIGÉ P0 : verifications strictes, idempotence, transaction, audit log.
-// body: { shopId }
+// CLIENT confirme réception → delivered + payout libéré (si MM)
+// P0 : idempotent, atomique, historisé, distingue MM/COD
 export async function POST(request, { params }) {
-  const userId = request.headers.get("x-user-id");
-  const userRole = request.headers.get("x-user-role");
-  const { id: orderId } = await params;
-
-  if (!userId) {
-    return Response.json({ error: "Authentification requise." }, { status: 401 });
+  let user;
+  try {
+    user = await requireBuyer();
+  } catch (e) {
+    return Response.json({ error: e.message }, { status: e.status || 401 });
   }
 
+  const { id: orderId } = await params;
+
   try {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     const shopId = Number(body.shopId);
 
     if (!Number.isInteger(shopId) || shopId <= 0) {
@@ -22,29 +23,27 @@ export async function POST(request, { params }) {
     }
 
     const result = await sql.begin(async (tx) => {
+      // 1) Commande + méthode paiement
       const [order] = await tx`
-        SELECT id, buyer_id, status FROM orders WHERE id = ${orderId}
+        SELECT id, buyer_id, status, payment_method
+        FROM orders WHERE id = ${orderId}
       `;
 
       if (!order) {
         return { error: "Commande introuvable.", status: 404 };
       }
 
-      if (String(order.buyer_id) !== String(userId) && userRole !== "admin") {
+      if (String(order.buyer_id) !== String(user.id) && user.role !== "admin") {
         return { error: "Accès refusé.", status: 403 };
       }
 
       if (order.status === "cancelled") {
-        return { error: "Commande annulée, confirmation impossible.", status: 400 };
-      }
-      if (order.status === "pending") {
-        return { error: "Commande en attente de paiement.", status: 400 };
+        return { error: "Commande annulée.", status: 400 };
       }
 
-      // Vérifie que shopId appartient bien à cette commande
+      // 2) shopId appartient bien à cette commande
       const [shopInOrder] = await tx`
-        SELECT DISTINCT oi.product_id
-        FROM order_items oi
+        SELECT 1 FROM order_items oi
         JOIN products p ON p.id = oi.product_id
         WHERE oi.order_id = ${orderId} AND p.shop_id = ${shopId}
         LIMIT 1
@@ -54,11 +53,15 @@ export async function POST(request, { params }) {
         return { error: "Cette boutique n'appartient pas à cette commande.", status: 403 };
       }
 
-      // Machine à états + idempotence
+      // 3) Machine à états + idempotence stricte
+      // 🆕 Distinction MM/COD : payout libéré SEULEMENT si mobile_money
+      const shouldReleasePayout = order.payment_method === "mobile_money";
+      const targetPayoutStatus = shouldReleasePayout ? "released" : "cod_pending";
+
       const [updated] = await tx`
         UPDATE shop_commission_ledger
         SET delivery_status = 'delivered',
-            payout_status = 'released',
+            payout_status = ${targetPayoutStatus},
             payout_released_at = NOW()
         WHERE order_id = ${orderId}
           AND shop_id = ${shopId}
@@ -67,6 +70,7 @@ export async function POST(request, { params }) {
         RETURNING id, delivery_status, payout_status
       `;
 
+      // IDEMPOTENCE : si déjà livré = OK silencieux
       if (!updated) {
         const [ledger] = await tx`
           SELECT delivery_status, payout_status FROM shop_commission_ledger
@@ -76,25 +80,40 @@ export async function POST(request, { params }) {
         if (!ledger) {
           return { error: "Sous-commande introuvable.", status: 404 };
         }
-        if (ledger.delivery_status === "delivered" && ledger.payout_status === "released") {
-          return { error: "Payout déjà libéré.", status: 409 };
+
+        if (ledger.delivery_status === "delivered") {
+          return { ok: true, alreadyProcessed: true, ledger };
         }
         if (ledger.delivery_status === "preparation") {
           return { error: "Le vendeur n'a pas encore expédié la commande.", status: 400 };
         }
-        if (ledger.payout_status !== "held") {
-          return { error: "Payout dans un état incompatible.", status: 400 };
-        }
-        return { error: "État de livraison invalide.", status: 400 };
+        return { error: `État actuel : ${ledger.delivery_status}/${ledger.payout_status}. Confirmation impossible.`, status: 409 };
       }
 
-      // Audit log
+      // 4) Statut global commande (agrégat des sous-commandes)
+      const subs = await tx`
+        SELECT delivery_status FROM shop_commission_ledger WHERE order_id = ${orderId}
+      `;
+      const allDelivered = subs.every((s) => s.delivery_status === "delivered");
+      if (allDelivered) {
+        await tx`UPDATE orders SET status = 'delivered' WHERE id = ${orderId}`;
+      }
+
+      // 5) Historique (P0 audit trail)
+      await tx`
+        INSERT INTO order_status_history
+          (order_id, shop_id, from_status, to_status, actor_id, actor_role, reason)
+        VALUES (${orderId}, ${shopId}, 'shipped', 'delivered', ${user.id}, ${user.role}, 'client_confirm_receipt')
+      `;
+
+      // 6) Audit log
       await tx`
         INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
-        VALUES (${userId}, 'confirm_receipt', 'order', ${orderId}, ${request.headers.get("x-forwarded-for") || "unknown"})
+        VALUES (${user.id}, 'confirm_receipt', 'order', ${orderId},
+                ${request.headers.get("x-forwarded-for") || "unknown"})
       `.catch(() => {});
 
-      return { ok: true, ledger: updated };
+      return { ok: true, ledger: updated, payoutReleased: shouldReleasePayout };
     });
 
     if (result.error) {
@@ -103,7 +122,7 @@ export async function POST(request, { params }) {
 
     return Response.json(result);
   } catch (err) {
-    console.error("Erreur confirmation réception:", err);
+    console.error("[confirm-receipt] Erreur:", err);
     return Response.json({ error: "Erreur serveur." }, { status: 500 });
   }
 }

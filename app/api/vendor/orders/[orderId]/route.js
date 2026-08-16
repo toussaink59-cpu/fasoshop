@@ -1,44 +1,49 @@
 import sql from "@/lib/db";
+import { requireVendor } from "@/lib/authHelpers";
 
 // PATCH /api/vendor/orders/:orderId
-// Le vendeur met à jour le statut de livraison de SA sous-commande uniquement.
-// CORRIGÉ P0 : machine à états stricte, transaction atomique, audit log.
-// body: { status } -> 'shipped' | 'delivered' | 'cancelled'
+// VENDEUR : peut passer preparation → shipped, ou preparation → cancelled.
+// 🔒 P0 CRITIQUE : delivered INTERDIT au vendeur (c'est le rôle du client).
+// 🔒 P0 CRITIQUE : cancel après shipped INTERDIT (colis déjà en route).
 export async function PATCH(request, { params }) {
-  const userId = request.headers.get("x-user-id");
+  let user;
+  try {
+    user = await requireVendor();
+  } catch (e) {
+    return Response.json({ error: e.message }, { status: e.status || 401 });
+  }
+
   const { orderId } = await params;
 
   try {
-    const { status } = await request.json();
-    const allowed = ["shipped", "delivered", "cancelled"];
+    const { status, reason } = await request.json();
+
+    // 🔒 P0 : seuls shipped (et cancel si préparation) autorisés
+    const allowed = ["shipped", "cancelled"];
     if (!allowed.includes(status)) {
       return Response.json(
-        { error: "Statut invalide. Valeurs autorisées : shipped, delivered, cancelled." },
+        { error: `Statut invalide. Autorisés : ${allowed.join(", ")}. (delivered est réservé au client)` },
         { status: 400 }
       );
     }
 
     const result = await sql.begin(async (tx) => {
-      // 1) Retrouve la boutique du vendeur connecté
+      // 1) Boutique du vendeur
       const [shop] = await tx`
-        SELECT id FROM shops WHERE vendor_id = ${userId} LIMIT 1
+        SELECT id FROM shops WHERE vendor_id = ${user.id} LIMIT 1
       `;
       if (!shop) {
         return { error: "Aucune boutique associée à ce compte.", status: 404 };
       }
 
-      // 2) Vérifie que la commande existe et n'est pas annulée
+      // 2) Commande existe et non annulée
       const [order] = await tx`
         SELECT id, status FROM orders WHERE id = ${orderId}
       `;
-      if (!order) {
-        return { error: "Commande introuvable.", status: 404 };
-      }
-      if (order.status === "cancelled") {
-        return { error: "Commande annulée, modification impossible.", status: 400 };
-      }
+      if (!order) return { error: "Commande introuvable.", status: 404 };
+      if (order.status === "cancelled") return { error: "Commande annulée.", status: 400 };
 
-      // 3) Récupère l'état actuel de la sous-commande
+      // 3) État actuel sous-commande
       const [current] = await tx`
         SELECT delivery_status, payout_status FROM shop_commission_ledger
         WHERE order_id = ${orderId} AND shop_id = ${shop.id}
@@ -47,38 +52,72 @@ export async function PATCH(request, { params }) {
         return { error: "Cette commande ne concerne pas votre boutique.", status: 403 };
       }
 
-      // 4) Machine à états stricte
+      // 4) 🔒 Machine à états STRICTE (P0)
+      //    preparation → shipped OK
+      //    preparation → cancelled OK (avec restock à faire)
+      //    shipped → rien (seul le client peut confirmer delivered)
+      //    delivered/cancelled → rien
       const transitions = {
         preparation: ["shipped", "cancelled"],
-        shipped: ["delivered", "cancelled"],
+        shipped: [],              // 🔒 verrouillé : client-only
         delivered: [],
         cancelled: [],
       };
 
-      const allowedTransitions = transitions[current.delivery_status] || [];
-      if (!allowedTransitions.includes(status)) {
+      const allowedT = transitions[current.delivery_status] || [];
+      if (!allowedT.includes(status)) {
         return {
-          error: `Transition invalide : ${current.delivery_status} → ${status}. Transitions autorisées : ${allowedTransitions.join(", ") || "aucune"}`,
+          error: `Transition refusée : ${current.delivery_status} → ${status}. Autorisé depuis cet état : ${allowedT.join(", ") || "aucune action"}.`,
           status: 400,
         };
       }
 
-      // 5) Mise à jour de la sous-commande
+      // 5) Update sous-commande (idempotent via RETURNING)
       const [updated] = await tx`
         UPDATE shop_commission_ledger
         SET delivery_status = ${status}
         WHERE order_id = ${orderId} AND shop_id = ${shop.id}
+          AND delivery_status = ${current.delivery_status}
         RETURNING id, order_id, shop_id, delivery_status
       `;
 
-      // 6) Mise à jour du statut global de la commande
+      if (!updated) {
+        return { error: "État déjà modifié, rechargez la page.", status: 409 };
+      }
+
+      // 6) 🔒 Si annulation depuis preparation → RESTOCK automatique
+      if (status === "cancelled" && current.delivery_status === "preparation") {
+        const items = await tx`
+          SELECT oi.product_id, oi.quantity
+          FROM order_items oi
+          JOIN products p ON p.id = oi.product_id
+          WHERE oi.order_id = ${orderId} AND p.shop_id = ${shop.id}
+        `;
+
+        for (const it of items) {
+          await tx`
+            UPDATE products
+            SET stock_quantity = stock_quantity + ${it.quantity}
+            WHERE id = ${it.product_id}
+          `;
+        }
+
+        // Commission = 0 pour cette sous-commande annulée
+        await tx`
+          UPDATE shop_commission_ledger
+          SET commission_amount = 0, payout_amount = 0, status = 'voided'
+          WHERE order_id = ${orderId} AND shop_id = ${shop.id}
+        `;
+      }
+
+      // 7) Statut global commande (agrégat)
       const subOrders = await tx`
         SELECT delivery_status FROM shop_commission_ledger WHERE order_id = ${orderId}
       `;
 
       const allDelivered = subOrders.every((s) => s.delivery_status === "delivered");
-      const anyShipped = subOrders.some(
-        (s) => s.delivery_status === "shipped" || s.delivery_status === "delivered"
+      const anyShipped = subOrders.some((s) =>
+        s.delivery_status === "shipped" || s.delivery_status === "delivered"
       );
       const allCancelled = subOrders.every((s) => s.delivery_status === "cancelled");
 
@@ -90,13 +129,22 @@ export async function PATCH(request, { params }) {
         await tx`UPDATE orders SET status = 'shipped' WHERE id = ${orderId}`;
       }
 
-      // 7) Audit log
+      // 8) Historique (P0 audit trail)
+      await tx`
+        INSERT INTO order_status_history
+          (order_id, shop_id, from_status, to_status, actor_id, actor_role, reason)
+        VALUES (${orderId}, ${shop.id}, ${current.delivery_status}, ${status},
+                ${user.id}, ${user.role}, ${reason || null})
+      `;
+
+      // 9) Audit log
       await tx`
         INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
-        VALUES (${userId}, 'update_delivery_status', 'order', ${orderId}, ${request.headers.get("x-forwarded-for") || "unknown"})
+        VALUES (${user.id}, 'update_delivery_status', 'order', ${orderId},
+                ${request.headers.get("x-forwarded-for") || "unknown"})
       `.catch(() => {});
 
-      return { ok: true, subOrder: updated };
+      return { ok: true, subOrder: updated, restocked: status === "cancelled" && current.delivery_status === "preparation" };
     });
 
     if (result.error) {
@@ -105,10 +153,7 @@ export async function PATCH(request, { params }) {
 
     return Response.json(result);
   } catch (err) {
-    console.error("Erreur mise à jour sous-commande:", err);
-    return Response.json(
-      { error: "Erreur serveur lors de la mise à jour de la commande." },
-      { status: 500 }
-    );
+    console.error("[vendor/orders/PATCH] Erreur:", err);
+    return Response.json({ error: "Erreur serveur." }, { status: 500 });
   }
 }

@@ -52,12 +52,12 @@ export default function VendorOrdersPage() {
     return () => clearInterval(timer);
   }, []);
 
-  async function updateStatus(orderId, status) {
+  async function updateStatus(orderId, status, reason) {
     setError("");
     const res = await fetch(`/api/vendor/orders/${orderId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, reason }),
     });
     const data = await res.json();
     if (!res.ok) {
@@ -65,6 +65,18 @@ export default function VendorOrdersPage() {
       return;
     }
     load();
+  }
+
+  // 🔒 P0 : annulation vendeur UNIQUEMENT depuis "preparation" (restock auto côté API)
+  async function handleCancel(orderId) {
+    if (
+      !window.confirm(
+        "Annuler cette commande ? Les produits seront remis en stock et la commission annulée. Action irréversible."
+      )
+    ) {
+      return;
+    }
+    await updateStatus(orderId, "cancelled", "vendor_cancel_preparation");
   }
 
   async function handleContact(orderId) {
@@ -114,7 +126,7 @@ export default function VendorOrdersPage() {
 
   return (
     <div className="shell">
-      {/* ===== TOPBAR TEMU ===== */}
+      {/* ===== TOPBAR ===== */}
       <div className="topbar">
         <div className="brand">
           <KimoxaLogo light size={20} /> <span className="role-tag">Vendeur</span>
@@ -135,6 +147,22 @@ export default function VendorOrdersPage() {
         <div className="vendor-dashboard-header">
           <h1>Commandes reçues</h1>
           <p>Le statut concerne uniquement votre boutique.</p>
+        </div>
+
+        {/* 🔒 Rappel règle P0 */}
+        <div
+          style={{
+            background: "#eff6ff",
+            border: "1px solid #93c5fd",
+            color: "#1e40af",
+            padding: "10px 14px",
+            borderRadius: "10px",
+            fontSize: "0.82rem",
+            marginBottom: "16px",
+          }}
+        >
+          🔒 Règle Kimoxa : vous marquez « Expédiée », <strong>le client confirme la réception</strong>.
+          Le paiement vous est libéré après confirmation client (Mobile Money) ou selon votre reversement de commission (espèces).
         </div>
 
         {error && <div className="error-box">{error}</div>}
@@ -200,16 +228,34 @@ export default function VendorOrdersPage() {
               </div>
 
               <div className="order-actions">
+                {/* ✅ preparation → shipped (seule transition "envoi" du vendeur) */}
                 {o.delivery_status === "preparation" && (
-                  <button className="btn btn-primary" onClick={() => updateStatus(o.order_id, "shipped")}>
+                  <button className="btn btn-primary" onClick={() => updateStatus(o.order_id, "shipped", "vendor_ship")}>
                     Marquer expédiée ➜
                   </button>
                 )}
-                {o.delivery_status === "shipped" && (
-                  <button className="btn btn-primary" onClick={() => updateStatus(o.order_id, "delivered")}>
-                    Marquer livrée ✓
+
+                {/* 🔒 P0 : annulation possible UNIQUEMENT en preparation */}
+                {o.delivery_status === "preparation" && (
+                  <button className="btn btn-ghost" onClick={() => handleCancel(o.order_id)}>
+                    ❌ Annuler (restock)
                   </button>
                 )}
+
+                {/* 🔒 P0 : PLUS DE BOUTON "Marquer livrée" — réservé au client */}
+                {o.delivery_status === "shipped" && (
+                  <div
+                    style={{
+                      fontSize: "0.82rem",
+                      color: "var(--ink-500)",
+                      fontStyle: "italic",
+                      padding: "6px 4px",
+                    }}
+                  >
+                    📱 Colis en route — en attente de confirmation du client.
+                  </div>
+                )}
+
                 <button
                   className="btn btn-ghost"
                   onClick={() => handleContact(o.order_id)}
