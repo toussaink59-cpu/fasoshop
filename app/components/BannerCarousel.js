@@ -4,8 +4,6 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
-// Les visuels du récit proviennent des vrais produits déjà publiés dans le
-// catalogue public. Aucun visuel stock/générique n'est injecté dans le hero.
 const STORY_SLIDES = [
   {
     id: 1,
@@ -15,8 +13,8 @@ const STORY_SLIDES = [
     description: "Une marketplace multi-vendeurs conçue pour rendre le commerce local plus accessible et plus structuré.",
     primaryLabel: "Découvrir le catalogue",
     primaryHref: "/shop",
-    secondaryLabel: "Notre vision",
-    secondaryHref: "/a-propos",
+    secondaryLabel: "Découvrir Kimoxa",
+    secondaryHref: "/",
     theme: "slide-t1",
     imageIndex: 0,
   },
@@ -40,7 +38,7 @@ const STORY_SLIDES = [
     subtitle: "Produits, stock et boutique réunis dans un même espace.",
     description: "Les vendeurs disposent d’outils pour présenter leurs produits et suivre leur stock au fil des ventes.",
     primaryLabel: "Découvrir Kimoxa",
-    primaryHref: "/a-propos",
+    primaryHref: "/",
     secondaryLabel: "Voir le catalogue",
     secondaryHref: "/shop",
     theme: "slide-t3",
@@ -54,8 +52,8 @@ const STORY_SLIDES = [
     description: "L’architecture relie la découverte des produits au parcours de commande et aux différents moyens de paiement intégrés.",
     primaryLabel: "Commencer mes achats",
     primaryHref: "/shop",
-    secondaryLabel: "Découvrir",
-    secondaryHref: "/a-propos",
+    secondaryLabel: "Découvrir Kimoxa",
+    secondaryHref: "/",
     theme: "slide-t4",
     imageIndex: 3,
   },
@@ -79,7 +77,7 @@ const STORY_SLIDES = [
     subtitle: "Une base africaine, une ambition continentale.",
     description: "Kimoxa commence avec une architecture pensée pour évoluer avec les besoins des acheteurs, des vendeurs et des marchés africains.",
     primaryLabel: "Découvrir Kimoxa",
-    primaryHref: "/a-propos",
+    primaryHref: "/",
     secondaryLabel: "Explorer le catalogue",
     secondaryHref: "/shop",
     theme: "slide-t6",
