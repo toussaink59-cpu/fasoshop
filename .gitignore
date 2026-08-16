@@ -8,3 +8,6 @@ node_modules/
 
 # Sentry Config File
 .env.sentry-build-plugin
+.env.test
+body.json
+scripts/test-data.json
