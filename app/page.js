@@ -12,7 +12,6 @@ import HorizontalProductSection from "@/app/components/HorizontalProductSection"
 import CategoryPillBar from "@/app/components/CategoryPillBar";
 import HomeFeed from "@/app/components/HomeFeed";
 
-// ♻️ ISR : régénère la page toutes les 60s (réduit charge DB, améliore TTFB)
 export const revalidate = 60;
 
 export const metadata = {
@@ -29,15 +28,11 @@ export default async function HomePage() {
     getNewArrivals(),
   ]);
 
-  // Collecte des IDs déjà affichés dans les sections vitrine (Flash + Nouveautés)
-  // pour les exclure du flux principal (zéro doublon, modèle Temu)
   const featuredIds = new Set([
     ...flashSales.map((p) => p.id),
     ...newArrivals.map((p) => p.id),
   ]);
 
-  // Flux unique façon Temu : tout le catalogue + "Afficher plus"
-  // getProducts(filters, limit, cursor, userId) — arguments dans le bon ordre
   const feedResult = await getProducts({ sort: "newest" }, 24, null, user?.id ?? null);
   const feed = feedResult.products;
 
@@ -45,10 +40,9 @@ export default async function HomePage() {
     <div className="shell">
       <SiteHeader initialUser={user} categories={categories} />
       <CategoryPillBar categories={categories} />
-
       <div className="woven-strip" />
 
-      <BannerCarousel />
+      <BannerCarousel featuredProducts={newArrivals} />
 
       <FlashSaleSection initialProducts={flashSales} />
 
@@ -60,9 +54,7 @@ export default async function HomePage() {
         user={user}
       />
 
-      {/* Flux unique : "Afficher plus" charge le reste, comme Temu */}
       <HomeFeed initialProducts={feed} user={user} excludeIds={featuredIds} />
-
       <Footer />
       <BottomNav user={user} />
     </div>
