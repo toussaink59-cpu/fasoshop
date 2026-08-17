@@ -7,19 +7,19 @@ const COMMISSION_RATE = 0.09; // 9%
 export async function POST(request) {
   const user = await getCurrentUser();
   if (!user) {
-    return NextResponse.json({ error: "Non authentifiÃ©" }, { status: 401 });
+    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
   }
 
   let body;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Corps de requÃªte invalide" }, { status: 400 });
+    return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
   }
 
   const { items, shippingAddress, phone, paymentMethod, deliveryMethod } = body;
 
-  // === Validation des entrÃ©es ===
+  // === Validation des entrées ===
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: "Panier vide" }, { status: 400 });
   }
@@ -29,7 +29,7 @@ export async function POST(request) {
   }
 
   if (!phone || !phone.trim()) {
-    return NextResponse.json({ error: "NumÃ©ro de tÃ©lÃ©phone requis" }, { status: 400 });
+    return NextResponse.json({ error: "Numéro de téléphone requis" }, { status: 400 });
   }
 
   if (!["cod", "mobile_money"].includes(paymentMethod)) {
@@ -40,14 +40,14 @@ export async function POST(request) {
     return NextResponse.json({ error: "Mode de livraison invalide" }, { status: 400 });
   }
 
-  // === ðŸ†• CAST explicite des IDs (localStorage donne des strings) ===
+  // === 🆕 CAST explicite des IDs (localStorage donne des strings) ===
   const productIds = items.map((i) => Number(i.productId)).filter((n) => Number.isInteger(n) && n > 0);
 
   if (productIds.length !== items.length) {
     return NextResponse.json({ error: "Produits invalides dans le panier" }, { status: 400 });
   }
 
-  // === RÃ©solution des produits avec stock rÃ©el ===
+  // === Résolution des produits avec stock réel ===
   const products = await sql`
     SELECT p.id, p.price, p.stock_quantity, p.name, p.shop_id, p.status
     FROM products p
@@ -56,7 +56,7 @@ export async function POST(request) {
 
   const productsMap = Object.fromEntries(products.map((p) => [p.id, p]));
 
-  // VÃ©rif disponibilitÃ© + stock
+  // Vérif disponibilité + stock
   for (const item of items) {
     const pid = Number(item.productId);
     const p = productsMap[pid];
@@ -83,7 +83,7 @@ export async function POST(request) {
   `;
   const shopsMap = Object.fromEntries(shops.map((s) => [s.id, s]));
 
-  // VÃ©rif : toutes les boutiques doivent Ãªtre actives
+  // Vérif : toutes les boutiques doivent être actives
   for (const s of shops) {
     if (s.status !== "active") {
       return NextResponse.json(
@@ -93,17 +93,19 @@ export async function POST(request) {
     }
   }
 
-  // VÃ©rif : livraison Ã  domicile vs options boutique
+  // Vérif : livraison à domicile vs options boutique
   if (deliveryMethod === "delivery") {
     for (const s of shops) {
       if (!s.offers_delivery) {
         return NextResponse.json(
-          { error: `"${s.name}" ne propose pas la livraison Ã  domicile. Choisissez le retrait.` },
+          { error: `"${s.name}" ne propose pas la livraison à domicile. Choisissez le retrait.` },
           { status: 400 }
         );
       }
     }
   }
+
+
   // === Calcul des frais de livraison PAR BOUTIQUE ===
   let deliveryFee = 0;
   if (deliveryMethod === "delivery") {
@@ -122,7 +124,7 @@ export async function POST(request) {
   // === Transaction atomique : commande + stock + ledger ===
   try {
     const result = await sql.begin(async (tx) => {
-      // 1. CrÃ©ation commande
+      // 1. Création commande
       const [newOrder] = await tx`
         INSERT INTO orders (buyer_id, shipping_address, phone, payment_method,
                             total, subtotal, delivery_fee, status, delivery_method)
@@ -131,7 +133,7 @@ export async function POST(request) {
         RETURNING id, total, subtotal, delivery_fee, status
       `;
 
-      // 2. Items + dÃ©stockage
+      // 2. Items + déstockage
       const subtotalsByShop = {};
       for (const item of items) {
         const pid = Number(item.productId);

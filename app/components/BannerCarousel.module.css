@@ -47,3 +47,23 @@
 .arrow{position:absolute;top:50%;z-index:6;width:42px;height:42px;transform:translateY(-50%);border:1px solid rgba(36,23,18,.14);border-radius:50%;background:rgba(252,250,246,.92);color:#241712;box-shadow:0 8px 20px rgba(36,23,18,.10);font-size:1.7rem;line-height:1;cursor:pointer}.arrowLeft{left:14px}.arrowRight{right:14px}
 @media(max-width:900px){.slide{grid-template-columns:1fr;gap:12px;padding:34px 40px 58px}.copy{max-width:none}.visual{min-height:270px}}
 @media(max-width:640px){.storyCarousel{border-radius:12px;min-height:620px}.slide{min-height:620px;padding:30px 22px 52px}.title{font-size:clamp(2.05rem,11vw,3.2rem)}.subtitle{font-size:.98rem}.description{font-size:.84rem}.ctaRow{margin-top:18px}.primary,.secondary{min-height:40px;padding:0 13px;font-size:.76rem}.visual{min-height:260px}.productStage{height:230px}.productCard{width:125px;height:165px}.productMeta{min-height:38px;padding:6px 7px}.productName{font-size:.62rem}.productStatus{font-size:.5rem}.stockPanel,.sellerPanel,.flowPanel,.offerPanel,.africaPanel{width:100%}.flow{gap:5px}.flowNode{min-height:62px;font-size:.54rem}.flowNode:not(:last-child)::after{right:-9px;font-size:.7rem}.arrow{width:36px;height:36px}.arrowLeft{left:8px}.arrowRight{right:8px}.dots{bottom:13px}}
+
+/* === Sprint C : mobile compact pro === */
+@media (max-width:640px){
+  .storyCarousel{min-height:0}
+  .slide{min-height:0;padding:24px 16px 42px;gap:12px}
+  .title{font-size:clamp(1.45rem,7vw,2rem);line-height:1.08;letter-spacing:-.02em}
+  .subtitle{font-size:.9rem;margin-top:10px}
+  .description{display:none}
+  .ctaRow{margin-top:14px}
+  .primary,.secondary{min-height:40px;padding:0 14px;font-size:.78rem}
+  .visual{min-height:180px}
+  .productStage{height:160px}
+  .productCard{width:100px;height:132px}
+  .arrow{display:none}
+  .dots{bottom:10px}
+  .africaPanel{min-height:180px}
+  .network{width:210px;height:140px}
+  .stockPanel,.sellerPanel,.flowPanel,.offerPanel{width:100%}
+  .flowNode{min-height:54px}
+}
