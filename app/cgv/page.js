@@ -19,231 +19,247 @@ export default function CGVPage() {
 
       <div className="legal-wrap">
         <div className="legal-header">
-          <span className="legal-tag">Document légal — Vendeurs</span>
+          <span className="legal-tag">Document légal — Acheteurs & vendeurs</span>
           <h1>Conditions Générales de Vente</h1>
-          <p className="legal-subtitle">
-            En vigueur au 09 août 2026 — Version 1.0
-          </p>
+          <p className="legal-subtitle">En vigueur au 17 août 2026 — Version 2.0</p>
         </div>
 
         <div className="legal-summary">
-          <h2>💼 Résumé pour les vendeurs</h2>
+          <h2>🛍️ Le modèle Kimoxa</h2>
           <ul>
-            <li>🪪 <strong>Vérification d'identité obligatoire</strong> avant de vendre</li>
-            <li>💰 <strong>Commission Kimoxa : 9%</strong> sur chaque vente</li>
-            <li>🔒 <strong>Paiement séquestré</strong> : déblocage après livraison confirmée</li>
-            <li>💸 <strong>Payouts Mobile Money</strong> sans limite une fois vérifié</li>
-            <li>🚫 <strong>Produits interdits</strong> : contrefaçons, armes, médicaments non autorisés</li>
+            <li>🤝 <strong>Marketplace</strong> : la vente est conclue entre l'acheteur et le vendeur concerné.</li>
+            <li>🪪 <strong>Vendeurs vérifiés</strong> : l'activité de vente est soumise au processus de vérification Kimoxa.</li>
+            <li>💰 <strong>Commission vendeur</strong> : 9% sur les ventes réalisées via la plateforme, selon les conditions applicables.</li>
+            <li>📦 <strong>Stock réel</strong> : un produit en rupture n'est pas présenté comme disponible à l'achat dans le catalogue public.</li>
+            <li>↩️ <strong>Retours</strong> : un signalement sous 48h est recommandé pour les problèmes constatés à réception, sans limiter les droits légaux applicables.</li>
           </ul>
         </div>
 
         <section className="legal-section">
-          <h2>1. Objet</h2>
+          <h2>1. Objet et parties à la vente</h2>
           <p>
-            Les présentes Conditions Générales de Vente (CGV) régissent les relations entre
-            <strong> Kimoxa</strong> (la marketplace) et les <strong>vendeurs professionnels ou
-            particuliers</strong> qui utilisent la plateforme pour vendre des produits aux
-            acheteurs inscrits.
+            Les présentes Conditions Générales de Vente encadrent les commandes effectuées sur
+            <strong> Kimoxa</strong>, marketplace multi-vendeurs.
           </p>
           <p>
-            En créant un compte vendeur et en publiant des produits, le vendeur accepte sans
-            réserve les présentes CGV.
-          </p>
-        </section>
-
-        <section className="legal-section">
-          <h2>2. Inscription vendeur et vérification</h2>
-          <h3>2.1. Création de compte</h3>
-          <p>
-            Toute personne physique ou morale souhaitant vendre sur Kimoxa doit :
-          </p>
-          <ul>
-            <li>Créer un compte avec ses informations réelles (identité, email, téléphone)</li>
-            <li>Déclarer le nom de sa boutique et sa catégorie principale</li>
-            <li>Fournir une <strong>pièce d'identité valide</strong> (CNI, passeport ou permis)</li>
-          </ul>
-
-          <h3>2.2. Vérification d'identité (KYC)</h3>
-          <p>
-            <strong>Aucune vente n'est possible avant validation de la pièce d'identité</strong>
-            par l'équipe Kimoxa. Cette vérification, obligatoire, protège les acheteurs contre
-            la fraude et permet au vendeur de bénéficier du statut « Vendeur Vérifié » (badge ✅).
+            Pour chaque commande, le <strong>vendeur identifié sur l'offre</strong> est responsable
+            de la vente du produit à l'acheteur. Kimoxa fournit l'intermédiation technique, les
+            outils de commande, certains services de paiement et de suivi, ainsi que les mécanismes
+            de confiance prévus par la plateforme.
           </p>
           <p>
-            Le délai moyen de vérification est de <strong>moins de 24 heures</strong> ouvrées.
-            En cas de rejet, le vendeur reçoit un motif et peut resoumettre.
+            Kimoxa n'est pas, par principe, le propriétaire ni le vendeur des produits proposés par
+            les boutiques tierces.
           </p>
         </section>
 
         <section className="legal-section">
-          <h2>3. Commission Kimoxa</h2>
+          <h2>2. Publication des offres</h2>
           <p>
-            En contrepartie de la mise à disposition de la plateforme, des outils de paiement,
-            de la vérification des acheteurs et du support client, Kimoxa prélève une
-            <strong> commission de 9%</strong> sur le montant brut de chaque vente.
+            Le vendeur est responsable de l'exactitude de la fiche produit : dénomination,
+            caractéristiques, images, prix, disponibilité, quantité et informations nécessaires à
+            l'achat.
           </p>
+          <p>
+            Les produits doivent respecter les règles de la plateforme et la législation applicable.
+            Kimoxa peut retirer ou suspendre une offre lorsqu'elle est interdite, trompeuse,
+            indisponible ou contraire aux règles de la marketplace.
+          </p>
+        </section>
 
-          <h3>3.1. Exemple de calcul</h3>
+        <section className="legal-section">
+          <h2>3. Prix et frais</h2>
+          <p>
+            Le prix affiché sur une offre doit être présenté de manière claire. Les frais de livraison,
+            taxes ou autres frais applicables sont indiqués lorsqu'ils sont connus au moment de la
+            commande.
+          </p>
+          <p>
+            La commission de <strong>9%</strong> constitue une rémunération de la plateforme sur les
+            ventes réalisées via Kimoxa selon les conditions vendeur applicables. Elle ne constitue
+            pas un frais supplémentaire facturé à l'acheteur au-delà du prix et des frais affichés
+            lors de sa commande, sauf mention explicite.
+          </p>
+          <h3>Exemple de calcul de commission</h3>
           <table className="legal-table">
             <thead>
               <tr>
-                <th>Article</th>
+                <th>Élément</th>
                 <th>Montant</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Prix de vente (brut)</td>
+                <td>Prix de vente brut</td>
                 <td><strong>10 000 FCFA</strong></td>
               </tr>
               <tr>
                 <td>Commission Kimoxa (9%)</td>
-                <td>− 550 FCFA</td>
+                <td>− 900 FCFA</td>
               </tr>
               <tr>
-                <td><strong>Net vendeur</strong></td>
-                <td><strong>9 450 FCFA</strong></td>
+                <td><strong>Montant vendeur avant autres ajustements éventuels</strong></td>
+                <td><strong>9 100 FCFA</strong></td>
               </tr>
             </tbody>
           </table>
+        </section>
 
-          <h3>3.2. Transparence</h3>
+        <section className="legal-section">
+          <h2>4. Commande et formation de la vente</h2>
           <p>
-            Le détail de chaque vente (brut, commission, net) est visible en temps réel dans le
-            tableau de bord vendeur, section <strong>« 💰 Mes gains »</strong>.
+            L'acheteur sélectionne les produits, vérifie le récapitulatif, renseigne les informations
+            nécessaires à la livraison et choisit un moyen de paiement parmi ceux proposés. La
+            commande est ensuite enregistrée et un récapitulatif peut être conservé par voie électronique.
+          </p>
+          <p>
+            La disponibilité d'un produit peut évoluer avant la validation finale. Une commande ne
+            peut être exécutée que dans les limites du stock effectivement disponible et des règles
+            applicables au vendeur.
           </p>
         </section>
 
         <section className="legal-section">
-          <h2>4. Système de paiement séquestré</h2>
+          <h2>5. Paiement et sécurisation des transactions</h2>
           <p>
-            Pour protéger acheteurs et vendeurs, Kimoxa applique un mécanisme de séquestre :
+            Kimoxa peut proposer plusieurs moyens de paiement selon la commande et le contexte,
+            notamment le paiement mobile et le paiement à la livraison. Le moyen effectivement
+            disponible est indiqué pendant le parcours de commande.
           </p>
-          <ol>
-            <li>L'acheteur paie → <strong>l'argent est séquestré</strong> par Kimoxa</li>
-            <li>Le vendeur expédie la commande</li>
-            <li>L'acheteur confirme la réception (bouton « ✅ J'ai reçu ma commande »)</li>
-            <li>Le montant net (après commission) est <strong>débloqué</strong> et devient disponible pour payout</li>
-          </ol>
           <p>
-            En cas de litige, Kimoxa arbitre et peut retenir les fonds jusqu'à résolution.
+            Pour les paiements en ligne, la plateforme applique des mécanismes de suivi de l'état de
+            la commande et du paiement. La disponibilité des fonds pour le vendeur dépend du statut
+            de la commande et des règles de versement applicables.
           </p>
         </section>
 
         <section className="legal-section">
-          <h2>5. Payouts (versements aux vendeurs)</h2>
-          <h3>5.1. Conditions de payout</h3>
-          <p>Le vendeur peut demander le versement de ses gains dès lors que :</p>
+          <h2>6. Livraison</h2>
+          <p>
+            Le vendeur est responsable de la préparation et de l'expédition de sa commande selon les
+            modalités annoncées. Les délais communiqués à l'acheteur doivent être réalistes et respecter
+            les obligations légales applicables.
+          </p>
+          <p>
+            En cas de retard important, d'impossibilité d'exécution ou de problème de livraison,
+            l'acheteur peut utiliser les mécanismes de réclamation prévus par la plateforme et les
+            droits qui lui sont reconnus par la législation applicable.
+          </p>
+        </section>
+
+        <section className="legal-section">
+          <h2>7. Réception, retours et non-conformité</h2>
+          <p>
+            Nous recommandons à l'acheteur de signaler dans les <strong>48 heures</strong> suivant la
+            réception tout produit manifestement endommagé, incomplet ou différent de la commande,
+            avec des éléments utiles à l'examen du dossier (photos, description du problème, etc.).
+          </p>
+          <p>
+            Cette procédure rapide ne limite pas les droits impératifs prévus par la loi. Pour les
+            contrats de commerce électronique entrant dans son champ, la loi burkinabè sur les services
+            et transactions électroniques prévoit notamment un délai de rétractation pouvant aller
+            jusqu'à <strong>sept jours ouvrables</strong>, sous réserve des exceptions prévues par la
+            loi. Le point de départ et les modalités dépendent de la nature de la vente et des
+            informations fournies au consommateur.
+          </p>
+          <p>
+            Les biens personnalisés, susceptibles de se détériorer rapidement ou entrant dans une
+            autre exception légale peuvent notamment être exclus du droit de rétractation. Les règles
+            impératives applicables prévalent sur toute clause contraire.
+          </p>
+        </section>
+
+        <section className="legal-section">
+          <h2>8. Remboursements et litiges</h2>
+          <p>
+            Lorsqu'un remboursement est dû, son traitement dépend du motif du remboursement, du statut
+            de la commande, du moyen de paiement utilisé et des règles légales applicables.
+          </p>
+          <p>
+            L'acheteur doit d'abord utiliser la messagerie ou le parcours de réclamation disponible
+            depuis sa commande. En cas de désaccord avec le vendeur, Kimoxa peut intervenir dans le
+            cadre de son rôle d'intermédiation et de médiation de la plateforme.
+          </p>
+        </section>
+
+        <section className="legal-section">
+          <h2>9. Obligations du vendeur</h2>
           <ul>
-            <li>Sa boutique est <strong>vérifiée et active</strong></li>
-            <li>Il a renseigné son <strong>numéro Mobile Money</strong> (Orange, Moov, Wave, MTN)</li>
-            <li>Les commandes correspondantes sont <strong>livrées et confirmées</strong></li>
+            <li>Fournir des informations exactes sur son identité et sa boutique</li>
+            <li>Respecter le processus de vérification avant l'activation de la vente</li>
+            <li>Publier des produits licites, authentiques et conformes à leur description</li>
+            <li>Maintenir les prix et les stocks à jour</li>
+            <li>Préparer et livrer les commandes dans les délais annoncés</li>
+            <li>Traiter les demandes clients et les réclamations de bonne foi</li>
+            <li>Respecter les obligations fiscales, commerciales et réglementaires qui lui incombent</li>
           </ul>
-
-          <h3>5.2. Délais</h3>
-          <p>
-            Les payouts sont traités par l'équipe Kimoxa dans un délai de <strong>24 à 72 heures
-            ouvrées</strong>. Aucun plafond de vente ou de gain n'est appliqué aux vendeurs
-            vérifiés.
-          </p>
         </section>
 
         <section className="legal-section">
-          <h2>6. Obligations du vendeur</h2>
+          <h2>10. Produits interdits</h2>
+          <p>Sont notamment interdits les produits ou contenus :</p>
           <ul>
-            <li><strong>Exactitude des annonces</strong> : description, photos, prix, stock</li>
-            <li><strong>Livraison dans les délais</strong> annoncés (généralement 24-72h)</li>
-            <li><strong>Réactivité</strong> : répondre aux messages clients sous 24h</li>
-            <li><strong>Produits conformes</strong> à la législation burkinabè</li>
-            <li><strong>Facturation</strong> : émettre une facture pour chaque vente (via Kimoxa)</li>
-            <li><strong>Fiscalité</strong> : déclarer ses revenus selon la réglementation en vigueur</li>
-          </ul>
-        </section>
-
-        <section className="legal-section">
-          <h2>7. Produits interdits</h2>
-          <p>Sont strictement interdits à la vente sur Kimoxa :</p>
-          <ul>
-            <li>Contrefaçons et produits piratés</li>
-            <li>Armes, munitions, explosifs</li>
-            <li>Drogues et substances illicites</li>
-            <li>Médicaments sans autorisation de mise sur le marché</li>
-            <li>Produits volés ou d'origine douteuse</li>
-            <li>Contenus à caractère pornographique ou haineux</li>
+            <li>contrefaits ou piratés ;</li>
+            <li>illicites, volés ou d'origine frauduleuse ;</li>
+            <li>dont la vente est soumise à une autorisation non détenue ;</li>
+            <li>présentant un risque grave pour la sécurité des utilisateurs ;</li>
+            <li>à caractère haineux, pornographique ou autrement interdit par la loi ou les règles de la plateforme.</li>
           </ul>
           <p>
-            Tout manquement entraîne la <strong>suspension immédiate</strong> de la boutique et
-            le gel des fonds.
+            Kimoxa peut retirer une annonce, suspendre une boutique ou prendre toute mesure nécessaire
+            lorsqu'une violation est constatée.
           </p>
         </section>
 
         <section className="legal-section">
-          <h2>8. Suspension et résiliation</h2>
-          <p>Kimoxa se réserve le droit de suspendre ou résilier un compte vendeur en cas de :</p>
-          <ul>
-            <li>Fraude ou tentative de fraude</li>
-            <li>Non-respect répété des obligations</li>
-            <li>Plaintes fondées d'acheteurs</li>
-            <li>Vente de produits interdits</li>
-            <li>Inactivité prolongée (plus de 12 mois)</li>
-          </ul>
+          <h2>11. Versements aux vendeurs</h2>
           <p>
-            Le vendeur peut contester la décision en écrivant à <strong>support@kimoxa.bf</strong>.
+            Le vendeur peut demander le versement des montants devenus disponibles selon les règles de
+            Kimoxa, notamment après le traitement de la commande et les étapes de sécurisation prévues.
+            Les éventuels frais ou délais de traitement sont communiqués au vendeur dans son espace.
           </p>
         </section>
 
         <section className="legal-section">
-          <h2>9. Responsabilité du vendeur</h2>
+          <h2>12. Propriété intellectuelle</h2>
           <p>
-            Le vendeur est seul responsable de la conformité de ses produits, de leur qualité,
-            et du respect de la législation applicable (notamment fiscale et douanière). Il
-            garantit Kimoxa contre toute réclamation d'un tiers relative à ses produits.
+            Le vendeur reste titulaire des droits sur ses photographies, descriptions et autres
+            contenus. Il autorise Kimoxa à les reproduire et représenter dans la mesure nécessaire à
+            l'exploitation, à la promotion et au fonctionnement de la marketplace.
           </p>
         </section>
 
         <section className="legal-section">
-          <h2>10. Propriété intellectuelle</h2>
+          <h2>13. Modification des conditions</h2>
           <p>
-            Le vendeur conserve la propriété intellectuelle de ses contenus (photos, descriptions).
-            Il concède à Kimoxa une licence non exclusive, gratuite et mondiale pour afficher
-            ces contenus sur la plateforme et dans ses communications marketing.
+            Les conditions peuvent évoluer pour tenir compte du fonctionnement de la marketplace,
+            des nouveaux services ou de la réglementation. La version applicable est celle publiée
+            sur cette page au moment concerné, sous réserve des règles impératives applicables aux
+            contrats déjà conclus.
           </p>
         </section>
 
         <section className="legal-section">
-          <h2>11. Modification des CGV</h2>
+          <h2>14. Droit applicable</h2>
           <p>
-            Kimoxa peut modifier les présentes CGV à tout moment. Le vendeur en sera informé
-            par email. La poursuite de l'activité sur la plateforme après modification vaut
-            acceptation des nouvelles conditions.
-          </p>
-        </section>
-
-        <section className="legal-section">
-          <h2>12. Droit applicable</h2>
-          <p>
-            Les présentes CGV sont régies par le <strong>droit burkinabè</strong>. En cas de
-            litige, les parties s'engagent à rechercher une solution amiable. À défaut, les
-            tribunaux compétents de <strong>Ouagadougou</strong> seront seuls compétents.
+            Les présentes conditions sont rédigées pour un service exploité depuis le Burkina Faso et
+            sont soumises au droit applicable au Burkina Faso, sous réserve des dispositions impératives
+            susceptibles de protéger l'acheteur ou de s'appliquer à une transaction déterminée.
           </p>
         </section>
 
         <div className="legal-contact">
-          <h2>📞 Contact vendeur</h2>
+          <h2>📞 Contact</h2>
           <ul>
-            <li>✉️ <strong>vendeurs@kimoxa.bf</strong></li>
-            <li>💬 Support prioritaire via la messagerie du dashboard vendeur</li>
-            <li>🏢 Kimoxa — Ouagadougou, Burkina Faso</li>
+            <li>✉️ <strong>support@kimoxa.bf</strong></li>
+            <li>💬 Support via la messagerie intégrée</li>
+            <li>🏢 Kimoxa — Burkina Faso</li>
           </ul>
         </div>
 
         <div className="legal-cta">
-          <Link href="/register?role=vendor" className="btn btn-primary">
-            Ouvrir ma boutique →
-          </Link>
-          <Link href="/" className="btn btn-ghost">
-            Retour à l'accueil
-          </Link>
+          <Link href="/register?role=vendor" className="btn btn-primary">Vendre sur Kimoxa →</Link>
+          <Link href="/" className="btn btn-ghost">Retour à l'accueil</Link>
         </div>
       </div>
     </div>
