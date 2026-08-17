@@ -620,7 +620,19 @@ export default function VendorDashboard() {
           </div>
         )}
 
-        {!loading && newOrdersCount > 0 && !newOrdersAlertDismissed && (
+                {!loading && lowStockCount > 0 && !lowStockAlertDismissed && (
+          <div className="vendor-alert vendor-alert-warning">
+            <div style={{ flex: 1 }}>
+              ⚠️ <strong>{lowStockCount} produit{lowStockCount > 1 ? "s" : ""} en stock faible</strong> — réapprovisionnez pour éviter les ruptures.{" "}
+              <button className="btn btn-ghost" style={{ fontWeight: 600 }} onClick={() => { setActiveFilter("low"); setLowStockAlertDismissed(true); }}>Voir les produits →</button>
+            </div>
+            <button className="btn btn-ghost" onClick={() => setLowStockAlertDismissed(true)}>
+              Fermer
+            </button>
+          </div>
+        )}
+
+{!loading && newOrdersCount > 0 && !newOrdersAlertDismissed && (
           <div className="vendor-alert vendor-alert-success">
             <div style={{ flex: 1 }}>
               🛍️ <strong>{newOrdersCount} nouvelle{newOrdersCount > 1 ? "s" : ""} commande{newOrdersCount > 1 ? "s" : ""}</strong> en attente de préparation.{" "}

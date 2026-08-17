@@ -7219,3 +7219,6 @@ a.side-menu-link:hover::after {
   .pdp-sticky-price{flex:1;min-width:0}
   .pdp-sticky-add{flex:1.2;margin:0;min-height:44px}
 }
+
+/* === Sprint stock bas : banniere warning === */
+.vendor-alert-warning{background:#fff7ed;border:1px solid #fdba74;color:#9a3412}
