@@ -119,7 +119,7 @@ export async function POST(request) {
   );
   const grandTotal = Math.max(0, subtotalProducts + deliveryFee);
 
-  // === Transaction atomique : commande + stock + ledger + promo ===
+  // === Transaction atomique : commande + stock + ledger ===
   try {
     const result = await sql.begin(async (tx) => {
       // 1. CrÃ©ation commande
@@ -173,19 +173,6 @@ export async function POST(request) {
         `;
       }
 
-      // 4. IncrÃ©ment code promo
-      if (promoCodeId) {
-        await tx`
-          UPDATE promo_codes
-          SET used_count = used_count + 1
-          WHERE id = ${promoCodeId}
-        `;
-
-        await tx`
-          INSERT INTO promo_code_uses (promo_code_id, order_id, user_id, discount_amount)
-          VALUES (${promoCodeId}, ${newOrder.id}, ${user.id}, ${promoDiscount})
-        `;
-      }
 
       return newOrder;
     });

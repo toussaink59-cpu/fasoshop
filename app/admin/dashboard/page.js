@@ -153,10 +153,6 @@ export default function AdminDashboard() {
             ðŸ›¡ï¸ <strong>ModÃ©ration</strong>
             <span>{pendingModerationCount > 0 ? `${pendingModerationCount} demande(s) en attente` : "Avis clients et sponsoring"}</span>
           </Link>
-                    <Link href="/admin/promo-codes" className="vendor-quick-link">
-            ðŸŽ <strong>Codes promo</strong>
-            <span>CrÃ©er et gÃ©rer les rÃ©ductions</span>
-          </Link>
           <Link href="/admin/products" className="vendor-quick-link">
             ðŸ“¦ <strong>Produits</strong>
             <span>Stock dÃ©taillÃ© par boutique</span>

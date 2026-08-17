@@ -402,22 +402,6 @@ export default function CartClient({ initialUser, categories }) {
                   <input id="phone" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Ex : 70 00 00 00" />
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="promo-code">Code promo (optionnel)</label>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <input id="promo-code" value={promoCode} onChange={(e) => setPromoCode(e.target.value.toUpperCase())} placeholder="Ex : BIENVENUE10" style={{ textTransform: "uppercase", flex: 1 }} />
-                    {promoResult && (
-                      <button type="button" className="btn btn-ghost" onClick={() => { setPromoCode(""); setPromoResult(null); setPromoError(""); }} title="Retirer le code">âœ•</button>
-                    )}
-                  </div>
-                  {promoValidating && <small style={{ color: "var(--ink-400)" }}>Validation...</small>}
-                  {promoResult && !promoValidating && (
-                    <small style={{ color: "var(--millet-600)", fontWeight: 600 }}>
-                      âœ… Code Â« {promoResult.code} Â» : -{promoResult.discount.toLocaleString("fr-FR")} FCFA
-                    </small>
-                  )}
-                  {promoError && !promoValidating && <small style={{ color: "#dc2626" }}>âŒ {promoError}</small>}
-                </div>
 
                 <div style={{ background: "#faf7f2", border: "1px dashed var(--border)", borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: 6, color: "var(--ink-700)" }}>
@@ -430,12 +414,6 @@ export default function CartClient({ initialUser, categories }) {
                       {deliveryFee === 0 ? "Gratuite" : `${deliveryFee.toLocaleString("fr-FR")} FCFA`}
                     </strong>
                   </div>
-                  {discount > 0 && (
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: 8, color: "var(--millet-600)" }}>
-                      <span>ðŸŽ Remise ({promoResult.code})</span>
-                      <strong>-{discount.toLocaleString("fr-FR")} FCFA</strong>
-                    </div>
-                  )}
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 8, borderTop: "1px solid var(--border)" }}>
                     <span style={{ fontWeight: 700, color: "var(--ink-900)" }}>Total Ã  payer</span>
                     <strong style={{ fontSize: "1.1rem", color: "var(--ink-900)" }}>
