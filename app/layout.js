@@ -1,4 +1,5 @@
 import "./globals.css";
+import Script from "next/script";
 import ServiceWorker from "@/app/components/ServiceWorker";
 import PwaInstallPrompt from "@/app/components/PwaInstallPrompt";
 
@@ -25,6 +26,13 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Kimoxa" />
         <link rel="apple-touch-icon" href="/icons/icon.svg" />
+        {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
+          <Script
+            strategy="afterInteractive"
+            data-domain={process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN}
+            src="https://plausible.io/js/script.js"
+          />
+        )}
         {children}
       </body>
     </html>
