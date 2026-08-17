@@ -187,6 +187,13 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
                 : "Ajouter au panier"}
             </button>
 
+            <div className="pdp-sticky-bar">
+              <div className="pdp-sticky-price"><PriceDisplay product={product} /></div>
+              <button className="btn btn-primary pdp-sticky-add" onClick={handleAdd} disabled={product.stock_quantity <= 0}>
+                {product.stock_quantity <= 0 ? "Rupture de stock" : justAdded ? "Ajouté ✓" : "Ajouter au panier"}
+              </button>
+            </div>
+
             <div className="pdp-trust">
               <span>🚚 Livraison vendeur</span>
               <span>📱 Mobile Money</span>

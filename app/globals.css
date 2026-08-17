@@ -7200,3 +7200,22 @@ a.side-menu-link:hover::after {
   .va-empty p { font-size: 0.85rem; margin: 4px 0; }
   .va-legend { gap: 8px; font-size: 0.7rem; }
 }
+/* === Sprint C-2 : bottom nav ne coupe plus jamais le contenu === */
+.shell{padding-bottom:80px}
+@media (max-width:640px){
+  .shell{padding-bottom:90px}
+}
+
+/* === Sprint C-2 : barre CTA sticky mobile (prix + bouton toujours visibles) === */
+.pdp-sticky-bar{display:none}
+@media (max-width:640px){
+  .pdp-sticky-bar{
+    display:flex;align-items:center;gap:10px;
+    position:fixed;left:0;right:0;
+    bottom:calc(64px + env(safe-area-inset-bottom,0px));
+    background:#fff;padding:10px 14px;z-index:45;
+    box-shadow:0 -6px 18px rgba(20,15,10,.14);
+  }
+  .pdp-sticky-price{flex:1;min-width:0}
+  .pdp-sticky-add{flex:1.2;margin:0;min-height:44px}
+}
