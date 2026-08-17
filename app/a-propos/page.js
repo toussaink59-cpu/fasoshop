@@ -5,7 +5,7 @@ import Footer from "@/app/components/Footer";
 import BottomNav from "@/app/components/BottomNav";
 
 export const metadata = {
-  title: "À propos",
+  title: "À propos de Kimoxa",
 };
 
 export default async function AboutPage() {
@@ -18,45 +18,63 @@ export default async function AboutPage() {
     <div className="shell">
       <SiteHeader initialUser={user} categories={categories} />
 
-      <div className="content" style={{ maxWidth: 720, margin: "0 auto" }}>
+      <div className="content" style={{ maxWidth: 760, margin: "0 auto" }}>
         <div className="page-header" style={{ textAlign: "center" }}>
           <h1>À propos de Kimoxa</h1>
-          <p>Connecter · Innover · Prospérer</p>
+          <p>Né en Afrique, pensé pour l’Afrique.</p>
         </div>
 
         <div className="panel">
+          <h2>Notre rôle</h2>
           <p>
-            Kimoxa est une marketplace multi-vendeurs née à Ouagadougou et conçue pour toute
-            l'Afrique. Notre mission : donner à chaque boutique, chaque artisan et chaque
-            entrepreneur une vitrine en ligne simple et fiable — et à chaque acheteur un moyen
-            sûr de trouver des produits locaux, partout sur le continent.
+            Kimoxa est une <strong>marketplace multi-vendeurs</strong> : nous mettons en relation
+            des vendeurs et des acheteurs et leur fournissons l'infrastructure nécessaire pour
+            découvrir des produits, passer commande, payer et suivre les transactions.
           </p>
           <p>
-            Notre conviction est simple : le commerce en ligne africain doit s'adapter aux
-            réalités du terrain — paiement Mobile Money, livraison locale, et confiance vérifiée
-            entre vendeurs et acheteurs — plutôt que de copier des modèles pensés ailleurs.
-          </p>
-
-          <h2>Notre engagement</h2>
-          <p>
-            Chaque boutique présente sur Kimoxa est vérifiée manuellement par notre équipe à
-            partir d'une pièce d'identité officielle, avant de pouvoir vendre. C'est notre façon
-            de construire une place de marché où l'on peut acheter en confiance.
+            Kimoxa n'est pas une boutique unique et ne se présente pas comme le propriétaire des
+            produits proposés par les vendeurs. Chaque vendeur reste responsable de ses produits,
+            de ses prix, de ses stocks, de ses annonces et de l'exécution de ses ventes.
           </p>
 
-          <h2>Notre modèle</h2>
+          <h2>Pourquoi Kimoxa ?</h2>
           <p>
-            L'inscription est gratuite pour les vendeurs. Kimoxa se rémunère uniquement via une
-            commission de 9% sur les ventes réalisées, ce qui aligne nos intérêts avec la
-            réussite de chaque boutique.
+            Nous construisons une expérience de commerce en ligne adaptée aux réalités africaines :
+            boutiques locales, paiement mobile, livraison, accompagnement et mécanismes de confiance.
+            Notre objectif est de rendre la découverte et l'achat en ligne plus simples tout en
+            donnant aux commerçants un espace structuré pour développer leur activité.
+          </p>
+
+          <h2>La confiance au cœur du modèle</h2>
+          <p>
+            Les vendeurs qui souhaitent commercialiser leurs produits passent par un processus de
+            vérification avant l'activation de leur activité de vente. Kimoxa peut également
+            suspendre une boutique ou une annonce lorsqu'un risque, une fraude ou un non-respect
+            des règles de la plateforme est identifié.
+          </p>
+          <p>
+            Côté catalogue public, les produits doivent respecter les règles de publication de la
+            plateforme et les produits en rupture de stock ne sont pas proposés comme disponibles
+            à l'achat.
+          </p>
+
+          <h2>Un modèle aligné avec les vendeurs</h2>
+          <p>
+            L'inscription vendeur est gratuite. Kimoxa se rémunère notamment par une commission
+            appliquée aux ventes réalisées sur la plateforme, selon les conditions communiquées au
+            vendeur. Les montants de vente, commissions et revenus sont suivis dans l'espace vendeur.
           </p>
 
           <h2>Notre ambition</h2>
           <p>
-            Après le Burkina Faso 🇧🇫, Kimoxa s'étendra progressivement au Sénégal, à la Côte
-            d'Ivoire, au Mali et au-delà — avec les paiements mobiles de chaque pays (Orange
-            Money, Moov Money, MTN MoMo, M-Pesa, Wave) et une livraison multi-pays.
-            Une plateforme intelligente, des possibilités infinies.
+            Kimoxa commence avec une implantation au Burkina Faso et porte une ambition plus large :
+            construire progressivement une infrastructure de commerce numérique capable de servir
+            plusieurs marchés africains, avec des moyens de paiement, des contraintes logistiques
+            et des réalités locales adaptés à chaque pays.
+          </p>
+          <p>
+            <strong>Né en Afrique, pensé pour l’Afrique.</strong> Notre ambition est de grandir avec
+            les commerçants, les entrepreneurs et les acheteurs qui feront vivre cette plateforme.
           </p>
         </div>
       </div>
