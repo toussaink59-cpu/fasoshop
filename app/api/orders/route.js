@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 
@@ -7,19 +7,19 @@ const COMMISSION_RATE = 0.09; // 9%
 export async function POST(request) {
   const user = await getCurrentUser();
   if (!user) {
-    return NextResponse.json({ error: "Non authentifié" }, { status: 401 });
+    return NextResponse.json({ error: "Non authentifiÃ©" }, { status: 401 });
   }
 
   let body;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
+    return NextResponse.json({ error: "Corps de requÃªte invalide" }, { status: 400 });
   }
 
-  const { items, shippingAddress, phone, paymentMethod, deliveryMethod, promoCode } = body;
+  const { items, shippingAddress, phone, paymentMethod, deliveryMethod } = body;
 
-  // === Validation des entrées ===
+  // === Validation des entrÃ©es ===
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: "Panier vide" }, { status: 400 });
   }
@@ -29,7 +29,7 @@ export async function POST(request) {
   }
 
   if (!phone || !phone.trim()) {
-    return NextResponse.json({ error: "Numéro de téléphone requis" }, { status: 400 });
+    return NextResponse.json({ error: "NumÃ©ro de tÃ©lÃ©phone requis" }, { status: 400 });
   }
 
   if (!["cod", "mobile_money"].includes(paymentMethod)) {
@@ -40,14 +40,14 @@ export async function POST(request) {
     return NextResponse.json({ error: "Mode de livraison invalide" }, { status: 400 });
   }
 
-  // === 🆕 CAST explicite des IDs (localStorage donne des strings) ===
+  // === ðŸ†• CAST explicite des IDs (localStorage donne des strings) ===
   const productIds = items.map((i) => Number(i.productId)).filter((n) => Number.isInteger(n) && n > 0);
 
   if (productIds.length !== items.length) {
     return NextResponse.json({ error: "Produits invalides dans le panier" }, { status: 400 });
   }
 
-  // === Résolution des produits avec stock réel ===
+  // === RÃ©solution des produits avec stock rÃ©el ===
   const products = await sql`
     SELECT p.id, p.price, p.stock_quantity, p.name, p.shop_id, p.status
     FROM products p
@@ -56,7 +56,7 @@ export async function POST(request) {
 
   const productsMap = Object.fromEntries(products.map((p) => [p.id, p]));
 
-  // Vérif disponibilité + stock
+  // VÃ©rif disponibilitÃ© + stock
   for (const item of items) {
     const pid = Number(item.productId);
     const p = productsMap[pid];
@@ -83,7 +83,7 @@ export async function POST(request) {
   `;
   const shopsMap = Object.fromEntries(shops.map((s) => [s.id, s]));
 
-  // Vérif : toutes les boutiques doivent être actives
+  // VÃ©rif : toutes les boutiques doivent Ãªtre actives
   for (const s of shops) {
     if (s.status !== "active") {
       return NextResponse.json(
@@ -93,59 +93,17 @@ export async function POST(request) {
     }
   }
 
-  // Vérif : livraison à domicile vs options boutique
+  // VÃ©rif : livraison Ã  domicile vs options boutique
   if (deliveryMethod === "delivery") {
     for (const s of shops) {
       if (!s.offers_delivery) {
         return NextResponse.json(
-          { error: `"${s.name}" ne propose pas la livraison à domicile. Choisissez le retrait.` },
+          { error: `"${s.name}" ne propose pas la livraison Ã  domicile. Choisissez le retrait.` },
           { status: 400 }
         );
       }
     }
   }
-
-  // === Code promo (si fourni) ===
-  let promoDiscount = 0;
-  let promoCodeId = null;
-  if (promoCode) {
-    const [promo] = await sql`
-      SELECT * FROM promo_codes
-      WHERE UPPER(code) = ${promoCode.toUpperCase()}
-        AND is_active = true
-        AND (starts_at IS NULL OR starts_at <= NOW())
-        AND (ends_at IS NULL OR ends_at >= NOW())
-        AND (max_uses IS NULL OR used_count < max_uses)
-    `;
-
-    if (!promo) {
-      return NextResponse.json({ error: "Code promo invalide ou expiré" }, { status: 400 });
-    }
-
-    const subtotalBeforePromo = items.reduce(
-      (sum, i) => sum + Number(productsMap[Number(i.productId)].price) * i.quantity,
-      0
-    );
-
-    if (promo.min_order_amount && subtotalBeforePromo < Number(promo.min_order_amount)) {
-      return NextResponse.json(
-        { error: `Commande minimum : ${Number(promo.min_order_amount).toLocaleString("fr-FR")} FCFA` },
-        { status: 400 }
-      );
-    }
-
-    if (promo.discount_type === "percent") {
-      promoDiscount = Math.round(subtotalBeforePromo * Number(promo.discount_value) / 100);
-      if (promo.max_discount_amount) {
-        promoDiscount = Math.min(promoDiscount, Number(promo.max_discount_amount));
-      }
-    } else {
-      promoDiscount = Number(promo.discount_value);
-    }
-
-    promoCodeId = promo.id;
-  }
-
   // === Calcul des frais de livraison PAR BOUTIQUE ===
   let deliveryFee = 0;
   if (deliveryMethod === "delivery") {
@@ -159,12 +117,12 @@ export async function POST(request) {
     (sum, i) => sum + Number(productsMap[Number(i.productId)].price) * i.quantity,
     0
   );
-  const grandTotal = Math.max(0, subtotalProducts + deliveryFee - promoDiscount);
+  const grandTotal = Math.max(0, subtotalProducts + deliveryFee);
 
   // === Transaction atomique : commande + stock + ledger + promo ===
   try {
     const result = await sql.begin(async (tx) => {
-      // 1. Création commande
+      // 1. CrÃ©ation commande
       const [newOrder] = await tx`
         INSERT INTO orders (buyer_id, shipping_address, phone, payment_method,
                             total, subtotal, delivery_fee, status, delivery_method)
@@ -173,7 +131,7 @@ export async function POST(request) {
         RETURNING id, total, subtotal, delivery_fee, status
       `;
 
-      // 2. Items + déstockage
+      // 2. Items + dÃ©stockage
       const subtotalsByShop = {};
       for (const item of items) {
         const pid = Number(item.productId);
@@ -215,7 +173,7 @@ export async function POST(request) {
         `;
       }
 
-      // 4. Incrément code promo
+      // 4. IncrÃ©ment code promo
       if (promoCodeId) {
         await tx`
           UPDATE promo_codes

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
@@ -9,11 +9,11 @@ import AdminAnalytics from "@/app/components/AdminAnalytics";
 import AdminInsights from "@/app/components/AdminInsights";
 const ORDER_STATUS = {
   pending: { label: "En attente", cls: "status-pending" },
-  paid: { label: "Payée", cls: "status-paid" },
-  preparation: { label: "En préparation", cls: "status-preparation" },
-  shipped: { label: "Expédiée", cls: "status-shipped" },
-  delivered: { label: "Livrée", cls: "status-delivered" },
-  cancelled: { label: "Annulée", cls: "status-cancelled" },
+  paid: { label: "PayÃ©e", cls: "status-paid" },
+  preparation: { label: "En prÃ©paration", cls: "status-preparation" },
+  shipped: { label: "ExpÃ©diÃ©e", cls: "status-shipped" },
+  delivered: { label: "LivrÃ©e", cls: "status-delivered" },
+  cancelled: { label: "AnnulÃ©e", cls: "status-cancelled" },
 };
 
 export default function AdminDashboard() {
@@ -50,7 +50,7 @@ export default function AdminDashboard() {
       const d = await shopsRes.json();
       setPendingShopsCount((d.shops || []).filter((s) => s.status === "pending").length);
     }
-    // BUG CORRIGÉ : on lit bien sponsorRes (et non shopsRes une 2e fois)
+    // BUG CORRIGÃ‰ : on lit bien sponsorRes (et non shopsRes une 2e fois)
     if (sponsorRes.ok) {
       const d = await sponsorRes.json();
       setPendingModerationCount((d.requests || []).filter((s) => s.status === "pending").length);
@@ -89,7 +89,7 @@ export default function AdminDashboard() {
         </div>
         <div className="topbar-actions">
           <Link href="/admin/analytics" className="topbar-textlink">Analytics</Link>
-          <button className="topbar-logout" onClick={handleLogout}>Déconnexion</button>
+          <button className="topbar-logout" onClick={handleLogout}>DÃ©connexion</button>
         </div>
       </div>
       <div className="woven-strip" />
@@ -97,81 +97,81 @@ export default function AdminDashboard() {
       <div className="vendor-dashboard-wrap">
         <div className="vendor-dashboard-header">
           <h1>Tableau de bord admin</h1>
-          <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
+          <p>{user ? `ConnectÃ© en tant que ${user.full_name}` : ""}</p>
         </div>
 
-               {/* 📊 Analytics plateforme (données réelles + états vides) */}
+               {/* ðŸ“Š Analytics plateforme (donnÃ©es rÃ©elles + Ã©tats vides) */}
         <AdminAnalytics />
 
-        {/* 💸🏆⏳ Payouts + top vendeurs + boutiques en attente */}
+        {/* ðŸ’¸ðŸ†â³ Payouts + top vendeurs + boutiques en attente */}
         <AdminInsights />
 
-        {/* 📤 Exports CSV (compta / gestion) */}
+        {/* ðŸ“¤ Exports CSV (compta / gestion) */}
         <div className="va-card" style={{ marginTop: 12 }}>
-          <h3>📤 Exports CSV (Excel)</h3>
+          <h3>ðŸ“¤ Exports CSV (Excel)</h3>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <a className="btn btn-ghost" href="/api/admin/export?kind=orders">🛒 Commandes</a>
-            <a className="btn btn-ghost" href="/api/admin/export?kind=shops">🏪 Boutiques</a>
-            <a className="btn btn-ghost" href="/api/admin/export?kind=payouts">💸 Payouts</a>
+            <a className="btn btn-ghost" href="/api/admin/export?kind=orders">ðŸ›’ Commandes</a>
+            <a className="btn btn-ghost" href="/api/admin/export?kind=shops">ðŸª Boutiques</a>
+            <a className="btn btn-ghost" href="/api/admin/export?kind=payouts">ðŸ’¸ Payouts</a>
           </div>
         </div>
         {/* 4 cartes stats */}
         <div className="vendor-stats-grid">
           <div className="vendor-stat-card">
-            <div className="vendor-stat-icon">🛒</div>
-            <div className="vendor-stat-value">{orderStats ? orderStats.orders_today : "—"}</div>
+            <div className="vendor-stat-icon">ðŸ›’</div>
+            <div className="vendor-stat-value">{orderStats ? orderStats.orders_today : "â€”"}</div>
             <div className="vendor-stat-label">Commandes aujourd'hui</div>
           </div>
           <div className="vendor-stat-card">
-            <div className="vendor-stat-icon">💰</div>
+            <div className="vendor-stat-icon">ðŸ’°</div>
             <div className="vendor-stat-value" style={{ fontSize: "1.2rem" }}>
-              {orderStats ? `${Number(orderStats.revenue_today).toLocaleString("fr-FR")}` : "—"}
+              {orderStats ? `${Number(orderStats.revenue_today).toLocaleString("fr-FR")}` : "â€”"}
             </div>
             <div className="vendor-stat-label">FCFA aujourd'hui</div>
           </div>
           <div className="vendor-stat-card">
-            <div className="vendor-stat-icon">📦</div>
-            <div className="vendor-stat-value">{orderStats ? orderStats.orders_total : "—"}</div>
+            <div className="vendor-stat-icon">ðŸ“¦</div>
+            <div className="vendor-stat-value">{orderStats ? orderStats.orders_total : "â€”"}</div>
             <div className="vendor-stat-label">Commandes totales</div>
           </div>
           <div className="vendor-stat-card">
-            <div className="vendor-stat-icon">⏳</div>
+            <div className="vendor-stat-icon">â³</div>
             <div className="vendor-stat-value" style={{ color: orderStats?.orders_awaiting > 0 ? "var(--gold-600)" : "inherit" }}>
-              {orderStats ? orderStats.orders_awaiting : "—"}
+              {orderStats ? orderStats.orders_awaiting : "â€”"}
             </div>
-            <div className="vendor-stat-label">À préparer</div>
+            <div className="vendor-stat-label">Ã€ prÃ©parer</div>
           </div>
         </div>
 
         {/* Liens rapides avec badges */}
         <div className="vendor-quick-links">
           <Link href="/admin/shops" className="vendor-quick-link">
-            🏪 <strong>Boutiques</strong>
-            <span>{pendingShopsCount > 0 ? `${pendingShopsCount} en attente de vérification` : "Gestion et vérification"}</span>
+            ðŸª <strong>Boutiques</strong>
+            <span>{pendingShopsCount > 0 ? `${pendingShopsCount} en attente de vÃ©rification` : "Gestion et vÃ©rification"}</span>
           </Link>
           <Link href="/admin/moderation" className="vendor-quick-link">
-            🛡️ <strong>Modération</strong>
+            ðŸ›¡ï¸ <strong>ModÃ©ration</strong>
             <span>{pendingModerationCount > 0 ? `${pendingModerationCount} demande(s) en attente` : "Avis clients et sponsoring"}</span>
           </Link>
                     <Link href="/admin/promo-codes" className="vendor-quick-link">
-            🎁 <strong>Codes promo</strong>
-            <span>Créer et gérer les réductions</span>
+            ðŸŽ <strong>Codes promo</strong>
+            <span>CrÃ©er et gÃ©rer les rÃ©ductions</span>
           </Link>
           <Link href="/admin/products" className="vendor-quick-link">
-            📦 <strong>Produits</strong>
-            <span>Stock détaillé par boutique</span>
+            ðŸ“¦ <strong>Produits</strong>
+            <span>Stock dÃ©taillÃ© par boutique</span>
           </Link>
           <Link href="/admin/analytics" className="vendor-quick-link">
-            📈 <strong>Analytics</strong>
-            <span>Statistiques détaillées</span>
+            ðŸ“ˆ <strong>Analytics</strong>
+            <span>Statistiques dÃ©taillÃ©es</span>
           </Link>
           <Link href="/admin/payouts" className="vendor-quick-link">
-            💸 <strong>Payouts</strong>
-            <span>{earnings ? `${earnings.released_count} payout(s) à libérer` : "Gestion des retraits vendeur"}</span>
+            ðŸ’¸ <strong>Payouts</strong>
+            <span>{earnings ? `${earnings.released_count} payout(s) Ã  libÃ©rer` : "Gestion des retraits vendeur"}</span>
           </Link>
           <Link href="/admin/conversations" className="vendor-quick-link">
-            💬 <strong>Conversations</strong>
-            <span>Surveillance vendeur ↔ client</span>
+            ðŸ’¬ <strong>Conversations</strong>
+            <span>Surveillance vendeur â†” client</span>
           </Link>
         </div>
 
@@ -184,25 +184,25 @@ export default function AdminDashboard() {
             En attente ({countBy("pending")})
           </button>
           <button className={`vendor-filter-btn ${orderFilter === "shipped" ? "active" : ""}`} onClick={() => setOrderFilter("shipped")}>
-            Expédiées ({countBy("shipped")})
+            ExpÃ©diÃ©es ({countBy("shipped")})
           </button>
           <button className={`vendor-filter-btn ${orderFilter === "delivered" ? "active" : ""}`} onClick={() => setOrderFilter("delivered")}>
-            Livrées ({countBy("delivered")})
+            LivrÃ©es ({countBy("delivered")})
           </button>
           <button className={`vendor-filter-btn ${orderFilter === "cancelled" ? "active" : ""}`} onClick={() => setOrderFilter("cancelled")}>
-            Annulées ({countBy("cancelled")})
+            AnnulÃ©es ({countBy("cancelled")})
           </button>
         </div>
 
-        {/* Ventes récentes en cartes */}
+        {/* Ventes rÃ©centes en cartes */}
         <div className="vendor-products-section">
-          <h2>Ventes récentes ({filteredOrders.length})</h2>
+          <h2>Ventes rÃ©centes ({filteredOrders.length})</h2>
 
           {loading ? (
             <p>Chargement...</p>
           ) : filteredOrders.length === 0 ? (
             <div className="empty-state">
-              <div className="glyph">🛒</div>
+              <div className="glyph">ðŸ›’</div>
               <p>Aucune commande {orderFilter !== "all" ? "pour ce filtre" : "pour l'instant"}.</p>
             </div>
           ) : (
@@ -220,7 +220,7 @@ export default function AdminDashboard() {
                     <span className="order-total">{Number(o.total_amount).toLocaleString("fr-FR")} FCFA</span>
                   </div>
                   <div className="order-meta">
-                    👤 {o.buyer_name} · {o.buyer_email} · 🏪 {o.shop_count} boutique{o.shop_count > 1 ? "s" : ""}
+                    ðŸ‘¤ {o.buyer_name} Â· {o.buyer_email} Â· ðŸª {o.shop_count} boutique{o.shop_count > 1 ? "s" : ""}
                   </div>
                   <span className={`status-pill ${st.cls}`}>{st.label}</span>
                 </div>
@@ -233,3 +233,4 @@ export default function AdminDashboard() {
     </div>
   );
 }
+
