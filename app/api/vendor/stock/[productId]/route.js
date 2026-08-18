@@ -1,3 +1,4 @@
+import { sendLowStockAlert } from "@/lib/email";
 import sql from "@/lib/db";
 import { clientKey } from "@/lib/rate-limit";
 
@@ -29,9 +30,10 @@ export async function PATCH(request, { params }) {
 
     // Vérifie que le produit appartient bien à ce vendeur
     const [product] = await sql`
-      SELECT p.id, p.price, p.stock_quantity, s.vendor_id
+      SELECT p.id, p.name, p.price, p.stock_quantity, p.low_stock_threshold, s.vendor_id, s.name AS shop_name, u.email AS vendor_email, u.full_name AS vendor_name
       FROM products p
       JOIN shops s ON s.id = p.shop_id
+      JOIN users u ON u.id = s.vendor_id
       WHERE p.id = ${productId}
     `;
 
@@ -104,6 +106,16 @@ export async function PATCH(request, { params }) {
         INSERT INTO stock_movements (product_id, type, quantity, reason, created_by)
         VALUES (${productId}, 'adjustment', ${Number(adjustment)}, ${reason || "Ajustement manuel"}, ${userId})
       `;
+    }
+
+    
+    if (hasStockChange) {
+      sendLowStockAlert({
+        product: { name: product.name, low_stock_threshold: product.low_stock_threshold },
+        vendor: { email: product.vendor_email, name: product.vendor_name, shopName: product.shop_name },
+        oldStock: product.stock_quantity,
+        newStock: newQuantity,
+      }).catch(e => console.error("[lowStock] Envoi echoue:", e));
     }
 
     return Response.json({ product: updated });

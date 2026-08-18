@@ -1,3 +1,4 @@
+import { sendLowStockAlert } from "@/lib/email";
 ﻿import { NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
@@ -49,8 +50,11 @@ export async function POST(request) {
 
   // === Résolution des produits avec stock réel ===
   const products = await sql`
-    SELECT p.id, p.price, p.stock_quantity, p.name, p.shop_id, p.status
+    SELECT p.id, p.price, p.stock_quantity, p.name, p.shop_id, p.status, p.low_stock_threshold,
+           s.name AS shop_name, u.email AS vendor_email, u.full_name AS vendor_name
     FROM products p
+    JOIN shops s ON s.id = p.shop_id
+    JOIN users u ON u.id = s.vendor_id
     WHERE p.id = ANY(${productIds}::int[])
   `;
 
@@ -135,6 +139,7 @@ export async function POST(request) {
 
       // 2. Items + déstockage
       const subtotalsByShop = {};
+      const stockChanges = [];
       for (const item of items) {
         const pid = Number(item.productId);
         const p = productsMap[pid];
@@ -145,6 +150,7 @@ export async function POST(request) {
           VALUES (${newOrder.id}, ${p.id}, ${item.quantity}, ${Number(p.price)})
         `;
 
+        const oldStock = p.stock_quantity;
         const [upd] = await tx`
           UPDATE products
           SET stock_quantity = stock_quantity - ${item.quantity}
@@ -154,6 +160,9 @@ export async function POST(request) {
         if (!upd) {
           throw new Error(`Stock insuffisant pour "${p.name}" (concurrence)`);
         }
+        const newStock = oldStock - item.quantity;
+        p.stock_quantity = newStock;
+        stockChanges.push({ product: p, oldStock, newStock });
 
         if (!subtotalsByShop[p.shop_id]) subtotalsByShop[p.shop_id] = 0;
         subtotalsByShop[p.shop_id] += lineTotal;
@@ -178,6 +187,16 @@ export async function POST(request) {
 
       return newOrder;
     });
+
+    // Envoi asynchrone des alertes stock bas (post-commit, ne bloque pas la réponse)
+    Promise.all(stockChanges.map(sc =>
+      sendLowStockAlert({
+        product: { name: sc.product.name, low_stock_threshold: sc.product.low_stock_threshold },
+        vendor: { email: sc.product.vendor_email, name: sc.product.vendor_name, shopName: sc.product.shop_name },
+        oldStock: sc.oldStock,
+        newStock: sc.newStock,
+      })
+    )).catch(e => console.error("[lowStock] Envoi post-commande echoue:", e));
 
     return NextResponse.json({ order: result });
   } catch (err) {
