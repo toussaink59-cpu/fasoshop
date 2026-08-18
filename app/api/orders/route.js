@@ -1,4 +1,4 @@
-import { sendLowStockAlert } from "@/lib/email";
+import { sendMail, emailTemplates, sendLowStockAlert } from "@/lib/email";
 ﻿import { NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
@@ -127,6 +127,7 @@ export async function POST(request) {
 
   // === Transaction atomique : commande + stock + ledger ===
   try {
+    const stockChanges = [];
     const result = await sql.begin(async (tx) => {
       // 1. Création commande
       const [newOrder] = await tx`
@@ -139,7 +140,6 @@ export async function POST(request) {
 
       // 2. Items + déstockage
       const subtotalsByShop = {};
-      const stockChanges = [];
       for (const item of items) {
         const pid = Number(item.productId);
         const p = productsMap[pid];
@@ -187,6 +187,20 @@ export async function POST(request) {
 
       return newOrder;
     });
+
+
+    // Email de confirmation de commande (non bloquant)
+    try {
+      const tpl = emailTemplates.orderConfirmation({
+        orderId: result.id,
+        total: result.total,
+        deliveryAddress: shippingAddress || "Retrait en boutique",
+      });
+      sendMail({ to: user.email, subject: tpl.subject, html: tpl.html })
+        .catch(e => console.error("[orderConfirmation] envoi echoue:", e));
+    } catch (e) {
+      console.error("[orderConfirmation] preparation echouee:", e);
+    }
 
     // Envoi asynchrone des alertes stock bas (post-commit, ne bloque pas la réponse)
     Promise.all(stockChanges.map(sc =>
