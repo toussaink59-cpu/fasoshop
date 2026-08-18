@@ -5,11 +5,10 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { getCart, cartCount } from "@/lib/cart";
 
-// Bottom Navigation fixe, mobile uniquement (masquée en desktop via CSS).
-// L'onglet actif est déduit du chemin courant.
 export default function BottomNav({ user }) {
   const pathname = usePathname();
   const [count, setCount] = useState(0);
+  const [unread, setUnread] = useState(0);
 
   useEffect(() => {
     const update = () => setCount(cartCount(getCart()));
@@ -18,13 +17,29 @@ export default function BottomNav({ user }) {
     return () => window.removeEventListener("fasoshop-cart-updated", update);
   }, []);
 
+  useEffect(() => {
+    if (!user) return;
+    let alive = true;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/conversations/unread-count");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (alive) setUnread(data.unread || 0);
+      } catch {}
+    };
+    load();
+    const t = setInterval(load, 30000);
+    return () => { alive = false; clearInterval(t); };
+  }, [user]);
+
   const accountHref = !user ? "/login" : user.role === "vendor" ? "/vendor/dashboard" : user.role === "admin" ? "/admin/dashboard" : "/orders";
 
   const items = [
     { href: "/", label: "Accueil", icon: "🏠", match: (p) => p === "/" },
     { href: "/shop", label: "Catégories", icon: "🗂️", match: (p) => p.startsWith("/shop") },
     { href: "/cart", label: "Panier", icon: "🛒", match: (p) => p.startsWith("/cart"), badge: count },
-    { href: "/favoris", label: "Favoris", icon: "♡", match: (p) => p.startsWith("/favoris") },
+    { href: "/messages", label: "Messages", icon: "💬", match: (p) => p.startsWith("/messages"), badge: unread },
     { href: accountHref, label: "Compte", icon: "👤", match: (p) => ["/login", "/orders", "/vendor/dashboard", "/admin/dashboard"].some((h) => p.startsWith(h)) },
   ];
 

@@ -11,6 +11,18 @@ import BottomNav from "@/app/components/BottomNav";
 const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
 const CONDITION_COLORS = { neuf: "var(--gold-600)", quasi_neuf: "#6b7280", occasion: "var(--bissap-600)" };
 
+async function startConversation(productId) {
+  const res = await fetch("/api/conversations", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ productId }),
+  });
+  if (res.status === 401) { window.location.href = "/login"; return; }
+  const data = await res.json();
+  if (res.ok) window.location.href = `/messages/${data.conversationId}`;
+  else alert(data.error || "Impossible de contacter le vendeur.");
+}
+
 export default function ProductDetailClient({ id, product, initialReviews, initialUser, categories }) {
   const [reviews, setReviews] = useState(initialReviews);
   const [justAdded, setJustAdded] = useState(false);
@@ -202,8 +214,16 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
                 : "Ajouter au panier"}
             </button>
 
+            <button
+              className="pdp-contact-btn"
+              onClick={() => startConversation(product.id)}
+            >
+              💬 Contacter le vendeur
+            </button>
+
             <div className={"pdp-sticky-bar" + (ctaInView ? " is-hidden" : "")}>
               <div className="pdp-sticky-price"><PriceDisplay product={product} /></div>
+              <button className="pdp-sticky-contact" onClick={() => startConversation(product.id)} aria-label="Contacter le vendeur">💬</button>
               <button className="btn btn-primary pdp-sticky-add" onClick={handleAdd} disabled={product.stock_quantity <= 0}>
                 {product.stock_quantity <= 0 ? "Rupture de stock" : justAdded ? "Ajouté ✓" : "Ajouter au panier"}
               </button>

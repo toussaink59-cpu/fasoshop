@@ -7343,3 +7343,26 @@ main {
     padding: 22px 28px 36px;
   }
 }
+
+/* === Chat B1 : bouton contacter sur fiche produit === */
+.pdp-contact-btn {
+  width: 100%;
+  margin-top: 8px;
+  background: transparent;
+  border: 1.5px solid var(--gold-600, #c9a44c);
+  color: var(--ink-900, #241712);
+  border-radius: 12px;
+  font-weight: 600;
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color .18s ease, transform .12s ease;
+}
+.pdp-contact-btn:active { transform: scale(.97); }
+.pdp-sticky-contact {
+  background: transparent;
+  border: 1.5px solid var(--gold-600, #c9a44c);
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
