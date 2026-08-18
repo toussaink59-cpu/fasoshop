@@ -1,0 +1,24 @@
+﻿.hero{position:relative;overflow:hidden;border-radius:12px;background:linear-gradient(135deg,#fdf8ee,#f7ecd8);border:1px solid var(--border,#eadfce);margin:8px 0 14px}
+.track{display:flex;transition:transform .45s ease}
+.slide{min-width:100%;display:flex;align-items:center;gap:14px;padding:12px 14px 24px;min-height:132px}
+.copy{flex:1.15;min-width:0;display:flex;flex-direction:column;gap:6px}
+.eyebrow{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#b98a1f}
+.title{font-family:"Work Sans",system-ui,-apple-system,sans-serif;font-weight:800;font-size:clamp(.98rem,4.4vw,1.3rem);line-height:1.12;color:var(--ink-900,#241712);margin:0}
+.subtitle{font-size:.8rem;color:var(--ink-700,#5c4a3a);margin:0}
+.cta{align-self:flex-start;background:#e8590c;color:#fff;font-size:.72rem;font-weight:700;padding:8px 14px;border-radius:999px;text-decoration:none}
+.visual{flex:0.9;position:relative;height:96px;border-radius:10px;overflow:hidden;background:#fff;border:1px solid var(--border,#eadfce)}
+.imgCover{object-fit:cover}
+.logoBox{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:linear-gradient(135deg,#fffdf7,#f6ead2)}
+.logoWord{font-weight:800;letter-spacing:.18em;color:#241712;font-size:.85rem}
+.dots{position:absolute;left:0;right:0;bottom:6px;display:flex;justify-content:center;gap:6px}
+.dot{width:6px;height:6px;border-radius:999px;border:0;background:#d8c9ae;padding:0;cursor:pointer}
+.active{background:#e8590c;width:16px}
+@media (min-width:768px){
+  .slide{min-height:180px;padding:20px 26px 30px;gap:22px}
+  .title{font-size:1.55rem}
+  .subtitle{font-size:.9rem}
+  .visual{height:130px}
+}
+
+.title{text-transform:uppercase;letter-spacing:.02em}
+@media (min-width:768px){.title{font-size:1.4rem}}

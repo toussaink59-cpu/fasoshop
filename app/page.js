@@ -5,7 +5,7 @@ import { getNewArrivals } from "@/lib/queries/homepage";
 import { getProducts } from "@/lib/queries/products";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
-import BannerCarousel from "@/app/components/BannerCarousel";
+import HeroCarousel from "@/app/components/HeroCarousel";
 import Footer from "@/app/components/Footer";
 import FlashSaleSection from "@/app/components/FlashSaleSection";
 import HorizontalProductSection from "@/app/components/HorizontalProductSection";
@@ -42,7 +42,7 @@ export default async function HomePage() {
       <CategoryPillBar categories={categories} />
       <div className="woven-strip" />
 
-      <BannerCarousel featuredProducts={newArrivals} />
+      <HeroCarousel featuredProducts={newArrivals} />
 
       <FlashSaleSection initialProducts={flashSales} />
 
