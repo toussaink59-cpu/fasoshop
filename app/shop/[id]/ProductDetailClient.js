@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { addToCart } from "@/lib/cart";
@@ -20,6 +20,20 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
   const [reviewSuccess, setReviewSuccess] = useState("");
   const [now, setNow] = useState(() => new Date());
   const [mainImg, setMainImg] = useState(0);
+  const [ctaInView, setCtaInView] = useState(true);
+  const mainCtaRef = useRef(null);
+
+  useEffect(() => {
+    const el = mainCtaRef.current;
+    if (!el) return;
+    const onScroll = () => {
+      const r = el.getBoundingClientRect();
+      setCtaInView(r.top < window.innerHeight && r.bottom > 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -176,6 +190,7 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
             ) : null}
 
             <button
+              ref={mainCtaRef}
               className="btn btn-primary pdp-add-btn"
               onClick={handleAdd}
               disabled={product.stock_quantity <= 0}
@@ -187,7 +202,7 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
                 : "Ajouter au panier"}
             </button>
 
-            <div className="pdp-sticky-bar">
+            <div className={"pdp-sticky-bar" + (ctaInView ? " is-hidden" : "")}>
               <div className="pdp-sticky-price"><PriceDisplay product={product} /></div>
               <button className="btn btn-primary pdp-sticky-add" onClick={handleAdd} disabled={product.stock_quantity <= 0}>
                 {product.stock_quantity <= 0 ? "Rupture de stock" : justAdded ? "Ajouté ✓" : "Ajouter au panier"}

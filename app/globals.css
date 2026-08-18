@@ -7222,3 +7222,7 @@ a.side-menu-link:hover::after {
 
 /* === Sprint stock bas : banniere warning === */
 .vendor-alert-warning{background:#fff7ed;border:1px solid #fdba74;color:#9a3412}
+
+/* === Polish mobile : sticky bar show/hide === */
+.pdp-sticky-bar{transition:transform .25s ease,opacity .25s ease}
+.pdp-sticky-bar.is-hidden{transform:translateY(140%);opacity:0;pointer-events:none}
