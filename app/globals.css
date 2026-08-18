@@ -7226,3 +7226,59 @@ a.side-menu-link:hover::after {
 /* === Polish mobile : sticky bar show/hide === */
 .pdp-sticky-bar{transition:transform .25s ease,opacity .25s ease}
 .pdp-sticky-bar.is-hidden{transform:translateY(140%);opacity:0;pointer-events:none}
+
+/* === Polish P3 : transitions smooth filtres shop === */
+@keyframes overlay-fade-in{from{opacity:0}to{opacity:1}}
+@media (max-width:767px){
+  .shop-filter-overlay{animation:overlay-fade-in .2s ease}
+}
+.temu-chip{transition:background-color .18s ease,border-color .18s ease,color .18s ease,transform .12s ease}
+.temu-chip:active{transform:scale(.95)}
+.temu-filter-btn{transition:background-color .18s ease,border-color .18s ease,color .18s ease,transform .12s ease}
+.temu-filter-btn:active{transform:scale(.96)}
+.shop-mobile-filter-btn{transition:background-color .18s ease,border-color .18s ease,transform .12s ease}
+.shop-mobile-filter-btn:active{transform:scale(.96)}
+
+/* === Polish P3 : transitions smooth filtres === */
+
+/* Chips catégorie/condition/rating : transition fond + couleur + scale */
+.temu-chip {
+  transition: background-color .22s cubic-bezier(0.22, 1, 0.36, 1),
+              color .22s ease,
+              border-color .22s ease,
+              transform .15s ease,
+              box-shadow .22s ease;
+}
+
+.temu-chip:active {
+  transform: scale(.94);
+}
+
+.temu-chip.is-active {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(232, 89, 12, 0.25);
+}
+
+/* Cartes produits : apparition en fondu + glissement au changement de filtre */
+@keyframes product-card-appear {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.product-card {
+  animation: product-card-appear .35s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+/* Staggered delay pour effet cascade */
+.product-card:nth-child(1) { animation-delay: 0s; }
+.product-card:nth-child(2) { animation-delay: .05s; }
+.product-card:nth-child(3) { animation-delay: .1s; }
+.product-card:nth-child(4) { animation-delay: .15s; }
+.product-card:nth-child(5) { animation-delay: .2s; }
+.product-card:nth-child(6) { animation-delay: .25s; }
