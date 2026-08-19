@@ -15,24 +15,39 @@
   ],
   "icons": [
     {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
       "src": "/icons/icon.svg",
       "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/svg+xml"
     }
   ],
   "shortcuts": [
     {
       "name": "Mon panier",
       "short_name": "Panier",
-      "url": "/cart",
-      "description": "Voir mon panier"
+      "url": "/cart"
     },
     {
       "name": "Mes commandes",
       "short_name": "Commandes",
-      "url": "/orders",
-      "description": "Suivre mes commandes"
+      "url": "/orders"
     }
   ]
 }
