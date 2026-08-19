@@ -55,9 +55,9 @@ export default function SearchBar({ initialValue = "", autoFocus = false }) {
       return;
     }
     debounceRef.current = setTimeout(() => {
-      fetch(`/api/products?q=${encodeURIComponent(value.trim())}&sort=newest`)
+      fetch(`/api/products/suggestions?q=${encodeURIComponent(value.trim())}`)
         .then((r) => r.json())
-        .then((data) => setSuggestions((data.products || []).slice(0, 5)))
+        .then((data) => setSuggestions(data.suggestions || []))
         .catch(() => setSuggestions([]));
     }, 300);
     return () => clearTimeout(debounceRef.current);
