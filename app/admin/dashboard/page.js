@@ -26,6 +26,7 @@ export default function AdminDashboard() {
   const [pendingModerationCount, setPendingModerationCount] = useState(0);
   const [orderFilter, setOrderFilter] = useState("all");
   const [earnings, setEarnings] = useState(null);
+  const [cockpitData, setCockpitData] = useState(null);
 
   const loadOrders = useCallback(async () => {
     const res = await fetch("/api/admin/orders");
@@ -69,6 +70,7 @@ export default function AdminDashboard() {
         loadOrders();
         loadBadgeCounts();
         fetch("/api/admin/earnings").then((r) => r.json()).then((d) => setEarnings(d.earnings || null));
+      fetch("/api/admin/dashboard").then((r) => r.json()).then((d) => setCockpitData(d));
       });
   }, [loadOrders, loadBadgeCounts, router]);
 
@@ -100,7 +102,128 @@ export default function AdminDashboard() {
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
 
-               {/* 📊 Analytics plateforme (données réelles + états vides) */}
+
+      {/* 🎯 COCKPIT ADMIN — KPIs + Alertes + Actions rapides */}
+      {cockpitData && (
+        <div style={{ display: "grid", gap: 16, marginBottom: 24 }}>
+          {/* KPIs enrichis avec deltas */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+            <div className="vendor-stat-card">
+              <div className="vendor-stat-icon">💰</div>
+              <div className="vendor-stat-value" style={{ fontSize: "1.4rem" }}>
+                {cockpitData.revenue.today.toLocaleString("fr-FR")} FCFA
+              </div>
+              <div className="vendor-stat-label">CA aujourd'hui</div>
+            </div>
+            <div className="vendor-stat-card">
+              <div className="vendor-stat-icon">📈</div>
+              <div className="vendor-stat-value" style={{ fontSize: "1.2rem" }}>
+                {cockpitData.revenue.week.toLocaleString("fr-FR")} FCFA
+              </div>
+              <div className="vendor-stat-label">
+                CA semaine{" "}
+                <span style={{ color: cockpitData.revenue.week_delta >= 0 ? "#2e7d32" : "#c62828", fontSize: "0.9rem" }}>
+                  {cockpitData.revenue.week_delta >= 0 ? "+" : ""}{cockpitData.revenue.week_delta}%
+                </span>
+              </div>
+            </div>
+            <div className="vendor-stat-card">
+              <div className="vendor-stat-icon">🗓️</div>
+              <div className="vendor-stat-value" style={{ fontSize: "1.2rem" }}>
+                {cockpitData.revenue.month.toLocaleString("fr-FR")} FCFA
+              </div>
+              <div className="vendor-stat-label">
+                CA mois{" "}
+                <span style={{ color: cockpitData.revenue.month_delta >= 0 ? "#2e7d32" : "#c62828", fontSize: "0.9rem" }}>
+                  {cockpitData.revenue.month_delta >= 0 ? "+" : ""}{cockpitData.revenue.month_delta}%
+                </span>
+              </div>
+            </div>
+            <div className="vendor-stat-card">
+              <div className="vendor-stat-icon">🛒</div>
+              <div className="vendor-stat-value" style={{ fontSize: "1.2rem" }}>
+                {cockpitData.avgBasket.toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
+              </div>
+              <div className="vendor-stat-label">Panier moyen (30j)</div>
+            </div>
+            <div className="vendor-stat-card">
+              <div className="vendor-stat-icon">👥</div>
+              <div className="vendor-stat-value">{cockpitData.customers.week}</div>
+              <div className="vendor-stat-label">Nouveaux clients (7j)</div>
+            </div>
+          </div>
+
+          {/* Alertes proactives */}
+          {(cockpitData.alerts.lowStock > 0 || cockpitData.alerts.stagnantOrders > 0) && (
+            <div className="va-card" style={{ background: "#fff3cd", borderLeft: "4px solid #ffc107" }}>
+              <h3 style={{ margin: "0 0 12px 0", fontSize: "1.1rem" }}>⚠️ Alertes</h3>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                {cockpitData.alerts.lowStock > 0 && (
+                  <Link href="/admin/products" style={{ color: "#856404", textDecoration: "none" }}>
+                    📦 <strong>{cockpitData.alerts.lowStock} produit(s)</strong> bientôt en rupture
+                  </Link>
+                )}
+                {cockpitData.alerts.stagnantOrders > 0 && (
+                  <Link href="/admin/orders?filter=stagnant" style={{ color: "#856404", textDecoration: "none" }}>
+                    ⏳ <strong>{cockpitData.alerts.stagnantOrders} commande(s)</strong> stagnent depuis &gt; 3 jours
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Actions rapides + Top 3 vendeurs */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div className="va-card">
+              <h3 style={{ margin: "0 0 12px 0", fontSize: "1.1rem" }}>🚀 Actions rapides</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {cockpitData.payouts.released_count > 0 && (
+                  <Link href="/admin/payouts" className="btn btn-primary" style={{ textDecoration: "none" }}>
+                    💸 Valider {cockpitData.payouts.released_count} payout(s) ({cockpitData.payouts.released_amount.toLocaleString("fr-FR")} FCFA)
+                  </Link>
+                )}
+                {pendingShopsCount > 0 && (
+                  <Link href="/admin/shops" className="btn btn-ghost" style={{ textDecoration: "none" }}>
+                    🏪 Vérifier {pendingShopsCount} boutique(s) en attente
+                  </Link>
+                )}
+                {pendingModerationCount > 0 && (
+                  <Link href="/admin/moderation" className="btn btn-ghost" style={{ textDecoration: "none" }}>
+                    🛡️ Traiter {pendingModerationCount} demande(s) de modération
+                  </Link>
+                )}
+              </div>
+            </div>
+
+            <div className="va-card">
+              <h3 style={{ margin: "0 0 12px 0", fontSize: "1.1rem" }}>🏆 Top 3 vendeurs (mois)</h3>
+              {cockpitData.topVendors.length === 0 ? (
+                <p style={{ color: "#666", fontSize: "0.9rem" }}>Aucune vente ce mois</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {cockpitData.topVendors.map((v, i) => (
+                    <div key={v.shop_name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div>
+                        <strong>{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"} {v.shop_name}</strong>
+                        <div style={{ fontSize: "0.85rem", color: "#666" }}>
+                          {v.order_count} commande(s)
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontWeight: "bold", color: "#d4af37" }}>
+                          {v.revenue.toLocaleString("fr-FR")} FCFA
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+                       {/* 📊 Analytics plateforme (données réelles + états vides) */}
         <AdminAnalytics />
 
         {/* 💸🏆⏳ Payouts + top vendeurs + boutiques en attente */}
