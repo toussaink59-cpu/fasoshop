@@ -1,4 +1,4 @@
-import { sendMail, emailTemplates, sendLowStockAlert } from "@/lib/email";
+import { sendMail, emailTemplates, sendLowStockAlert, sendNewOrderToVendor } from "@/lib/email";
 ﻿import { NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
@@ -211,6 +211,49 @@ export async function POST(request) {
         .catch(e => console.error("[orderConfirmation] envoi echoue:", e));
     } catch (e) {
       console.error("[orderConfirmation] preparation echouee:", e);
+    }
+
+    // Notifications vendeurs : 1 email par boutique avec tous ses produits (non bloquant)
+    try {
+      const itemsByShop = {};
+      for (const sc of stockChanges) {
+        const shopId = sc.product.shop_id;
+        if (!itemsByShop[shopId]) {
+          itemsByShop[shopId] = {
+            vendorEmail: sc.product.vendor_email,
+            vendorName: sc.product.vendor_name,
+            shopName: sc.product.shop_name,
+            items: [],
+            subtotal: 0,
+          };
+        }
+        const qty = sc.oldStock - sc.newStock;
+        const lineTotal = Number(sc.product.price) * qty;
+        itemsByShop[shopId].items.push({
+          name: sc.product.name,
+          quantity: qty,
+          price: Number(sc.product.price),
+          lineTotal,
+        });
+        itemsByShop[shopId].subtotal += lineTotal;
+      }
+
+      Promise.all(
+        Object.values(itemsByShop).map(shop =>
+          sendNewOrderToVendor({
+            vendorEmail: shop.vendorEmail,
+            vendorName: shop.vendorName,
+            shopName: shop.shopName,
+            orderId: result.id,
+            items: shop.items,
+            subtotal: shop.subtotal,
+            deliveryMethod,
+            deliveryAddress: shippingAddress || null,
+          })
+        )
+      ).catch(e => console.error("[newOrderToVendor] envoi echoue:", e));
+    } catch (e) {
+      console.error("[newOrderToVendor] preparation echouee:", e);
     }
 
     // Envoi asynchrone des alertes stock bas (post-commit, ne bloque pas la réponse)
