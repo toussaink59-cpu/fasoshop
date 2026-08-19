@@ -34,7 +34,7 @@ export async function GET(request) {
   try {
     // Rate limit : 60 requêtes/min/IP
     const key = `catalogue:${clientKey(request)}`;
-    if (!rateLimit(key, { limit: 60, windowMs: 60_000 })) {
+    if (!(await rateLimit(key, { limit: 60, windowMs: 60_000 })) {
       return Response.json(
         { error: "Trop de requêtes. Réessayez dans une minute." },
         { status: 429, headers: { "Retry-After": "60" } }
