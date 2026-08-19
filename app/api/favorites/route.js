@@ -16,7 +16,7 @@ export async function GET(request) {
 
   // 🔒 2) Rate limit : max 30 consultations par minute
   const key = `favorites:${clientKey(request)}`;
-  if (!(await rateLimit(key, { limit: 30, windowMs: 60_000 })) {
+  if (!(await rateLimit(key, { limit: 30, windowMs: 60_000 }))) {
     return Response.json(
       { error: "Trop de requêtes. Réessayez dans une minute." },
       { status: 429 }
@@ -51,7 +51,7 @@ export async function POST(request) {
 
   // 🔒 2) Rate limit : max 20 ajouts par minute
   const key = `favorite:${clientKey(request)}`;
-  if (!(await rateLimit(key, { limit: 20, windowMs: 60_000 })) {
+  if (!(await rateLimit(key, { limit: 20, windowMs: 60_000 }))) {
     return Response.json(
       { error: "Trop d'ajouts. Réessayez dans une minute." },
       { status: 429 }
