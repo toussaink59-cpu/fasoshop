@@ -3,12 +3,15 @@ import sql from "@/lib/db";
 // CRON quotidien 3h : auto-confirme les commandes expédiées depuis 7 jours
 // → libère le payout (MM) ou passe en cod_pending (espèces)
 export async function POST(request) {
+  // Fail-closed : CRON_SECRET doit etre defini, sinon refus
   const secret = process.env.CRON_SECRET;
-  if (secret) {
-    const auth = request.headers.get("authorization");
-    if (auth !== `Bearer ${secret}`) {
-      return Response.json({ error: "Non autorisé." }, { status: 401 });
-    }
+  if (!secret) {
+    console.error("[cron] CRON_SECRET non defini - refus");
+    return Response.json({ error: "Service indisponible." }, { status: 500 });
+  }
+  const auth = request.headers.get("authorization");
+  if (auth !== `Bearer ${secret}`) {
+    return Response.json({ error: "Non autorise." }, { status: 401 });
   }
 
   try {

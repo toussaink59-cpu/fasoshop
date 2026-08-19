@@ -1,11 +1,14 @@
 import sql from "@/lib/db";
 import { hash } from "bcryptjs";
 
-const isTestEnv = process.env.NODE_ENV !== "production" || process.env.ALLOW_TEST_HELPERS === "1";
-
+// Production : JAMAIS accessible, sans echappatoire
+// Dev/test : ALLOW_TEST_HELPERS=1 requis explicitement
 function guard() {
-  if (!isTestEnv) {
+  if (process.env.NODE_ENV === "production") {
     return Response.json({ error: "Non disponible en production." }, { status: 403 });
+  }
+  if (process.env.ALLOW_TEST_HELPERS !== "1") {
+    return Response.json({ error: "Test helpers desactives (ALLOW_TEST_HELPERS)." }, { status: 403 });
   }
   return null;
 }

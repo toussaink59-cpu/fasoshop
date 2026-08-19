@@ -1,4 +1,5 @@
 import sql from "@/lib/db";
+import { requireRole } from "@/lib/auth";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
 
 const ALLOWED_CONDITIONS = ["neuf", "quasi_neuf", "occasion"];
@@ -34,10 +35,11 @@ function isValidImageUrl(url) {
 // GET /api/vendor/stock — vendeur voit SEULEMENT ses produits
 export async function GET(request) {
   const userId = request.headers.get("x-user-id");
-  const userRole = request.headers.get("x-user-role");
-
-  if (!userId || (userRole !== "vendor" && userRole !== "admin")) {
-    return Response.json({ error: "Accès refusé." }, { status: 403 });
+  
+  // Vérification de rôle en DB (défense en profondeur)
+  const check = await requireRole(userId, ["vendor", "admin"]);
+  if (!check.ok) {
+    return Response.json({ error: check.error }, { status: check.status });
   }
 
   const products = await sql`
@@ -60,11 +62,11 @@ export async function GET(request) {
 // POST /api/vendor/stock — création produit avec validation militaire
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
-  const userRole = request.headers.get("x-user-role");
-
-  // 🔒 1) Seul vendeur ou admin peut créer
-  if (!userId || (userRole !== "vendor" && userRole !== "admin")) {
-    return Response.json({ error: "Accès refusé." }, { status: 403 });
+  
+  // 🔒 1) Vérification de rôle en DB (défense en profondeur)
+  const check = await requireRole(userId, ["vendor", "admin"]);
+  if (!check.ok) {
+    return Response.json({ error: check.error }, { status: check.status });
   }
 
   // 🔒 2) Rate limit : max 5 produits par minute

@@ -74,10 +74,13 @@ export async function GET(request) {
     // Appel à getProducts (validation interne des filtres)
     const result = await getProducts(filters, limit, cursor, userId);
 
-    // Réponse avec cache-control pour performance
+    // Reponse avec cache-control : prive si userId present (contient is_favorited)
+    const cacheHeader = userId
+      ? "private, no-store"
+      : "public, s-maxage=60, stale-while-revalidate=300";
     return Response.json(result, {
       headers: {
-        "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        "Cache-Control": cacheHeader,
       },
     });
   } catch (error) {

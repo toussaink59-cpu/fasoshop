@@ -48,6 +48,17 @@ export async function POST(request) {
     return NextResponse.json({ error: "Produits invalides dans le panier" }, { status: 400 });
   }
 
+  // === Validation stricte des quantites (entier > 0, max 99) ===
+  for (const item of items) {
+    const q = item.quantity;
+    if (!Number.isInteger(q) || q < 1 || q > 99) {
+      return NextResponse.json(
+        { error: "Quantite invalide (doit etre un entier entre 1 et 99)." },
+        { status: 400 }
+      );
+    }
+  }
+
   // === Résolution des produits avec stock réel ===
   const products = await sql`
     SELECT p.id, p.price, p.stock_quantity, p.name, p.shop_id, p.status, p.low_stock_threshold,
