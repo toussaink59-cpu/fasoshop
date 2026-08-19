@@ -21,6 +21,7 @@ export default function RootLayout({ children }) {
         <ServiceWorker />
         <PwaInstallPrompt />
         <meta name="theme-color" content="#241712" />
+        <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />

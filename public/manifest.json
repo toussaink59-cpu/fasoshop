@@ -1,0 +1,38 @@
+{
+  "name": "Kimoxa — Marketplace multi-vendeurs",
+  "short_name": "Kimoxa",
+  "description": "La marketplace multi-vendeurs qui connecte l'Afrique qui vend à l'Afrique qui achète.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#241712",
+  "theme_color": "#241712",
+  "lang": "fr",
+  "categories": [
+    "shopping",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mon panier",
+      "short_name": "Panier",
+      "url": "/cart",
+      "description": "Voir mon panier"
+    },
+    {
+      "name": "Mes commandes",
+      "short_name": "Commandes",
+      "url": "/orders",
+      "description": "Suivre mes commandes"
+    }
+  ]
+}
