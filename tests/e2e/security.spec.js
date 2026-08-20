@@ -188,3 +188,32 @@ test.describe("6. Rate-limit", () => {
     expect(got429, "Rate-limit n'a pas declenche 429").toBeTruthy();
   });
 });
+
+test.describe("7. Password reset", () => {
+  test("forgot-password email inconnu -> 200 anti-enumeration", async ({ request }) => {
+    const r = await request.post("/api/auth/forgot-password", {
+      data: { email: `inconnu-${Date.now()}@nowhere.test` },
+    });
+    expect(r.status()).toBe(200);
+    const body = await r.json();
+    expect(body.ok).toBe(true);
+  });
+
+  test("reset-password token invalide -> 400", async ({ request }) => {
+    const r = await request.post("/api/auth/reset-password", {
+      data: {
+        token: "deadbeef".repeat(8),
+        password: TEST_PASSWORD,
+        confirmPassword: TEST_PASSWORD,
+      },
+    });
+    expect(r.status()).toBe(400);
+  });
+
+  test("reset-password GET sans token -> valid false", async ({ request }) => {
+    const r = await request.get("/api/auth/reset-password");
+    expect(r.status()).toBe(200);
+    const body = await r.json();
+    expect(body.valid).toBe(false);
+  });
+});

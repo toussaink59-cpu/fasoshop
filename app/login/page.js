@@ -83,6 +83,9 @@ export default function LoginPage() {
             onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
             placeholder="••••••••"
           />
+      <div style={{ textAlign: "right", margin: "8px 0" }}>
+        <Link href="/forgot-password" style={{ color: "#8a6d3b", fontSize: 14, textDecoration: "underline" }}>Mot de passe oublie ?</Link>
+      </div>
           <button type="submit" className="btn btn-primary" disabled={loading}>
             {loading ? "Un instant..." : "Se connecter"}
           </button>
