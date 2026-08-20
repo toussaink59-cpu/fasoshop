@@ -1,16 +1,6 @@
 {
   "crons": [
-    {
-      "path": "/api/cron/expire-orders",
-      "schedule": "0 2 * * *"
-    },
-    {
-      "path": "/api/cron/auto-confirm",
-      "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/abandoned-carts",
-      "schedule": "0 14 * * *"
-    }
+    { "path": "/api/cron/expire-orders", "schedule": "0 2 * * *" },
+    { "path": "/api/cron/auto-confirm", "schedule": "0 3 * * *" }
   ]
 }
