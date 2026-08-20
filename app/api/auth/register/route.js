@@ -36,6 +36,17 @@ export async function POST(request) {
     if (password.length < 8) {
       return NextResponse.json({ error: "Le mot de passe doit contenir au moins 8 caractères." }, { status: 400 });
     }
+    // Politique renforcée : lettre + chiffre minimum
+    const hasLetter = /[a-zA-Z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    if (!hasLetter || !hasNumber) {
+      return NextResponse.json({ error: "Le mot de passe doit contenir au moins une lettre et un chiffre." }, { status: 400 });
+    }
+    // Rejet des mots de passe triviaux (top 20 français)
+    const trivialPasswords = ["password", "12345678", "qwerty12", "abc12345", "azerty12", "password1", "123456789", "1234567890", "abcdefgh", "iloveyou"];
+    if (trivialPasswords.includes(password.toLowerCase())) {
+      return NextResponse.json({ error: "Ce mot de passe est trop faible. Choisissez un mot de passe plus complexe." }, { status: 400 });
+    }
     if (password !== confirmPassword) {
       return NextResponse.json({ error: "Les deux mots de passe ne correspondent pas." }, { status: 400 });
     }

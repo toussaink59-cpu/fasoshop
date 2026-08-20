@@ -70,10 +70,15 @@ CREATE TABLE shops (
   id_document_url TEXT,
   mobile_money_provider TEXT,
   delivers_own_orders BOOLEAN NOT NULL DEFAULT false,
+  delivery_fee NUMERIC(10,2) DEFAULT 0,
+  offers_delivery BOOLEAN NOT NULL DEFAULT false,
+  offers_pickup BOOLEAN NOT NULL DEFAULT true,
   CONSTRAINT shops_status_check CHECK (status IN ('pending','active','suspended','rejected')),
   CONSTRAINT shops_mobile_money_operator_check CHECK (mobile_money_operator IN ('orange_money','moov_money')),
   CONSTRAINT shops_mobile_money_provider_check CHECK (mobile_money_provider IN ('orange_money','moov_money')) -- [M001]
 );
+CREATE INDEX idx_shops_offers_delivery ON shops(offers_delivery) WHERE offers_delivery = true;
+CREATE INDEX idx_shops_offers_pickup ON shops(offers_pickup) WHERE offers_pickup = true;
 CREATE INDEX idx_shops_vendor_id ON shops(vendor_id);
 
 -- ---------- PRODUCTS ----------
