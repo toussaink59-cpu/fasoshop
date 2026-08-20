@@ -44,8 +44,17 @@ export default function VendorDashboard() {
   const [activeFilter, setActiveFilter] = useState("all");
   const [expandedProduct, setExpandedProduct] = useState(null);
   const [earnings, setEarnings] = useState(null);
+  const [cockpitData, setCockpitData] = useState(null);
 
   useEffect(() => {
+
+    function loadCockpit() {
+      fetch("/api/vendor/dashboard")
+        .then((r) => r.json())
+        .then((d) => setCockpitData(d))
+        .catch(() => {});
+    }
+    loadCockpit();
     function loadUnread() {
       fetch("/api/conversations/unread-count")
         .then((r) => r.json())
@@ -648,7 +657,104 @@ export default function VendorDashboard() {
         {success && <div className="success-box">{success}</div>}
 
                 {/* 📊 Analytics vendeur (données réelles + états vides) */}
-        <VendorAnalytics />
+        
+      {/* 🎯 COCKPIT VENDEUR — KPIs + Alertes + Top produits */}
+      {cockpitData && (
+        <div style={{ display: "grid", gap: 16, marginBottom: 24 }}>
+          {/* KPIs CA avec deltas */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
+            <div className="vendor-stat-card">
+              <div className="vendor-stat-icon">💰</div>
+              <div className="vendor-stat-value" style={{ fontSize: "1.3rem" }}>
+                {cockpitData.revenue.today.toLocaleString("fr-FR")} F
+              </div>
+              <div className="vendor-stat-label">Aujourd'hui</div>
+            </div>
+            <div className="vendor-stat-card">
+              <div className="vendor-stat-icon">📈</div>
+              <div className="vendor-stat-value" style={{ fontSize: "1.1rem" }}>
+                {cockpitData.revenue.week.toLocaleString("fr-FR")} F
+              </div>
+              <div className="vendor-stat-label">
+                Semaine{" "}
+                <span style={{ color: cockpitData.revenue.week_delta >= 0 ? "#2e7d32" : "#c62828", fontSize: "0.85rem" }}>
+                  {cockpitData.revenue.week_delta >= 0 ? "+" : ""}{cockpitData.revenue.week_delta}%
+                </span>
+              </div>
+            </div>
+            <div className="vendor-stat-card">
+              <div className="vendor-stat-icon">🗓️</div>
+              <div className="vendor-stat-value" style={{ fontSize: "1.1rem" }}>
+                {cockpitData.revenue.month.toLocaleString("fr-FR")} F
+              </div>
+              <div className="vendor-stat-label">
+                Mois{" "}
+                <span style={{ color: cockpitData.revenue.month_delta >= 0 ? "#2e7d32" : "#c62828", fontSize: "0.85rem" }}>
+                  {cockpitData.revenue.month_delta >= 0 ? "+" : ""}{cockpitData.revenue.month_delta}%
+                </span>
+              </div>
+            </div>
+            <div className="vendor-stat-card">
+              <div className="vendor-stat-icon">⭐</div>
+              <div className="vendor-stat-value" style={{ fontSize: "1.1rem" }}>
+                {cockpitData.rating.avg_rating.toFixed(1)} / 5
+              </div>
+              <div className="vendor-stat-label">{cockpitData.rating.review_count} avis</div>
+            </div>
+          </div>
+
+          {/* Alertes proactives */}
+          {(cockpitData.stock.out_of_stock > 0 || cockpitData.stock.low_stock > 0 || cockpitData.unansweredReviews > 0) && (
+            <div className="va-card" style={{ background: "#fff3cd", borderLeft: "4px solid #ffc107" }}>
+              <h3 style={{ margin: "0 0 12px 0", fontSize: "1.05rem" }}>⚠️ À traiter</h3>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: "0.95rem" }}>
+                {cockpitData.orders.to_prepare > 0 && (
+                  <Link href="/vendor/orders" style={{ color: "#856404", textDecoration: "none" }}>
+                    📦 <strong>{cockpitData.orders.to_prepare} commande(s)</strong> à préparer
+                  </Link>
+                )}
+                {cockpitData.stock.out_of_stock > 0 && (
+                  <Link href="/vendor/dashboard" style={{ color: "#856404", textDecoration: "none" }}>
+                    🚫 <strong>{cockpitData.stock.out_of_stock} produit(s)</strong> en rupture
+                  </Link>
+                )}
+                {cockpitData.stock.low_stock > 0 && (
+                  <Link href="/vendor/dashboard" style={{ color: "#856404", textDecoration: "none" }}>
+                    ⚠️ <strong>{cockpitData.stock.low_stock} produit(s)</strong> stock bas
+                  </Link>
+                )}
+                {cockpitData.unansweredReviews > 0 && (
+                  <Link href="/vendor/dashboard" style={{ color: "#856404", textDecoration: "none" }}>
+                    💬 <strong>{cockpitData.unansweredReviews} avis</strong> sans réponse
+                  </Link>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Top 3 produits du mois */}
+          {cockpitData.topProducts.length > 0 && (
+            <div className="va-card">
+              <h3 style={{ margin: "0 0 12px 0", fontSize: "1.05rem" }}>🏆 Top 3 produits du mois</h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {cockpitData.topProducts.map((p, i) => (
+                  <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingBottom: 8, borderBottom: i < 2 ? "1px solid #eee" : "none" }}>
+                    <div style={{ flex: 1 }}>
+                      <strong>{i === 0 ? "🥇" : i === 1 ? "🥈" : "🥉"} {p.name}</strong>
+                      <div style={{ fontSize: "0.85rem", color: "#666" }}>{p.units_sold} unité(s) vendue(s)</div>
+                    </div>
+                    <div style={{ textAlign: "right", fontWeight: "bold", color: "#d4af37" }}>
+                      {p.revenue.toLocaleString("fr-FR")} F
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <VendorAnalytics />
 
         {/* 🕐⭐ Commandes récentes + top produits + avis */}
         <VendorInsights />
