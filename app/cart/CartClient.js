@@ -31,7 +31,7 @@ export default function CartClient({ initialUser, categories }) {
     setCart(getCart());
   }, []);
 
-  // 🆕 Récupère les prix de livraison EN DIRECT (corrige les vieux paniers)
+  // Prix de livraison EN DIRECT (corrige les vieux paniers)
   useEffect(() => {
     const ids = [...new Set(cart.map((i) => i.shopId).filter(Boolean))];
     if (ids.length === 0) return;
@@ -45,6 +45,7 @@ export default function CartClient({ initialUser, categories }) {
       .catch(() => {});
   }, [cart]);
 
+  // Chargement des adresses sauvegardees
   useEffect(() => {
     if (!initialUser) return;
     fetch("/api/addresses").then(async (res) => {
@@ -60,6 +61,36 @@ export default function CartClient({ initialUser, categories }) {
       }
     });
   }, [initialUser]);
+
+  // Sync panier vers abandoned_carts (users connectes uniquement)
+  useEffect(() => {
+    if (!initialUser?.id) return;
+    const controller = new AbortController();
+    const syncCart = async () => {
+      try {
+        const totalCents = cart.reduce(
+          (sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 0) * 100,
+          0
+        );
+        await fetch("/api/cart/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: cart, totalCents }),
+          signal: controller.signal,
+        });
+      } catch (e) {
+        if (e.name !== "AbortError") console.warn("[cart sync]", e.message);
+      }
+    };
+    const timer = setTimeout(syncCart, 1000);
+    return () => { clearTimeout(timer); controller.abort(); };
+  }, [cart, initialUser?.id]);
+
+  // Reset reminded_at quand le user visite le panier (permet futur rappel)
+  useEffect(() => {
+    if (!initialUser?.id) return;
+    fetch("/api/cart/sync", { method: "DELETE" }).catch(() => {});
+  }, [initialUser?.id]);
 
   function changeQty(productId, qty) {
     updateQuantity(productId, qty);
