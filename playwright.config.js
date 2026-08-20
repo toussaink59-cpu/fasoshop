@@ -35,6 +35,7 @@ export default defineConfig({
     env: {
       ALLOW_TEST_HELPERS: "1",
       INTERNAL_STATUS_SECRET: process.env.INTERNAL_STATUS_SECRET || "",
+      DATABASE_URL: process.env.E2E_DATABASE_URL || process.env.DATABASE_URL,
     },
   },
 
