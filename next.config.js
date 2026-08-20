@@ -1,11 +1,12 @@
 const { withSentryConfig } = require("@sentry/nextjs");
 
+const isDev = process.env.NODE_ENV === "development";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: __dirname,
 
-  // 🖼️ Optimisation images Next.js : autorise Vercel Blob Storage
   images: {
     remotePatterns: [
       {
@@ -17,8 +18,38 @@ const nextConfig = {
     formats: ["image/webp"],
   },
 
-  // 🔒 Headers de sécurité appliqués à TOUTES les réponses
+  // Headers de securite appliques a TOUTES les reponses
   async headers() {
+    // === CSP dynamique : unsafe-eval retire en production, Plausible autorise ===
+    const scriptSrc = [
+      "'self'",
+      "'unsafe-inline'", // necessaire pour Next.js inline scripts (hydration)
+      // unsafe-eval RETIRE en production (securite) - garde en dev pour HMR
+      ...(isDev ? ["'unsafe-eval'"] : []),
+      "https://*.sentry-cdn.com",
+      "https://*.ingest.sentry.io",
+      "https://plausible.io", // Plausible analytics (debloque)
+    ];
+
+    const cspDirectives = [
+      "default-src 'self'",
+      `script-src ${scriptSrc.join(" ")}`,
+      "worker-src 'self' blob:",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+      "img-src 'self' data: blob: https:",
+      "font-src 'self' data: https://fonts.gstatic.com",
+      // connect-src : Plausible debloque (etait bloque dans les logs)
+      "connect-src 'self' https: https://*.ingest.sentry.io https://*.sentry.io https://plausible.io",
+      "media-src 'self'",
+      "object-src 'none'",
+      "frame-src 'none'",
+      "frame-ancestors 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      // Production : force HTTPS partout
+      ...(isDev ? [] : ["upgrade-insecure-requests"]),
+    ];
+
     return [
       {
         source: "/(.*)",
@@ -30,41 +61,23 @@ const nextConfig = {
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains; preload" },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.sentry-cdn.com https://*.ingest.sentry.io",
-              "worker-src 'self' blob:",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "img-src 'self' data: blob: https:",
-              "font-src 'self' data: https://fonts.gstatic.com",
-              "connect-src 'self' https: https://*.ingest.sentry.io https://*.sentry.io",
-              "media-src 'self'",
-              "object-src 'none'",
-              "frame-src 'none'",
-              "frame-ancestors 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-            ].join("; "),
-          },
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+          { key: "Content-Security-Policy", value: cspDirectives.join("; ") },
         ],
       },
     ];
   },
 };
 
-// ⚙️ Options Sentry (silencieux en dev, upload sourcemaps en build)
-const isDev = process.env.NODE_ENV === "development";
-
+// Sentry options
 const sentryOptions = {
   org: "kimoxa",
   project: "javascript-nextjs",
   silent: true,
   hideSourceMaps: true,
   widenClientFileUpload: true,
-  tunnelRoute: isDev ? undefined : "/monitoring",  // 🆕 désactivé en dev
-  sourcemaps: { disable: isDev },                  // 🆕 pas d'upload sourcemaps en dev
+  tunnelRoute: isDev ? undefined : "/monitoring",
+  sourcemaps: { disable: isDev },
   webpack: { treeshake: { removeDebugLogging: true } },
 };
 
