@@ -69,7 +69,7 @@ export default function CartClient({ initialUser, categories }) {
     const syncCart = async () => {
       try {
         const totalCents = cart.reduce(
-          (sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 0) * 100,
+          (sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 0),
           0
         );
         await fetch("/api/cart/sync", {
