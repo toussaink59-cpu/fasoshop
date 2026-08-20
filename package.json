@@ -1,78 +1,43 @@
 {
-
   "name": "kimoxa",
-
   "version": "0.1.0",
-
   "private": true,
-
   "scripts": {
-
     "dev": "next dev",
-
     "build": "next build",
-
     "start": "next start",
-
     "lint": "next lint",
-
-    "db:migrate": "node db/migrate.js"
-
+    "db:migrate": "node db/migrate.js",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
   },
-
   "dependencies": {
-
     "@neondatabase/serverless": "^1.1.0",
-
     "@sentry/nextjs": "^10.70.0",
-
     "@vercel/blob": "^2.8.0",
-
     "@vercel/kv": "^3.0.0",
-
     "bcryptjs": "^2.4.3",
-
     "jose": "^5.9.6",
-
     "next": "^15.5.23",
-
     "postgres": "^3.4.4",
-
     "react": "^18.3.1",
-
     "react-dom": "^18.3.1",
-
     "resend": "^6.19.0"
-
   },
-
   "devDependencies": {
-
+    "@playwright/test": "^1.62.1",
     "dotenv": "^16.4.5",
-
     "eslint": "^8.57.1",
-
     "eslint-config-next": "^15.5.2"
-
   },
-
   "overrides": {
-
     "postcss": "^8.5.23",
-
     "sharp": "^0.35.0"
-
   },
-
   "allowScripts": {
-
     "sharp": true,
-
     "unrs-resolver@1.12.2": true,
-
     "@sentry/cli@2.58.6": true
-
   }
-
 }
-
