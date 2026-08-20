@@ -28,7 +28,42 @@ export default function CartClient({ initialUser, categories }) {
   const [locError, setLocError] = useState("");
 
   useEffect(() => {
-    setCart(getCart());
+
+  // Sync panier vers abandoned_carts (users connectes uniquement)
+  useEffect(() => {
+    if (!initialUser?.id) return;
+    const controller = new AbortController();
+    const syncCart = async () => {
+      try {
+        const totalCents = items.reduce(
+          (sum, it) => sum + (Number(it.price) || 0) * (Number(it.quantity) || 0) * 100,
+          0
+        );
+        await fetch("/api/cart/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items, totalCents }),
+          signal: controller.signal,
+        });
+      } catch (e) {
+        if (e.name !== "AbortError") console.warn("[cart sync]", e.message);
+      }
+    };
+    // Debounce 1s pour eviter les appels multiples
+    const t = setTimeout(syncCart, 1000);
+    return () => {
+      clearTimeout(t);
+      controller.abort();
+    };
+  }, [items, initialUser?.id]);
+
+  // Reset reminded_at quand le user visite le panier (permet futur rappel)
+  useEffect(() => {
+    if (!initialUser?.id) return;
+    fetch("/api/cart/sync", { method: "DELETE" }).catch(() => {});
+  }, [initialUser?.id]);
+
+      setCart(getCart());
   }, []);
 
   // 🆕 Récupère les prix de livraison EN DIRECT (corrige les vieux paniers)
