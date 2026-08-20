@@ -11,3 +11,8 @@ node_modules/
 .env.test
 body.json
 scripts/test-data.json
+
+# Playwright
+playwright-report/
+test-results/
+blob-report/
