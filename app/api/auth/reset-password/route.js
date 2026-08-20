@@ -85,7 +85,7 @@ export async function POST(request) {
     await sql.begin(async (tx) => {
       await tx`
         UPDATE users
-        SET password_hash = ${password_hash}, updated_at = now()
+        SET password_hash = ${password_hash}
         WHERE id = ${matched.user_id}
       `;
       await tx`
