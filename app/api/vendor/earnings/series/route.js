@@ -34,13 +34,13 @@ export async function GET(request) {
     JOIN shop_commission_ledger scl ON scl.order_id = o.id
     WHERE scl.shop_id = ${shop.id}
       AND o.created_at >= NOW() - (${days} || ' days')::interval
-      AND o.status IN ('paid', 'shipped', 'delivered')
+      AND o.status NOT IN ('cancelled')
     GROUP BY DATE(o.created_at)
     ORDER BY date ASC
   `;
 
   // Remplir les jours vides
-  const byDate = new Map(rows.map((r) => [r.date, r]));
+  const byDate = new Map(rows.map((r) => [new Date(r.date).toISOString().split("T")[0], r]));
   const series = Array.from({ length: days }, (_, i) => {
     const d = new Date(Date.now() - (days - 1 - i) * 86400000);
     const dateStr = d.toISOString().split("T")[0];
