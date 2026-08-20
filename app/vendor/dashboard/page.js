@@ -50,8 +50,13 @@ export default function VendorDashboard() {
 
     function loadCockpit() {
       fetch("/api/vendor/dashboard")
-        .then((r) => r.json())
-        .then((d) => setCockpitData(d))
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => {
+          // Ne stocker que si la réponse a la structure attendue
+          if (d && d.revenue && d.orders && d.stock) {
+            setCockpitData(d);
+          }
+        })
         .catch(() => {});
     }
     loadCockpit();

@@ -97,13 +97,27 @@ export async function GET(request) {
     `;
 
     // === Avis sans réponse vendeur ===
-    const [unanswered] = await sql`
-      SELECT COUNT(*)::int AS count
-      FROM reviews r
-      JOIN products p ON p.id = r.product_id
-      WHERE p.shop_id = ${shop.id}
-        AND r.vendor_reply IS NULL
+    // Compatible avec les bases qui n'ont pas encore la colonne reviews.vendor_reply.
+    const [hasVendorReplyColumn] = await sql`
+      SELECT EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'reviews'
+          AND column_name = 'vendor_reply'
+      ) AS exists
     `;
+
+    let unanswered = { count: 0 };
+
+    if (hasVendorReplyColumn.exists) {
+      [unanswered] = await sql`
+        SELECT COUNT(*)::int AS count
+        FROM reviews r
+        JOIN products p ON p.id = r.product_id
+        WHERE p.shop_id = ${shop.id}
+          AND (r.vendor_reply IS NULL OR btrim(r.vendor_reply) = '')
+      `;
+    }
 
     return Response.json({
       revenue: {
