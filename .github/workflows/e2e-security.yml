@@ -34,7 +34,7 @@ jobs:
       - name: Run E2E security tests
         run: npx playwright test
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           INTERNAL_STATUS_SECRET: ${{ secrets.INTERNAL_STATUS_SECRET }}
 

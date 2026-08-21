@@ -14,6 +14,11 @@ function guard() {
 }
 
 export async function POST(request) {
+  // Endpoint reserve aux tests E2E : jamais disponible en production
+  if (process.env.NODE_ENV === "production") {
+    return Response.json({ error: "Not found." }, { status: 404 });
+  }
+
   const g = guard();
   if (g) return g;
 
@@ -90,6 +95,11 @@ export async function POST(request) {
 }
 
 export async function GET(request) {
+  // Endpoint reserve aux tests E2E : jamais disponible en production
+  if (process.env.NODE_ENV === "production") {
+    return Response.json({ error: "Not found." }, { status: 404 });
+  }
+
   const g = guard();
   if (g) return g;
 
