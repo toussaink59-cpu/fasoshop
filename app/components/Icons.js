@@ -138,3 +138,7 @@ export const StarIcon = ({ size = 16, ...props }) => (
 export const PieChartIcon = (p) => (
   <S {...p}><path d="M21.21 15.89A10 10 0 1 1 8 2.83" /><path d="M22 12A10 10 0 0 0 12 2v10z" /></S>
 );
+
+export const CalendarIcon = (p) => (
+  <S {...p}><rect width="18" height="18" x="3" y="4" rx="2" /><path d="M16 2v4" /><path d="M8 2v4" /><path d="M3 10h18" /></S>
+);
