@@ -1,12 +1,15 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
+import PaymentMethods from "@/app/components/PaymentMethods";
+import {
+  SmartphoneIcon, FacebookIcon, InstagramIcon, WhatsAppIcon, TikTokIcon, MapPinIcon,
+} from "@/app/components/Icons";
 
 export default function Footer() {
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
 
-        {/* 1. Logo + promesse */}
         <div className="temu-footer-brand">
           <KimoxaLogo light size={34} withTagline />
           <p className="site-footer-tagline">
@@ -14,38 +17,32 @@ export default function Footer() {
           </p>
         </div>
 
-        {/* 2. Application + réseaux sociaux */}
         <div className="temu-footer-top">
           <div className="temu-footer-app">
-            <div className="temu-footer-app-icon">📲</div>
+            <div className="temu-footer-app-icon" style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <SmartphoneIcon size={20} />
+            </div>
             <div>
               <strong>Application mobile</strong>
-              <span>Installez-la depuis votre navigateur 📲</span>
+              <span>Installez-la depuis votre navigateur</span>
             </div>
           </div>
           <div className="temu-footer-socials">
             <span className="temu-footer-socials-title">Suivez-nous</span>
             <div className="site-footer-socials">
-              <a href="#" className="site-footer-social-icon" aria-label="Facebook">📘</a>
-              <a href="#" className="site-footer-social-icon" aria-label="Instagram">📷</a>
-              <a href="#" className="site-footer-social-icon" aria-label="WhatsApp">💬</a>
-              <a href="#" className="site-footer-social-icon" aria-label="TikTok">🎵</a>
+              <a href="#" className="site-footer-social-icon" aria-label="Facebook" style={{ color: "#1877F2" }}><FacebookIcon size={18} /></a>
+              <a href="#" className="site-footer-social-icon" aria-label="Instagram" style={{ color: "#E4405F" }}><InstagramIcon size={18} /></a>
+              <a href="#" className="site-footer-social-icon" aria-label="WhatsApp" style={{ color: "#25D366" }}><WhatsAppIcon size={18} /></a>
+              <a href="#" className="site-footer-social-icon" aria-label="TikTok" style={{ color: "#ffffff" }}><TikTokIcon size={18} /></a>
             </div>
           </div>
         </div>
 
-        {/* 3. Vrais logos de paiement */}
         <div className="temu-footer-payments">
           <span className="temu-footer-payments-title">Paiements acceptés</span>
-          <div className="temu-footer-payment-badges">
-            <span className="pay-logo pay-om"><b>orange</b> money</span>
-            <span className="pay-logo pay-moov"><b>moov</b> money</span>
-            <span className="pay-logo pay-wave"><b>wave</b></span>
-            <span className="pay-logo pay-cod">💵 À la livraison</span>
-          </div>
+          <PaymentMethods />
         </div>
 
-        {/* 4. Trois colonnes de liens */}
         <div className="footer-cols temu-footer-cols">
           <div className="site-footer-col">
             <h4>Vous aider</h4>
@@ -54,13 +51,11 @@ export default function Footer() {
             <Link href="/retours">Retours & remboursements</Link>
             <Link href="/messages">Nous contacter</Link>
           </div>
-
-                   <div className="site-footer-col">
+          <div className="site-footer-col">
             <h4>Vendre sur Kimoxa</h4>
-            <Link href="/devenir-vendeur" className="footer-cta-vendor">Devenir vendeur →</Link>
+            <Link href="/devenir-vendeur">Devenir vendeur</Link>
             <Link href="/vendor/dashboard">Espace vendeur</Link>
           </div>
-
           <div className="site-footer-col">
             <h4>Kimoxa</h4>
             <Link href="/a-propos">À propos</Link>
@@ -69,10 +64,11 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* 5. Barre basse */}
         <div className="temu-footer-bottombar">
-          <span className="temu-footer-country">🇧🇫 Burkina Faso</span>
-          <span>© {new Date().getFullYear()} Kimoxa — Conçu pour toute l'Afrique 🌍</span>
+          <span className="temu-footer-country" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <MapPinIcon size={14} /> Burkina Faso
+          </span>
+          <span>© {new Date().getFullYear()} Kimoxa — Conçu pour toute l'Afrique</span>
         </div>
       </div>
     </footer>

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Footer from "@/app/components/Footer";
+import { StoreIcon, WalletIcon, BarChartIcon, PercentIcon, EyeIcon, LockIcon, ShieldCheckIcon } from "@/app/components/Icons";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
 import { getCurrentUser } from "@/lib/session";
@@ -26,10 +27,10 @@ export default async function DevenirVendeurPage() {
         </div>
 
         <div className="trust-strip">
-          <div className="trust-item"><span className="trust-icon">🏪</span> Boutiques vérifiées</div>
-          <div className="trust-item"><span className="trust-icon">📱</span> Paiement Mobile Money</div>
-          <div className="trust-item"><span className="trust-icon">📈</span> Tableau de bord de vente</div>
-          <div className="trust-item"><span className="trust-icon">🤝</span> Commission unique de 8%</div>
+          <div className="trust-item"><span className="trust-icon" style={{ color: "var(--gold-600)", display: "inline-flex" }}><StoreIcon size={20} /></span> Boutiques vérifiées</div>
+          <div className="trust-item"><span className="trust-icon" style={{ color: "var(--gold-600)", display: "inline-flex" }}><WalletIcon size={20} /></span> Paiement Mobile Money</div>
+          <div className="trust-item"><span className="trust-icon" style={{ color: "var(--gold-600)", display: "inline-flex" }}><BarChartIcon size={20} /></span> Tableau de bord de vente</div>
+          <div className="trust-item"><span className="trust-icon" style={{ color: "var(--gold-600)", display: "inline-flex" }}><PercentIcon size={20} /></span> Commission unique de 8%</div>
         </div>
 
         <div className="panel">
@@ -80,28 +81,28 @@ export default async function DevenirVendeurPage() {
           <h2>Vos avantages</h2>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 20, marginTop: 16 }}>
             <div>
-              <div style={{ fontSize: "1.6rem", marginBottom: 6 }}>👀</div>
+              <div style={{ marginBottom: 6, color: "var(--gold-600)" }}><EyeIcon size={26} /></div>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>Visibilité</div>
               <p style={{ color: "var(--ink-400)", margin: 0, fontSize: "0.9rem" }}>
                 Votre boutique apparaît dans le catalogue, les recherches et les recommandations vues par tous les acheteurs Kimoxa.
               </p>
             </div>
             <div>
-              <div style={{ fontSize: "1.6rem", marginBottom: 6 }}>🔒</div>
+              <div style={{ marginBottom: 6, color: "var(--gold-600)" }}><LockIcon size={26} /></div>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>Paiement sécurisé</div>
               <p style={{ color: "var(--ink-400)", margin: 0, fontSize: "0.9rem" }}>
                 Vos ventes sont suivies et reversées via Mobile Money, avec un historique clair de chaque transaction.
               </p>
             </div>
             <div>
-              <div style={{ fontSize: "1.6rem", marginBottom: 6 }}>✅</div>
+              <div style={{ marginBottom: 6, color: "var(--gold-600)" }}><ShieldCheckIcon size={26} /></div>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>Confiance vérifiée</div>
               <p style={{ color: "var(--ink-400)", margin: 0, fontSize: "0.9rem" }}>
                 Le badge "boutique vérifiée" rassure vos acheteurs et vous distingue des profils non contrôlés.
               </p>
             </div>
             <div>
-              <div style={{ fontSize: "1.6rem", marginBottom: 6 }}>📊</div>
+              <div style={{ marginBottom: 6, color: "var(--gold-600)" }}><BarChartIcon size={26} /></div>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>Suivi de vos ventes</div>
               <p style={{ color: "var(--ink-400)", margin: 0, fontSize: "0.9rem" }}>
                 Un tableau de bord dédié : ventes du jour et du mois, commandes, stock, tout en un seul endroit.
