@@ -13,18 +13,18 @@ export async function generateMetadata({ searchParams }) {
   if (q) {
     return {
       title: `Résultats pour "${q}"`,
-      description: `Produits correspondant à "${q}" sur le catalogue FasoShop.`,
+      description: `Produits correspondant à "${q}" sur le catalogue Kimoxa.`,
     };
   }
   if (category) {
     return {
       title: `Catégorie : ${category}`,
-      description: `Découvrez les produits de la catégorie ${category} sur FasoShop.`,
+      description: `Découvrez les produits de la catégorie ${category} sur Kimoxa.`,
     };
   }
   return {
     title: "Catalogue",
-    description: "Parcourez tous les produits disponibles sur FasoShop, toutes boutiques confondues.",
+    description: "Parcourez tous les produits disponibles sur Kimoxa, toutes boutiques confondues.",
   };
 }
 

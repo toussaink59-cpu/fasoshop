@@ -196,7 +196,7 @@ export default function VendorAccountPage() {
     <div className="shell">
       <div className="topbar">
         <div className="brand">
-          🛒 FasoShop <span className="role-tag">Vendeur</span>
+          🛒 Kimoxa <span className="role-tag">Vendeur</span>
         </div>
         <div className="topbar-actions">
           <Link href="/messages" style={{ marginRight: 10, color: "var(--sand-50)", fontSize: "0.85rem" }}>
@@ -428,7 +428,7 @@ export default function VendorAccountPage() {
                 <h3>Boutique suspendue</h3>
               </div>
               <p className="vendor-setting-desc">
-                Votre boutique est temporairement suspendue. Contactez le support FasoShop pour plus d'informations.
+                Votre boutique est temporairement suspendue. Contactez le support Kimoxa pour plus d'informations.
               </p>
             </div>
           )}

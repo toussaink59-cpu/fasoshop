@@ -88,7 +88,7 @@ export default function SearchBar({ initialValue = "", autoFocus = false }) {
           onChange={(e) => setValue(e.target.value)}
           onFocus={() => setOpen(true)}
           placeholder="Rechercher un produit, une boutique..."
-          aria-label="Rechercher sur FasoShop"
+          aria-label="Rechercher sur Kimoxa"
         />
       </form>
 
