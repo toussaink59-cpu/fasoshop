@@ -1,5 +1,6 @@
 import sql from "@/lib/db";
 import { requireBuyer } from "@/lib/authHelpers";
+import { sendOrderDeliveredEmail } from "@/lib/email/orders";
 
 // POST /api/orders/[id]/confirm-receipt
 // CLIENT confirme réception → delivered + payout libéré (si MM)
@@ -113,7 +114,25 @@ export async function POST(request, { params }) {
                 ${request.headers.get("x-forwarded-for") || "unknown"})
       `.catch(() => {});
 
-      return { ok: true, ledger: updated, payoutReleased: shouldReleasePayout };
+            // 📧 EMAIL LIVRAISON (fire-and-forget, non-bloquant)
+      try {
+        const [buyer] = await tx`
+          SELECT u.email, u.full_name FROM users u WHERE u.id = ${order.buyer_id} LIMIT 1
+        `;
+        const [shopRow] = await tx`SELECT name FROM shops WHERE id = ${shopId} LIMIT 1`;
+        if (buyer) {
+          sendOrderDeliveredEmail({
+            to: buyer.email,
+            firstName: (buyer.full_name || "").split(" ")[0] || "Client",
+            orderId: Number(orderId),
+            shopName: shopRow?.name || "Boutique",
+            autoConfirmed: false,
+          }).catch(() => {});
+        }
+      } catch (emailErr) {
+        console.error("[confirm-receipt] email error:", emailErr.message);
+      }
+return { ok: true, ledger: updated, payoutReleased: shouldReleasePayout };
     });
 
     if (result.error) {

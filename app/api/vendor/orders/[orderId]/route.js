@@ -1,5 +1,6 @@
 import sql from "@/lib/db";
 import { requireVendor } from "@/lib/authHelpers";
+import { sendOrderShippedEmail } from "@/lib/email/orders";
 
 // PATCH /api/vendor/orders/:orderId
 // VENDEUR : peut passer preparation → shipped, ou preparation → cancelled.
@@ -144,7 +145,27 @@ export async function PATCH(request, { params }) {
                 ${request.headers.get("x-forwarded-for") || "unknown"})
       `.catch(() => {});
 
-      return { ok: true, subOrder: updated, restocked: status === "cancelled" && current.delivery_status === "preparation" };
+            // 📧 EMAIL EXPEDITION (fire-and-forget, non-bloquant)
+      if (status === "shipped") {
+        try {
+          const [buyer] = await tx`
+            SELECT u.email, u.full_name FROM users u
+            JOIN orders o ON o.buyer_id = u.id WHERE o.id = ${orderId} LIMIT 1
+          `;
+          const [shopRow] = await tx`SELECT name FROM shops WHERE id = ${shop.id} LIMIT 1`;
+          if (buyer) {
+            sendOrderShippedEmail({
+              to: buyer.email,
+              firstName: (buyer.full_name || "").split(" ")[0] || "Client",
+              orderId: Number(orderId),
+              shopName: shopRow?.name || "Boutique",
+            }).catch(() => {});
+          }
+        } catch (emailErr) {
+          console.error("[vendor/orders] email error:", emailErr.message);
+        }
+      }
+return { ok: true, subOrder: updated, restocked: status === "cancelled" && current.delivery_status === "preparation" };
     });
 
     if (result.error) {

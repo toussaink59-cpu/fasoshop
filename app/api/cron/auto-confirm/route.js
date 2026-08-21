@@ -1,5 +1,6 @@
 import sql from "@/lib/db";
 import { isValidCronAuth } from "@/lib/cronAuth";
+import { sendOrderDeliveredEmail } from "@/lib/email/orders";
 
 // CRON quotidien 3h : auto-confirme les commandes expédiées depuis 7 jours
 // → libère le payout (MM) ou passe en cod_pending (espèces)
@@ -50,7 +51,28 @@ export async function POST(request) {
       return rows;
     });
 
-    return Response.json({ ok: true, autoConfirmed: processed.length });
+        // 📧 EMAILS LIVRAISON pour chaque commande auto-confirmée (fire-and-forget)
+    for (const r of processed) {
+      try {
+        const [buyer] = await sql`
+          SELECT u.email, u.full_name FROM users u
+          JOIN orders o ON o.buyer_id = u.id WHERE o.id = ${r.order_id} LIMIT 1
+        `;
+        const [shopRow] = await sql`SELECT name FROM shops WHERE id = ${r.shop_id} LIMIT 1`;
+        if (buyer) {
+          sendOrderDeliveredEmail({
+            to: buyer.email,
+            firstName: (buyer.full_name || "").split(" ")[0] || "Client",
+            orderId: Number(r.order_id),
+            shopName: shopRow?.name || "Boutique",
+            autoConfirmed: true,
+          }).catch(() => {});
+        }
+      } catch (emailErr) {
+        console.error("[cron/auto-confirm] email error:", emailErr.message);
+      }
+    }
+return Response.json({ ok: true, autoConfirmed: processed.length });
   } catch (err) {
     console.error("[cron/auto-confirm]", err);
     return Response.json({ error: "Erreur serveur." }, { status: 500 });
