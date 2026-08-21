@@ -12,7 +12,7 @@ export async function POST(request, { params }) {
 
   // 🔒 1) Rate limit : max 3 initiations par minute par utilisateur
   const key = `pay:${userId}:${clientKey(request)}`;
-  if (!rateLimit(key, { limit: 3, windowMs: 60_000 })) {
+  if (!(await rateLimit(key, { limit: 3, windowMs: 60_000 }))) {
     return Response.json(
       { error: "Trop de tentatives de paiement. Réessayez dans une minute." },
       { status: 429 }

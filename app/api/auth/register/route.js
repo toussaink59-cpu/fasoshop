@@ -13,7 +13,7 @@ export async function POST(request) {
   try {
     // Limite par IP : empêche la création massive automatisée de comptes.
     const key = `register:${clientKey(request)}`;
-    if (!rateLimit(key, { limit: 5, windowMs: 60_000 })) {
+    if (!(await rateLimit(key, { limit: 5, windowMs: 60_000 }))) {
       return NextResponse.json(
         { error: "Trop de tentatives. Réessayez dans une minute." },
         { status: 429 }

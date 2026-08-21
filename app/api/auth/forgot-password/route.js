@@ -2,6 +2,7 @@ import crypto from "crypto";
 import { hash } from "bcryptjs";
 import sql from "@/lib/db";
 import { Resend } from "resend";
+import { rateLimit, clientKey } from "@/lib/rate-limit";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM = process.env.EMAIL_FROM || "Kimoxa <no-reply@kimoxa.com>";
@@ -23,6 +24,19 @@ export async function POST(request) {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+
+    // 🔒 Rate-limit : 5 demandes/heure par e-mail, 10/heure par IP.
+    // En cas de blocage, on renvoie EXACTEMENT la même réponse que le cas
+    // "email inconnu" (ok:true) pour ne jamais laisser un attaquant
+    // distinguer "rate-limité" de "email inexistant" (anti-énumération).
+    const rlEmailKey = `forgot-pwd:email:${normalizedEmail}`;
+    const rlIpKey = `forgot-pwd:ip:${clientKey(request)}`;
+    if (!(await rateLimit(rlEmailKey, { limit: 5, windowMs: 3_600_000 }))) {
+      return Response.json({ ok: true });
+    }
+    if (!(await rateLimit(rlIpKey, { limit: 10, windowMs: 3_600_000 }))) {
+      return Response.json({ ok: true });
+    }
 
     const [user] = await sql`
       SELECT id, full_name FROM users WHERE email = ${normalizedEmail} AND status = 'active'

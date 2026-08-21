@@ -17,7 +17,7 @@ export async function PATCH(request, { params }) {
 
   // 🔒 2) Rate limit : max 10 modifications par minute
   const key = `address-update:${clientKey(request)}`;
-  if (!rateLimit(key, { limit: 10, windowMs: 60_000 })) {
+  if (!(await rateLimit(key, { limit: 10, windowMs: 60_000 }))) {
     return Response.json(
       { error: "Trop de modifications. Réessayez dans une minute." },
       { status: 429 }
@@ -94,7 +94,7 @@ export async function DELETE(request, { params }) {
 
   // 🔒 2) Rate limit : max 5 suppressions par minute
   const key = `address-delete:${clientKey(request)}`;
-  if (!rateLimit(key, { limit: 5, windowMs: 60_000 })) {
+  if (!(await rateLimit(key, { limit: 5, windowMs: 60_000 }))) {
     return Response.json(
       { error: "Trop de suppressions. Réessayez dans une minute." },
       { status: 429 }

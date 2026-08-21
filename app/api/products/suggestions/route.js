@@ -9,7 +9,7 @@ import { rateLimit, clientKey } from "@/lib/rate-limit";
 export async function GET(request) {
   try {
     const key = `suggestions:${clientKey(request)}`;
-    if (!rateLimit(key, { limit: 120, windowMs: 60_000 })) {
+    if (!(await rateLimit(key, { limit: 120, windowMs: 60_000 }))) {
       return Response.json({ error: "Trop de requêtes." }, { status: 429 });
     }
 

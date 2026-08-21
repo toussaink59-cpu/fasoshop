@@ -1,5 +1,9 @@
 import sql from "@/lib/db";
 
+// Force dynamic rendering (avoid DB timeout during build)
+export const dynamic = 'force-dynamic';
+
+
 // Sitemap dynamique : produits + boutiques actifs uniquement
 export default async function sitemap() {
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://fasoshop-xi.vercel.app";

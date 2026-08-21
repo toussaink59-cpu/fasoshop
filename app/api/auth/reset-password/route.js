@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { hash } from "bcryptjs";
 import sql from "@/lib/db";
+import { rateLimit, clientKey } from "@/lib/rate-limit";
 
 // Liste noire basique
 const BLOCKED_PASSWORDS = new Set([
@@ -37,6 +38,13 @@ export async function POST(request) {
 
     if (!token || typeof token !== "string") {
       return Response.json({ error: "Lien de reinitialisation invalide." }, { status: 400 });
+    }
+
+    // 🔒 Rate-limit : 10 tentatives/heure par IP (le token est déjà un
+    // secret à 256 bits, mais on freine quand même les scripts automatisés).
+    const ipKey = `reset-pwd:ip:${clientKey(request)}`;
+    if (!(await rateLimit(ipKey, { limit: 10, windowMs: 3_600_000 }))) {
+      return Response.json({ error: "Trop de tentatives. Réessayez plus tard." }, { status: 429 });
     }
 
     if (password !== confirmPassword) {
@@ -85,7 +93,7 @@ export async function POST(request) {
     await sql.begin(async (tx) => {
       await tx`
         UPDATE users
-        SET password_hash = ${password_hash}
+        SET password_hash = ${password_hash}, token_version = token_version + 1
         WHERE id = ${matched.user_id}
       `;
       await tx`
@@ -93,9 +101,9 @@ export async function POST(request) {
         SET used_at = now()
         WHERE id = ${matched.id}
       `;
-      // Invalider toutes les sessions existantes (si vous avez un systeme de sessions)
-      // En pratique, le JWT etant stateless, l'utilisateur sera simplement
-      // deconnecte cote client quand son JWT expire naturellement
+      // 🔒 token_version incrémenté ci-dessus : tous les JWT déjà émis pour
+      // cet utilisateur deviennent invalides dès la prochaine requête
+      // (vérifié dans middleware.js via /api/internal/session-status).
     });
 
     return Response.json({

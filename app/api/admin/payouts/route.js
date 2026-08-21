@@ -16,7 +16,7 @@ export async function GET(request) {
 
   // 🔒 2) Rate limit : max 10 consultations par minute (même pour admin)
   const key = `admin-payouts:${clientKey(request)}`;
-  if (!rateLimit(key, { limit: 10, windowMs: 60_000 })) {
+  if (!(await rateLimit(key, { limit: 10, windowMs: 60_000 }))) {
     return Response.json(
       { error: "Trop de requêtes. Réessayez dans une minute." },
       { status: 429 }

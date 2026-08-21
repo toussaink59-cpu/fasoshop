@@ -21,12 +21,22 @@ export const metadata = {
 };
 
 export default async function HomePage() {
-  const [categories, user, flashSales, newArrivals] = await Promise.all([
+  let categories, user, flashSales, newArrivals;
+  try {
+    [categories, user, flashSales, newArrivals] = await Promise.all([
     getCategoriesTree(),
     getCurrentUser(),
     getActiveFlashSales(),
     getNewArrivals(),
-  ]);
+    ]);
+  } catch (err) {
+    console.error('[page.js] Erreur chargement données accueil:', err.message);
+    // Fallback : valeurs par défaut pour permettre le démarrage
+    categories = [];
+    user = null;
+    flashSales = [];
+    newArrivals = [];
+  }
 
   const featuredIds = new Set([
     ...flashSales.map((p) => p.id),

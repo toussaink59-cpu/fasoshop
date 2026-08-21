@@ -23,7 +23,7 @@ export async function GET(request) {
   }
 
   const [row] = await sql`
-    SELECT u.status AS user_status, s.status AS shop_status
+    SELECT u.status AS user_status, u.token_version AS token_version, s.status AS shop_status
     FROM users u
     LEFT JOIN shops s ON s.vendor_id = u.id
     WHERE u.id = ${uid}

@@ -1,10 +1,10 @@
 import sql from "@/lib/db";
 import { sendAbandonedCartEmail } from "@/lib/email/abandoned-cart";
+import { isValidCronAuth } from "@/lib/cronAuth";
 
 export async function GET(request) {
-  const auth = request.headers.get("authorization");
-  const expected = `Bearer ${process.env.CRON_SECRET}`;
-  if (!process.env.CRON_SECRET || auth !== expected) {
+  // Fail-closed + comparaison timing-safe (voir lib/cronAuth.js)
+  if (!isValidCronAuth(request)) {
     console.warn("[cron/abandoned-carts] Unauthorized attempt");
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -60,7 +60,7 @@ export async function POST(request) {
 
   // 🔒 2) Rate limit : max 5 changements par minute
   const key = `vendor-delivery:${userId}`;
-  if (!rateLimit(key, { limit: 5, windowMs: 60_000 })) {
+  if (!(await rateLimit(key, { limit: 5, windowMs: 60_000 }))) {
     return Response.json({ error: "Trop de modifications. Réessayez dans une minute." }, { status: 429 });
   }
 

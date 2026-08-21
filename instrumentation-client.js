@@ -9,6 +9,18 @@ if (process.env.NODE_ENV === "production") {
     enableLogs: true,
     replaysSessionSampleRate: 0,
     replaysOnErrorSampleRate: 1.0,
+    sendDefaultPii: false,
+    beforeSend(event) {
+      if (event.user) {
+        delete event.user.email;
+        delete event.user.ip_address;
+      }
+      if (event.request) {
+        delete event.request.data;
+        delete event.request.cookies;
+      }
+      return event;
+    },
     ignoreErrors: [
       "ResizeObserver loop",
       "NetworkError",

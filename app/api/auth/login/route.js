@@ -42,13 +42,13 @@ export async function POST(request) {
     const emailKey = `login:email:${cleanEmail}`;
     const ipKey = `login:ip:${clientKey(request)}`;
 
-    if (!rateLimit(emailKey, { limit: 8, windowMs: 60_000 })) {
+    if (!(await rateLimit(emailKey, { limit: 8, windowMs: 60_000 }))) {
       return NextResponse.json(
         { error: "Trop de tentatives. Réessayez dans une minute." },
         { status: 429 }
       );
     }
-    if (!rateLimit(ipKey, { limit: 10, windowMs: 60_000 })) {
+    if (!(await rateLimit(ipKey, { limit: 10, windowMs: 60_000 }))) {
       return NextResponse.json(
         { error: "Trop de tentatives. Réessayez dans une minute." },
         { status: 429 }
@@ -57,7 +57,7 @@ export async function POST(request) {
 
     // Récupérer l'utilisateur depuis la base de données
     const [user] = await sql`
-      SELECT id, email, full_name, password_hash, role, status
+      SELECT id, email, full_name, password_hash, role, status, token_version
       FROM users
       WHERE email = ${cleanEmail}
     `;
@@ -120,6 +120,7 @@ export async function POST(request) {
       userId: user.id,
       role: user.role,
       status: user.status,
+      tokenVersion: user.token_version,
     };
     if (user.role === "vendor" && shop) {
       tokenPayload.shopId = shop.id;

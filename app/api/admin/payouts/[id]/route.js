@@ -54,7 +54,7 @@ export async function POST(request, { params }) {
   }
 
   const key = `admin-payout:${userId}`;
-  if (!rateLimit(key, { limit: 1, windowMs: 10_000 })) {
+  if (!(await rateLimit(key, { limit: 1, windowMs: 10_000 }))) {
     return Response.json({ error: "Veuillez patienter avant un autre paiement." }, { status: 429 });
   }
 

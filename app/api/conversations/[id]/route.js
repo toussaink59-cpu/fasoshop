@@ -34,7 +34,7 @@ export async function POST(request, { params }) {
   const userId = request.headers.get("x-user-id");
   if (!userId) return Response.json({ error: "Non authentifie." }, { status: 401 });
 
-  if (!rateLimit(`chat:send:${clientKey(request)}`, { limit: 10, windowMs: 60_000 }))
+  if (!(await rateLimit(`chat:send:${clientKey(request)}`, { limit: 10, windowMs: 60_000 })))
     return Response.json({ error: "Trop de messages. Attendez une minute." }, { status: 429 });
 
   const { id } = await params;
