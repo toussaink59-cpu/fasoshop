@@ -82,7 +82,7 @@ export default function VendorRevenuePage() {
 
         <div className="panel">
           <p style={{ fontSize: "0.85rem", color: "var(--ink-400)", marginTop: -8, marginBottom: 16 }}>
-            Une commission de 9% est prélevée par Kimoxa sur chaque vente confirmée.
+            Une commission de 8% est prélevée par Kimoxa sur chaque vente confirmée.
           </p>
 
           {!revenue ? (
@@ -117,10 +117,10 @@ export default function VendorRevenuePage() {
 
               {/* 🆕 BLOC COMMISSIONS — distinction MM vs COD */}
               <div style={{ marginBottom: 20, padding: "14px 16px", background: "var(--cream-50, #faf7f2)", borderRadius: 10, border: "1px solid var(--border)" }}>
-                <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: "1rem" }}>💰 Commissions Kimoxa (9%)</h3>
+                <h3 style={{ marginTop: 0, marginBottom: 8, fontSize: "1rem" }}>💰 Commissions Kimoxa (8%)</h3>
                 <p style={{ fontSize: "0.82rem", color: "var(--ink-500)", margin: "0 0 12px 0" }}>
                   Sur les ventes <strong>Mobile Money</strong> : commission prélevée automatiquement.<br />
-                  Sur les ventes en <strong>espèces</strong> : vous collectez la totalité et devez reverser 9% à Kimoxa.
+                  Sur les ventes en <strong>espèces</strong> : vous collectez la totalité et devez reverser 8% à Kimoxa.
                 </p>
 
                 <div className="stat-row">

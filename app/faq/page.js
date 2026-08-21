@@ -23,7 +23,7 @@ const FAQS = [
   },
   {
     q: "Quels sont les frais pour un vendeur ?",
-    a: "L'inscription est gratuite. Kimoxa prélève uniquement une commission de 9% sur chaque vente réalisée.",
+    a: "L'inscription est gratuite. Kimoxa prélève uniquement une commission de 8% sur chaque vente réalisée.",
   },
   {
     q: "Que faire si mon produit n'arrive pas ?",

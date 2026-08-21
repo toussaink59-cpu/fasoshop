@@ -98,7 +98,7 @@ export default function VendorAnalytics() {
     { icon: "✅", label: "Livrées", value: fmt(countDel) },
     { icon: "🚚", label: "En livraison", value: fmt(countShip) },
     { icon: "💰", label: "Chiffre d'affaires", value: `${fmt(totalGross)} FCFA` },
-    { icon: "📊", label: "Commissions (9%)", value: `${fmt(totalCommission)} FCFA` },
+    { icon: "📊", label: "Commissions (8%)", value: `${fmt(totalCommission)} FCFA` },
     { icon: "💳", label: "Solde disponible", value: `${fmt(released)} FCFA` },
   ];
 

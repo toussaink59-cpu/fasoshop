@@ -471,7 +471,7 @@ export default function CartClient({ initialUser, categories }) {
                       <input type="radio" name="paymentMethod" value="cod" checked={paymentMethod === "cod"} onChange={() => setPaymentMethod("cod")} />
                       <div>
                         <div className="payment-option-title">💵 Espèces</div>
-                        <div className="payment-option-desc">Au vendeur · la commission 9% reste due à Kimoxa</div>
+                        <div className="payment-option-desc">Au vendeur · la commission 8% reste due à Kimoxa</div>
                       </div>
                     </label>
                   </div>

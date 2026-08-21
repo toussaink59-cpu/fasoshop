@@ -3,7 +3,7 @@ import { sendMail, emailTemplates, sendLowStockAlert, sendNewOrderToVendor } fro
 import sql from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 
-const COMMISSION_RATE = 0.09; // 9%
+const COMMISSION_RATE = (Number(process.env.COMMISSION_RATE_PERCENT) || 8) / 100;
 
 export async function POST(request) {
   const user = await getCurrentUser();

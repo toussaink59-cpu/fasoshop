@@ -40,8 +40,6 @@ export default function Footer() {
           <div className="temu-footer-payment-badges">
             <span className="pay-logo pay-om"><b>orange</b> money</span>
             <span className="pay-logo pay-moov"><b>moov</b> money</span>
-            <span className="pay-logo pay-mtn"><b>MTN</b> MoMo</span>
-            <span className="pay-logo pay-mpesa"><b>M-PESA</b></span>
             <span className="pay-logo pay-wave"><b>wave</b></span>
             <span className="pay-logo pay-cod">💵 À la livraison</span>
           </div>

@@ -115,7 +115,7 @@ export default function AdminAnalytics() {
     { icon: "✅", label: "Livrées", value: fmt(countDelivered) },
     { icon: "🏪", label: "Boutiques actives", value: fmt(activeShops) },
     { icon: "💰", label: "CA global", value: `${fmt(totalGross)} FCFA` },
-    { icon: "📊", label: "Commissions (9%)", value: `${fmt(totalCommission)} FCFA` },
+    { icon: "📊", label: "Commissions (8%)", value: `${fmt(totalCommission)} FCFA` },
     { icon: "⏳", label: "Payouts à libérer", value: `${fmt(released)} FCFA` },
   ];
 
