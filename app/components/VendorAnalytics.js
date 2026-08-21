@@ -1,10 +1,13 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
+import {
+  ShoppingCartIcon, CheckCircleIcon, TruckIcon, WalletIcon,
+  BarChartIcon, CreditCardIcon, PieChartIcon, LockIcon,
+} from "@/app/components/Icons";
 
 const fmt = (n) => Number(n || 0).toLocaleString("fr-FR");
 
-// Graphique en aire SVG (zéro lib externe)
 function AreaChart({ series }) {
   const W = 600, H = 190, P = 26;
   const values = series.map((s) => Number(s.gross) || 0);
@@ -32,7 +35,6 @@ function AreaChart({ series }) {
   );
 }
 
-// Donut SVG 3 segments
 function Donut({ segments, total }) {
   const R = 54, C = 2 * Math.PI * R;
   let acc = 0;
@@ -56,8 +58,11 @@ function Donut({ segments, total }) {
   );
 }
 
+const LegendDot = ({ color }) => (
+  <span style={{ display: "inline-block", width: 10, height: 10, borderRadius: "50%", background: color, marginRight: 6, verticalAlign: "middle" }} />
+);
+
 export default function VendorAnalytics() {
-  // États initiaux = structure SSR (valeurs 0) -> pas de mismatch
   const [earnings, setEarnings] = useState(null);
   const [series, setSeries] = useState([]);
   const [items, setItems] = useState([]);
@@ -81,65 +86,60 @@ export default function VendorAnalytics() {
   const paid = Number(earnings?.paid_amount || 0);
 
   const byOrder = new Map();
-  for (const it of items) {
-    if (!byOrder.has(it.order_id)) byOrder.set(it.order_id, it.delivery_status);
-  }
+  for (const it of items) { if (!byOrder.has(it.order_id)) byOrder.set(it.order_id, it.delivery_status); }
   const statuses = [...byOrder.values()];
   const countPrep = statuses.filter((s) => s === "preparation").length;
   const countShip = statuses.filter((s) => s === "shipped").length;
   const countDel = statuses.filter((s) => s === "delivered").length;
   const totalOrders = statuses.length;
-
-  // Vérifie s'il y a des ventes sur les 7 derniers jours
   const hasRecentSales = series.some((s) => s.gross > 0);
 
   const kpis = [
-    { icon: "🛒", label: "Commandes reçues", value: fmt(totalOrders) },
-    { icon: "✅", label: "Livrées", value: fmt(countDel) },
-    { icon: "🚚", label: "En livraison", value: fmt(countShip) },
-    { icon: "💰", label: "Chiffre d'affaires", value: `${fmt(totalGross)} FCFA` },
-    { icon: "📊", label: "Commissions (8%)", value: `${fmt(totalCommission)} FCFA` },
-    { icon: "💳", label: "Solde disponible", value: `${fmt(released)} FCFA` },
+    { Icon: ShoppingCartIcon, label: "Commandes reçues", value: fmt(totalOrders) },
+    { Icon: CheckCircleIcon, label: "Livrées", value: fmt(countDel) },
+    { Icon: TruckIcon, label: "En livraison", value: fmt(countShip) },
+    { Icon: WalletIcon, label: "Chiffre d'affaires", value: `${fmt(totalGross)} FCFA` },
+    { Icon: BarChartIcon, label: "Commissions (8%)", value: `${fmt(totalCommission)} FCFA` },
+    { Icon: CreditCardIcon, label: "Solde disponible", value: `${fmt(released)} FCFA` },
   ];
 
   return (
     <section className="va-section">
-      {/* 6 cartes KPI - toujours rendu (SSR = client) */}
       <div className="va-kpi-grid">
-        {kpis.map((k) => (
-          <div className="va-kpi" key={k.label}>
-            <div className="icon" aria-hidden="true">{k.icon}</div>
-            <div className="value">{k.value}</div>
-            <div className="label">{k.label}</div>
-          </div>
-        ))}
+        {kpis.map((k) => {
+          const { Icon } = k;
+          return (
+            <div className="va-kpi" key={k.label}>
+              <div className="icon" style={{ color: "var(--gold-600)" }}><Icon size={22} /></div>
+              <div className="value">{k.value}</div>
+              <div className="label">{k.label}</div>
+            </div>
+          );
+        })}
       </div>
 
-      {/* Résumé escrow - toujours rendu */}
-      <div className="va-card va-escrow-row">
-        <span>🔒 Séquestrés : <strong>{fmt(held)} FCFA</strong></span>
-        <span>✅ À retirer : <strong>{fmt(released)} FCFA</strong></span>
-        <span>💸 Déjà payés : <strong>{fmt(paid)} FCFA</strong></span>
+      <div className="va-card va-escrow-row" style={{ display: "flex", gap: 18, flexWrap: "wrap", justifyContent: "space-between", fontSize: "0.9rem" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><LockIcon size={14} /> Séquestrés : <strong>{fmt(held)} FCFA</strong></span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><CheckCircleIcon size={14} /> À retirer : <strong>{fmt(released)} FCFA</strong></span>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><CreditCardIcon size={14} /> Déjà payés : <strong>{fmt(paid)} FCFA</strong></span>
       </div>
 
       <div className="va-row">
-        {/* Courbe CA */}
         <div className="va-card">
-          <h3>📈 Évolution du chiffre d'affaires (7 jours)</h3>
+          <h3 style={{ display: "flex", alignItems: "center", gap: 8 }}><BarChartIcon size={18} /> Évolution du chiffre d'affaires (7 jours)</h3>
           {hasRecentSales ? (
             <AreaChart series={series} />
           ) : (
             <div className="va-empty">
-              <div style={{ fontSize: "2rem" }}>📈</div>
+              <div style={{ display: "flex", justifyContent: "center", color: "var(--ink-400)" }}><BarChartIcon size={40} /></div>
               <p>Aucune vente sur les 7 derniers jours.</p>
               <p style={{ fontSize: "0.75rem", marginTop: 4 }}>Vos ventes récentes apparaîtront ici.</p>
             </div>
           )}
         </div>
 
-        {/* Donut répartition */}
-        <div className="va-card va-center">
-          <h3>🍩 Répartition des commandes</h3>
+        <div className="va-card va-center" style={{ textAlign: "center" }}>
+          <h3 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}><PieChartIcon size={18} /> Répartition des commandes</h3>
           {totalOrders > 0 ? (
             <>
               <Donut
@@ -150,15 +150,15 @@ export default function VendorAnalytics() {
                   { value: countPrep, color: "#f59e0b" },
                 ]}
               />
-              <div className="va-legend">
-                <span>🟢 Livrées ({countDel})</span>
-                <span>🔵 En livraison ({countShip})</span>
-                <span>🟠 En attente ({countPrep})</span>
+              <div className="va-legend" style={{ display: "flex", justifyContent: "center", gap: 12, fontSize: "0.75rem", flexWrap: "wrap" }}>
+                <span><LegendDot color="#16a34a" />Livrées ({countDel})</span>
+                <span><LegendDot color="#2563eb" />En livraison ({countShip})</span>
+                <span><LegendDot color="#f59e0b" />En attente ({countPrep})</span>
               </div>
             </>
           ) : (
             <div className="va-empty">
-              <div style={{ fontSize: "2rem" }}>🍩</div>
+              <div style={{ display: "flex", justifyContent: "center", color: "var(--ink-400)" }}><PieChartIcon size={40} /></div>
               <p>Aucune commande pour l'instant.</p>
             </div>
           )}
