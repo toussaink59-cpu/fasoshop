@@ -21,9 +21,56 @@ export async function GET(request) {
     `;
     let sent = 0, failed = 0;
     for (const c of candidates) {
-      const items = Array.isArray(c.items) ? c.items : [];
-      if (items.length === 0) continue;
-      const result = await sendAbandonedCartEmail(c.email, c.full_name, items, Number(c.total_cents));
+      const rawItems = Array.isArray(c.items) ? c.items : [];
+      if (rawItems.length === 0) continue;
+
+      // 🔒 Corrige V-03 : on ne fait plus confiance au nom/prix/image stockés
+      // (potentiellement fournis par le client via /api/cart/sync). On les
+      // re-résout depuis la table products, source de vérité, juste avant
+      // l'envoi de l'e-mail. Un produit supprimé/désactivé est simplement
+      // exclu du récapitulatif plutôt que d'afficher une donnée non fiable.
+      const productIds = rawItems
+        .map((i) => Number(i.productId))
+        .filter((n) => Number.isInteger(n) && n > 0);
+
+      const realProducts = productIds.length
+        ? await sql`
+            SELECT id, name, price, images, status
+            FROM products
+            WHERE id = ANY(${productIds}::int[]) AND status = 'active'
+          `
+        : [];
+      const realProductsMap = Object.fromEntries(realProducts.map((p) => [p.id, p]));
+
+      const safeItems = rawItems
+        .map((i) => {
+          const p = realProductsMap[Number(i.productId)];
+          if (!p) return null; // produit supprimé/désactivé depuis → on l'ignore
+          const quantity = Number.isInteger(i.quantity) && i.quantity > 0
+            ? Math.min(i.quantity, 99)
+            : 1;
+          const firstImage = Array.isArray(p.images) && p.images.length > 0 ? p.images[0] : "";
+          return {
+            productId: p.id,
+            name: p.name,               // ← vérité serveur, plus jamais celle du client
+            price: Number(p.price),     // ← vérité serveur
+            image: firstImage,          // ← vérité serveur
+            quantity,
+          };
+        })
+        .filter(Boolean);
+
+      if (safeItems.length === 0) {
+        // Plus aucun produit valide dans ce panier : on n'envoie pas de relance trompeuse
+        await sql`UPDATE abandoned_carts SET reminded_at = now() WHERE user_id = ${c.user_id}`;
+        continue;
+      }
+
+      const realTotalCents = Math.round(
+        safeItems.reduce((sum, it) => sum + it.price * it.quantity, 0) * 100
+      );
+
+      const result = await sendAbandonedCartEmail(c.email, c.full_name, safeItems, realTotalCents);
       if (result.ok) {
         await sql`UPDATE abandoned_carts SET reminded_at = now() WHERE user_id = ${c.user_id}`;
         sent++;
