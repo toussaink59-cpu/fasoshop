@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
@@ -7,6 +7,11 @@ import { addToCart } from "@/lib/cart";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
+import {
+  PackageIcon, StoreIcon, BadgeCheckIcon, StarIcon, MessageIcon,
+  ShoppingCartIcon, CheckCircleIcon, TruckIcon, SmartphoneIcon,
+  RotateCcwIcon, AlertTriangleIcon, ClockIcon,
+} from "@/app/components/Icons";
 
 const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
 const CONDITION_COLORS = { neuf: "var(--gold-600)", quasi_neuf: "#6b7280", occasion: "var(--bissap-600)" };
@@ -102,7 +107,6 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
         <Link href="/shop" className="pdp-back">← Retour au catalogue</Link>
 
         <div className="pdp-main">
-          {/* Galerie */}
           <div className="pdp-gallery">
             <div className="pdp-main-image">
               {hasDiscount(product) && (
@@ -119,7 +123,9 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
                   unoptimized
                 />
               ) : (
-                <div className="pdp-main-image-placeholder">📦</div>
+                <div className="pdp-main-image-placeholder" style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#999" }}>
+                  <PackageIcon size={64} />
+                </div>
               )}
             </div>
             {images.length > 1 && (
@@ -138,7 +144,6 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
             )}
           </div>
 
-          {/* Encadré achat */}
           <div className="pdp-buy-box">
             <div className="pdp-title-row">
               <h1>{product.name}</h1>
@@ -167,18 +172,19 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
                 marginBottom: 12,
               }}
             >
-              <span style={{ fontSize: "1.1rem" }}>🏪</span>
+              <StoreIcon size={18} />
               <span style={{ fontWeight: 600 }}>{product.shop_name || "Boutique partenaire"}</span>
-              <span style={{ color: "var(--gold-600, #c9a44c)", fontWeight: 700 }}>✓</span>
+              <span style={{ color: "var(--gold-600, #c9a44c)", display: "inline-flex" }}><BadgeCheckIcon size={16} /></span>
             </Link>
 
             {product.category_name && (
-              <p className="pdp-category">📂 {product.category_name}</p>
+              <p className="pdp-category">{product.category_name}</p>
             )}
 
             {product.review_count > 0 && (
-              <div className="pdp-rating">
-                ⭐ {product.avg_rating.toFixed(1)} / 5
+              <div className="pdp-rating" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <StarIcon size={18} style={{ color: "var(--gold-500)" }} />
+                <strong>{product.avg_rating.toFixed(1)}</strong> / 5
                 <span className="pdp-rating-count">({product.review_count} avis)</span>
               </div>
             )}
@@ -188,17 +194,19 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
             </div>
 
             {flashActive && (
-              <div className="pdp-flash">
-                ⚡ <strong>Vente flash :</strong> se termine dans {fh}h {fm}m {fs}s
+              <div className="pdp-flash" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <ClockIcon size={16} /> <strong>Vente flash :</strong> se termine dans {fh}h {fm}m {fs}s
               </div>
             )}
 
             {product.stock_quantity > 0 && product.stock_quantity <= 5 ? (
-              <div className="pdp-stock-low">
-                🔥 Plus que <strong>{product.stock_quantity}</strong> en stock — commandez vite !
+              <div className="pdp-stock-low" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <AlertTriangleIcon size={16} /> Plus que <strong>{product.stock_quantity}</strong> en stock — commandez vite !
               </div>
             ) : product.stock_quantity > 5 ? (
-              <div className="pdp-stock-ok">✅ En stock : {product.stock_quantity} disponibles</div>
+              <div className="pdp-stock-ok" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <CheckCircleIcon size={16} /> En stock : {product.stock_quantity} disponibles
+              </div>
             ) : null}
 
             <button
@@ -206,36 +214,47 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
               className="btn btn-primary pdp-add-btn"
               onClick={handleAdd}
               disabled={product.stock_quantity <= 0}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
             >
-              {product.stock_quantity <= 0
-                ? "Rupture de stock"
-                : justAdded
-                ? "Ajouté ✓"
-                : "Ajouter au panier"}
+              {product.stock_quantity <= 0 ? (
+                "Rupture de stock"
+              ) : justAdded ? (
+                <><CheckCircleIcon size={16} /> Ajouté</>
+              ) : (
+                <><ShoppingCartIcon size={16} /> Ajouter au panier</>
+              )}
             </button>
 
             <button
               className="pdp-contact-btn"
               onClick={() => startConversation(product.id)}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
             >
-              💬 Contacter le vendeur
+              <MessageIcon size={16} /> Contacter le vendeur
             </button>
 
             <div className={"pdp-sticky-bar" + (ctaInView ? " is-hidden" : "")}>
               <div className="pdp-sticky-price"><PriceDisplay product={product} /></div>
-              <button className="pdp-sticky-contact" onClick={() => startConversation(product.id)} aria-label="Contacter le vendeur">💬</button>
-              <button className="btn btn-primary pdp-sticky-add" onClick={handleAdd} disabled={product.stock_quantity <= 0}>
-                {product.stock_quantity <= 0 ? "Rupture de stock" : justAdded ? "Ajouté ✓" : "Ajouter au panier"}
+              <button className="pdp-sticky-contact" onClick={() => startConversation(product.id)} aria-label="Contacter le vendeur" style={{ display: "inline-flex" }}>
+                <MessageIcon size={18} />
+              </button>
+              <button className="btn btn-primary pdp-sticky-add" onClick={handleAdd} disabled={product.stock_quantity <= 0} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {product.stock_quantity <= 0 ? (
+                  "Rupture"
+                ) : justAdded ? (
+                  <><CheckCircleIcon size={14} /> Ajouté</>
+                ) : (
+                  <><ShoppingCartIcon size={14} /> Ajouter</>
+                )}
               </button>
             </div>
 
-            <div className="pdp-trust">
-              <span>🚚 Livraison vendeur</span>
-              <span>📱 Mobile Money</span>
-              <span>↩️ 7 jours</span>
+            <div className="pdp-trust" style={{ display: "flex", flexWrap: "wrap", gap: 12, fontSize: "0.85rem" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><TruckIcon size={14} /> Livraison vendeur</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><SmartphoneIcon size={14} /> Mobile Money</span>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}><RotateCcwIcon size={14} /> 7 jours</span>
             </div>
 
-            {/* 🚚🏪 OPTIONS LIVRAISON — modèle v3 (le vendeur décide) */}
             <div
               style={{
                 marginTop: 16,
@@ -248,25 +267,27 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
               }}
             >
               {product.offers_delivery !== false && (
-                <div style={{ marginBottom: 4 }}>
-                  🚚 <strong>Livraison à domicile par {product.shop_name}</strong> :{" "}
-                  <strong>{deliveryFee === 0 ? "Gratuite" : `${deliveryFee.toLocaleString("fr-FR")} FCFA`}</strong>
+                <div style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                  <TruckIcon size={14} />
+                  <div><strong>Livraison à domicile par {product.shop_name}</strong> :{" "}
+                  <strong>{deliveryFee === 0 ? "Gratuite" : `${deliveryFee.toLocaleString("fr-FR")} FCFA`}</strong></div>
                 </div>
               )}
               {product.offers_pickup !== false && (
-                <div style={{ marginBottom: 4 }}>
-                  🏪 <strong>Retrait en boutique</strong> :{" "}
-                  <strong style={{ color: "#2f7a3d" }}>Gratuit</strong>
+                <div style={{ marginBottom: 4, display: "flex", alignItems: "center", gap: 6 }}>
+                  <StoreIcon size={14} />
+                  <div><strong>Retrait en boutique</strong> :{" "}
+                  <strong style={{ color: "#2f7a3d" }}>Gratuit</strong></div>
                 </div>
               )}
-              <div style={{ color: "#3a6b3a", fontSize: "0.8rem" }}>
-                💵 Espèces ou 📱 Mobile Money — paiement sécurisé par Kimoxa.
+              <div style={{ color: "#3a6b3a", fontSize: "0.8rem", display: "flex", alignItems: "center", gap: 6 }}>
+                <SmartphoneIcon size={12} />
+                <span>Espèces ou Mobile Money — paiement sécurisé par Kimoxa.</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Description */}
         {product.description && (
           <div className="panel pdp-description">
             <h2>Description</h2>
@@ -274,7 +295,6 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
           </div>
         )}
 
-        {/* Avis clients */}
         <div className="panel">
           <h2>Avis clients</h2>
 
@@ -284,7 +304,11 @@ export default function ProductDetailClient({ id, product, initialReviews, initi
             <div>
               {reviews.map((r) => (
                 <div key={r.id} className="pdp-review">
-                  <div className="pdp-review-stars">{"⭐".repeat(r.rating)}</div>
+                  <div className="pdp-review-stars" style={{ display: "inline-flex", gap: 2 }}>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <StarIcon key={i} size={14} style={{ color: i < r.rating ? "var(--gold-500)" : "#d4d4d4" }} />
+                    ))}
+                  </div>
                   <div className="pdp-review-author">{r.buyer_name}</div>
                   {r.comment && <p className="pdp-review-comment">{r.comment}</p>}
                 </div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -7,13 +7,16 @@ import Image from "next/image";
 import { getCart, updateQuantity, clearCart, cartTotal } from "@/lib/cart";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
+import {
+  ShoppingCartIcon, TrashIcon, StoreIcon, TruckIcon, MapPinIcon,
+  SmartphoneIcon, CreditCardIcon, PackageIcon, BadgeCheckIcon,
+  InfoIcon, AlertTriangleIcon, MinusIcon, PlusIcon, CheckCircleIcon,
+} from "@/app/components/Icons";
 
 export default function CartClient({ initialUser, categories }) {
   const router = useRouter();
 
- // Hydration-safe : panier vide au 1er rendu, chargé après montage
   const [cart, setCart] = useState([]);
-  // 🆕 Options de livraison EN DIRECT depuis la DB (jamais périmées)
   const [liveShops, setLiveShops] = useState({});
 
   const [savedAddresses, setSavedAddresses] = useState([]);
@@ -31,7 +34,6 @@ export default function CartClient({ initialUser, categories }) {
     setCart(getCart());
   }, []);
 
-  // Prix de livraison EN DIRECT (corrige les vieux paniers)
   useEffect(() => {
     const ids = [...new Set(cart.map((i) => i.shopId).filter(Boolean))];
     if (ids.length === 0) return;
@@ -45,7 +47,6 @@ export default function CartClient({ initialUser, categories }) {
       .catch(() => {});
   }, [cart]);
 
-  // Chargement des adresses sauvegardees
   useEffect(() => {
     if (!initialUser) return;
     fetch("/api/addresses").then(async (res) => {
@@ -62,7 +63,6 @@ export default function CartClient({ initialUser, categories }) {
     });
   }, [initialUser]);
 
-  // Sync panier vers abandoned_carts (users connectes uniquement)
   useEffect(() => {
     if (!initialUser?.id) return;
     const controller = new AbortController();
@@ -86,7 +86,6 @@ export default function CartClient({ initialUser, categories }) {
     return () => { clearTimeout(timer); controller.abort(); };
   }, [cart, initialUser?.id]);
 
-  // Reset reminded_at quand le user visite le panier (permet futur rappel)
   useEffect(() => {
     if (!initialUser?.id) return;
     fetch("/api/cart/sync", { method: "DELETE" }).catch(() => {});
@@ -151,7 +150,6 @@ export default function CartClient({ initialUser, categories }) {
 
   const subtotal = cartTotal(cart);
 
-  // ===== CALCUL LIVRAISON PAR BOUTIQUE (modèle v3, prix EN DIRECT) =====
   const { deliveryFee, shopDeliveryDetails, canDeliver, cannotDeliverShops, isMultiShop } = useMemo(() => {
     if (cart.length === 0) {
       return { deliveryFee: 0, shopDeliveryDetails: [], canDeliver: true, cannotDeliverShops: [], isMultiShop: false };
@@ -209,7 +207,6 @@ export default function CartClient({ initialUser, categories }) {
   }, [cart, deliveryMethod, liveShops]);
 
   const grandTotal = Math.max(0, subtotal + deliveryFee);
-
 
   async function handleCheckout(e) {
     e.preventDefault();
@@ -278,7 +275,7 @@ export default function CartClient({ initialUser, categories }) {
 
         {cart.length === 0 ? (
           <div className="empty-state">
-            <div className="glyph">🛒</div>
+            <div className="glyph" style={{ display: "inline-flex", color: "var(--gold-600)" }}><ShoppingCartIcon size={48} /></div>
             <p>Votre panier est vide.</p>
             <Link href="/shop">
               <button className="btn btn-primary" style={{ marginTop: 10 }}>Voir le catalogue</button>
@@ -287,23 +284,25 @@ export default function CartClient({ initialUser, categories }) {
         ) : (
           <>
             {isMultiShop && (
-              <div style={{ background: "#eff6ff", border: "1px solid #93c5fd", color: "#1e40af", padding: "10px 14px", borderRadius: "10px", fontSize: "0.85rem", marginBottom: "16px", textAlign: "center" }}>
-                🛍️ Votre panier contient <strong>{shopDeliveryDetails.length} boutiques</strong> — chaque vendeur prépare et livre séparément.
+              <div style={{ background: "#eff6ff", border: "1px solid #93c5fd", color: "#1e40af", padding: "10px 14px", borderRadius: "10px", fontSize: "0.85rem", marginBottom: "16px", textAlign: "center", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <InfoIcon size={18} /> Votre panier contient <strong>{shopDeliveryDetails.length} boutiques</strong> — chaque vendeur prépare et livre séparément.
               </div>
             )}
 
             {deliveryMethod === "delivery" && !canDeliver && (
-              <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", color: "#991b1b", padding: "10px 14px", borderRadius: "10px", fontSize: "0.85rem", marginBottom: "16px" }}>
-                ⚠️ <strong>{cannotDeliverShops.join(", ")}</strong> ne propose{cannotDeliverShops.length > 1 ? "nt" : ""} pas la livraison à domicile. Passez en « Retrait en boutique ».
+              <div style={{ background: "#fef2f2", border: "1px solid #fca5a5", color: "#991b1b", padding: "10px 14px", borderRadius: "10px", fontSize: "0.85rem", marginBottom: "16px", display: "flex", alignItems: "center", gap: 8 }}>
+                <AlertTriangleIcon size={18} /> <strong>{cannotDeliverShops.join(", ")}</strong> ne propose{cannotDeliverShops.length > 1 ? "nt" : ""} pas la livraison à domicile. Passez en « Retrait en boutique ».
               </div>
             )}
 
             {deliveryMethod === "delivery" && shopDeliveryDetails.length > 0 && (
               <div style={{ background: "var(--cream-100, #faf7f2)", border: "1px solid var(--border)", borderRadius: 10, padding: "10px 14px", marginBottom: 16, fontSize: "0.85rem" }}>
-                <div style={{ fontWeight: 600, marginBottom: 6 }}>🚚 Livraison (fixée par chaque vendeur) :</div>
+                <div style={{ fontWeight: 600, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
+                  <TruckIcon size={16} /> Livraison (fixée par chaque vendeur) :
+                </div>
                 {shopDeliveryDetails.map((s) => (
                   <div key={s.key} style={{ display: "flex", justifyContent: "space-between", marginBottom: 2, color: "var(--ink-600)" }}>
-                    <span>🏪 {s.shopName}</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}><StoreIcon size={14} /> {s.shopName}</span>
                     <span style={{ fontWeight: 600, color: s.deliveryFee === 0 ? "var(--millet-600)" : "var(--ink-900)" }}>
                       {s.deliveryFee === 0 ? "Gratuite" : `${s.deliveryFee.toLocaleString("fr-FR")} FCFA`}
                     </span>
@@ -331,10 +330,12 @@ export default function CartClient({ initialUser, categories }) {
                   {isMultiShop && (
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 8px 12px 8px", borderBottom: "1px solid var(--border)", marginBottom: 12 }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: "1.3rem" }}>🏪</span>
+                        <span style={{ color: "var(--gold-600)", display: "inline-flex" }}><StoreIcon size={24} /></span>
                         <div>
                           <div style={{ fontWeight: 700, fontSize: "0.95rem" }}>{shop.shopName}</div>
-                          <div style={{ fontSize: "0.75rem", color: "var(--gold-600)", fontWeight: 600 }}>✓ Vendeur vérifié</div>
+                          <div style={{ fontSize: "0.75rem", color: "var(--gold-600)", fontWeight: 600, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <BadgeCheckIcon size={12} /> Vendeur vérifié
+                          </div>
                         </div>
                       </div>
                       <div style={{ textAlign: "right", fontSize: "0.85rem" }}>
@@ -350,7 +351,9 @@ export default function CartClient({ initialUser, categories }) {
                         {item.image ? (
                           <Image src={item.image} alt={item.name} width={96} height={96} loading="lazy" unoptimized />
                         ) : (
-                          <div className="cart-item-placeholder">📦</div>
+                          <div className="cart-item-placeholder" style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#999" }}>
+                            <PackageIcon size={40} />
+                          </div>
                         )}
                       </div>
                       <div className="cart-item-details">
@@ -358,21 +361,21 @@ export default function CartClient({ initialUser, categories }) {
                           {item.name}
                         </Link>
                         {!isMultiShop && (
-                          <div className="cart-item-shop" style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                            <span>🏪</span>
+                          <div className="cart-item-shop" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <StoreIcon size={14} />
                             <span>{item.shopName}</span>
-                            <span style={{ color: "var(--gold-600)", fontSize: "0.8rem" }}>✓</span>
+                            <span style={{ color: "var(--gold-600)", display: "inline-flex" }}><BadgeCheckIcon size={14} /></span>
                           </div>
                         )}
                         <div className="cart-item-price">{item.price.toLocaleString("fr-FR")} FCFA</div>
                         <div className="cart-item-actions">
-                          <div className="qty-stepper">
-                            <button onClick={() => changeQty(item.productId, item.quantity - 1)}>−</button>
-                            <span>{item.quantity}</span>
-                            <button onClick={() => changeQty(item.productId, item.quantity + 1)}>+</button>
+                          <div className="qty-stepper" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <button onClick={() => changeQty(item.productId, item.quantity - 1)} style={{ padding: "4px 8px" }}><MinusIcon size={14} /></button>
+                            <span style={{ padding: "0 8px" }}>{item.quantity}</span>
+                            <button onClick={() => changeQty(item.productId, item.quantity + 1)} style={{ padding: "4px 8px" }}><PlusIcon size={14} /></button>
                           </div>
-                          <button className="cart-item-remove" onClick={() => removeItem(item.productId)}>
-                            🗑️ Supprimer
+                          <button className="cart-item-remove" onClick={() => removeItem(item.productId)} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                            <TrashIcon size={14} /> Supprimer
                           </button>
                         </div>
                       </div>
@@ -394,14 +397,18 @@ export default function CartClient({ initialUser, categories }) {
                     <label className={`payment-option ${deliveryMethod === "delivery" ? "selected" : ""}`}>
                       <input type="radio" name="deliveryMethod" value="delivery" checked={deliveryMethod === "delivery"} onChange={() => setDeliveryMethod("delivery")} />
                       <div>
-                        <div className="payment-option-title">🚚 Livraison à domicile</div>
+                        <div className="payment-option-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <TruckIcon size={18} /> Livraison à domicile
+                        </div>
                         <div className="payment-option-desc">Le vendeur livre à votre adresse · prix fixé par chaque boutique</div>
                       </div>
                     </label>
                     <label className={`payment-option ${deliveryMethod === "pickup" ? "selected" : ""}`}>
                       <input type="radio" name="deliveryMethod" value="pickup" checked={deliveryMethod === "pickup"} onChange={() => setDeliveryMethod("pickup")} />
                       <div>
-                        <div className="payment-option-title">🏪 Retrait en boutique</div>
+                        <div className="payment-option-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <StoreIcon size={18} /> Retrait en boutique
+                        </div>
                         <div className="payment-option-desc">Gratuit · vous récupérez votre commande chez le vendeur</div>
                       </div>
                     </label>
@@ -424,8 +431,8 @@ export default function CartClient({ initialUser, categories }) {
                     <div className="form-group">
                       <label htmlFor="address">Adresse de livraison</label>
                       <input id="address" required value={shippingAddress} onChange={(e) => setShippingAddress(e.target.value)} placeholder="Ex : Secteur 15, Ouagadougou" />
-                      <button type="button" className="btn btn-ghost" style={{ marginTop: 6, width: "100%" }} onClick={useMyLocation} disabled={locating}>
-                        📍 {locating ? "Localisation en cours..." : "Utiliser ma position GPS"}
+                      <button type="button" className="btn btn-ghost" style={{ marginTop: 6, width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }} onClick={useMyLocation} disabled={locating}>
+                        <MapPinIcon size={16} /> {locating ? "Localisation en cours..." : "Utiliser ma position GPS"}
                       </button>
                       {locError && <small style={{ color: "#dc2626", fontSize: "0.75rem" }}>{locError}</small>}
                     </div>
@@ -437,14 +444,15 @@ export default function CartClient({ initialUser, categories }) {
                   <input id="phone" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Ex : 70 00 00 00" />
                 </div>
 
-
                 <div style={{ background: "#faf7f2", border: "1px dashed var(--border)", borderRadius: 10, padding: "12px 14px", marginBottom: 16 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: 6, color: "var(--ink-700)" }}>
                     <span>Sous-total produits</span>
                     <strong>{subtotal.toLocaleString("fr-FR")} FCFA</strong>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.85rem", marginBottom: 8, color: "var(--ink-700)" }}>
-                    <span>{deliveryMethod === "pickup" ? "🏪 Retrait en boutique" : "🚚 Livraison"}</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      {deliveryMethod === "pickup" ? <><StoreIcon size={14} /> Retrait en boutique</> : <><TruckIcon size={14} /> Livraison</>}
+                    </span>
                     <strong style={{ color: deliveryFee === 0 ? "var(--millet-600)" : "var(--ink-900)" }}>
                       {deliveryFee === 0 ? "Gratuite" : `${deliveryFee.toLocaleString("fr-FR")} FCFA`}
                     </strong>
@@ -463,14 +471,18 @@ export default function CartClient({ initialUser, categories }) {
                     <label className={`payment-option ${paymentMethod === "mobile_money" ? "selected" : ""}`}>
                       <input type="radio" name="paymentMethod" value="mobile_money" checked={paymentMethod === "mobile_money"} onChange={() => setPaymentMethod("mobile_money")} />
                       <div>
-                        <div className="payment-option-title">📱 Mobile Money (recommandé)</div>
+                        <div className="payment-option-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <SmartphoneIcon size={18} /> Mobile Money (recommandé)
+                        </div>
                         <div className="payment-option-desc">Paiement immédiat · commission prélevée automatiquement</div>
                       </div>
                     </label>
                     <label className={`payment-option ${paymentMethod === "cod" ? "selected" : ""}`}>
                       <input type="radio" name="paymentMethod" value="cod" checked={paymentMethod === "cod"} onChange={() => setPaymentMethod("cod")} />
                       <div>
-                        <div className="payment-option-title">💵 Espèces</div>
+                        <div className="payment-option-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <CreditCardIcon size={18} /> Espèces
+                        </div>
                         <div className="payment-option-desc">Au vendeur · la commission 8% reste due à Kimoxa</div>
                       </div>
                     </label>

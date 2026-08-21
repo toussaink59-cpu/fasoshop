@@ -1,10 +1,14 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
+import {
+  PackageIcon, TruckIcon, CheckCircleIcon, MessageIcon, CreditCardIcon,
+  MapPinIcon, SmartphoneIcon, StoreIcon, BadgeCheckIcon, SearchIcon,
+} from "@/app/components/Icons";
 
 const STATUS_LABELS = {
   preparation: "En préparation",
@@ -13,9 +17,15 @@ const STATUS_LABELS = {
   cancelled: "Annulée",
 };
 
+const StatusIcon = ({ status, size = 16 }) => {
+  if (status === "preparation") return <PackageIcon size={size} />;
+  if (status === "shipped") return <TruckIcon size={size} />;
+  if (status === "delivered") return <CheckCircleIcon size={size} />;
+  return null;
+};
+
 function OrdersContent({ initialUser, categories, initialOrders, confirmedId, confirmedMethod }) {
   const router = useRouter();
-  // 🆕 Paramètre ?paid=XX : retour après un paiement Mobile Money réussi
   const searchParams = useSearchParams();
   const paidId = searchParams.get("paid");
 
@@ -110,10 +120,9 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
       <SiteHeader initialUser={initialUser} categories={categories} />
       <div className="orders-wrap">
 
-        {/* 🆕 Bannière verte : paiement Mobile Money réussi */}
         {paidId && (
           <div className="order-confirm-banner" style={{ background: "#e8f5e9", borderColor: "#2e7d32" }}>
-            <div className="order-confirm-icon">✅</div>
+            <div className="order-confirm-icon" style={{ color: "#2e7d32", display: "inline-flex" }}><CheckCircleIcon size={32} /></div>
             <h2>Paiement réussi !</h2>
             <p>
               Merci ! Votre paiement Mobile Money de la commande #{paidId} a bien été reçu.
@@ -121,17 +130,17 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
             </p>
             <div className="order-steps">
               <div className="order-step is-active">
-                <span className="order-step-dot">📦</span>
+                <span className="order-step-dot"><PackageIcon size={18} /></span>
                 En préparation
               </div>
               <div className="order-step-line" />
               <div className="order-step">
-                <span className="order-step-dot">🚚</span>
+                <span className="order-step-dot"><TruckIcon size={18} /></span>
                 Expédiée
               </div>
               <div className="order-step-line" />
               <div className="order-step">
-                <span className="order-step-dot">✅</span>
+                <span className="order-step-dot"><CheckCircleIcon size={18} /></span>
                 Livrée
               </div>
             </div>
@@ -140,7 +149,7 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
 
         {confirmedId && (
           <div className="order-confirm-banner">
-            <div className="order-confirm-icon">🎉</div>
+            <div className="order-confirm-icon" style={{ color: "var(--gold-600)", display: "inline-flex" }}><CheckCircleIcon size={32} /></div>
             <h2>Commande #{confirmedId} confirmée !</h2>
             <p>
               {confirmedMethod === "mobile_money"
@@ -149,17 +158,17 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
             </p>
             <div className="order-steps">
               <div className="order-step is-active">
-                <span className="order-step-dot">📦</span>
+                <span className="order-step-dot"><PackageIcon size={18} /></span>
                 En préparation
               </div>
               <div className="order-step-line" />
               <div className="order-step">
-                <span className="order-step-dot">🚚</span>
+                <span className="order-step-dot"><TruckIcon size={18} /></span>
                 Expédiée
               </div>
               <div className="order-step-line" />
               <div className="order-step">
-                <span className="order-step-dot">✅</span>
+                <span className="order-step-dot"><CheckCircleIcon size={18} /></span>
                 Livrée
               </div>
             </div>
@@ -175,7 +184,7 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
 
         {orders.length === 0 ? (
           <div className="empty-state">
-            <div className="glyph">📦</div>
+            <div className="glyph" style={{ display: "inline-flex", color: "var(--gold-600)" }}><PackageIcon size={48} /></div>
             <p>Vous n'avez pas encore passé de commande.</p>
             <Link href="/shop">
               <button className="btn btn-primary" style={{ marginTop: 10 }}>Voir le catalogue</button>
@@ -202,7 +211,7 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
 
             {filteredOrders.length === 0 ? (
               <div className="empty-state">
-                <div className="glyph">🔎</div>
+                <div className="glyph" style={{ display: "inline-flex", color: "var(--ink-400)" }}><SearchIcon size={48} /></div>
                 <p>Aucune commande pour ce filtre.</p>
               </div>
             ) : (
@@ -220,10 +229,13 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
                     </span>
                   </div>
 
-                  <div className="order-meta">
-                    📍 {order.shipping_address}
-                    {" · "}
-                    {order.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 À la livraison"}
+                  <div className="order-meta" style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, fontSize: "0.85rem" }}>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <MapPinIcon size={14} /> {order.shipping_address}
+                    </span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      {order.payment_method === "mobile_money" ? <><SmartphoneIcon size={14} /> Mobile Money</> : <><CreditCardIcon size={14} /> À la livraison</>}
+                    </span>
                   </div>
 
                   {order.payment_method === "mobile_money" && order.status === "pending" && (
@@ -232,9 +244,10 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
                         className="btn btn-primary"
                         onClick={() => handlePay(order.id)}
                         disabled={payingKey === order.id}
-                        style={{ width: "100%" }}
+                        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
                       >
-                        💳 {payingKey === order.id
+                        <CreditCardIcon size={16} />
+                        {payingKey === order.id
                           ? "Redirection en cours..."
                           : `Payer maintenant (${Number(order.total).toLocaleString("fr-FR")} FCFA)`}
                       </button>
@@ -246,13 +259,13 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
                     return (
                       <div className="order-sub" key={sub.shopId}>
                         <div className="order-sub-head">
-                          {/* 🎯 SPRINT A : nom RÉEL de la boutique (plus de "Kimoxa" hardcodé) */}
                           <strong style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                            <span style={{ fontSize: "1.1rem" }}>🏪</span>
+                            <StoreIcon size={18} />
                             <span>{sub.shopName || "Boutique partenaire"}</span>
-                            <span style={{ color: "var(--gold-600)", fontWeight: 700 }}>✓</span>
+                            <span style={{ color: "var(--gold-600)", display: "inline-flex" }}><BadgeCheckIcon size={16} /></span>
                           </strong>
-                          <span className={`status-pill status-${sub.deliveryStatus}`}>
+                          <span className={`status-pill status-${sub.deliveryStatus}`} style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            <StatusIcon status={sub.deliveryStatus} size={12} />
                             {STATUS_LABELS[sub.deliveryStatus] || sub.deliveryStatus}
                           </span>
                         </div>
@@ -270,27 +283,29 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
                           ))}
                         </div>
 
-                        <div className="order-actions">
+                        <div className="order-actions" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                           <button
                             className="btn btn-ghost"
                             onClick={() => handleContact(order.id, sub.shopId)}
                             disabled={contactingKey === key}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
                           >
-                            💬 {contactingKey === key ? "Ouverture..." : "Contacter"}
+                            <MessageIcon size={14} /> {contactingKey === key ? "Ouverture..." : "Contacter"}
                           </button>
                           <Link
                             href={`/orders/${order.id}/invoice`}
                             className="btn btn-ghost"
                           >
-                            🧾 Facture
+                            Facture
                           </Link>
                           {sub.deliveryStatus === "shipped" && (
                             <button
                               className="btn btn-success"
                               onClick={() => handleConfirmReceipt(order.id, sub.shopId)}
                               disabled={confirmingKey === key}
+                              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
                             >
-                              ✅ {confirmingKey === key ? "..." : "J'ai reçu"}
+                              <CheckCircleIcon size={14} /> {confirmingKey === key ? "..." : "J'ai reçu"}
                             </button>
                           )}
                         </div>
@@ -308,7 +323,6 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
   );
 }
 
-// Enveloppe Suspense : obligatoire pour useSearchParams dans Next.js 15
 export default function OrdersClient(props) {
   return (
     <Suspense fallback={<div className="shell"><div className="orders-wrap"><p>Chargement...</p></div></div>}>
