@@ -19,10 +19,11 @@ export async function middleware(request) {
   const isAddressesRoute = pathname.startsWith("/api/addresses");
   const isConversationsRoute = pathname.startsWith("/api/conversations");
   const isFavoritesRoute = pathname.startsWith("/api/favorites");
-  
+  const isCartRoute = pathname.startsWith("/api/cart"); // 🔒 corrige V-01 : cette route lisait x-user-id sans passer par le middleware
+
   if (
     !isVendorRoute && !isAdminRoute && !isOrdersRoute && !isProductsRoute &&
-    !isAddressesRoute && !isConversationsRoute && !isFavoritesRoute
+    !isAddressesRoute && !isConversationsRoute && !isFavoritesRoute && !isCartRoute
   ) {
     return NextResponse.next();
   }
@@ -85,7 +86,7 @@ export async function middleware(request) {
   }
   
  // Routes acheteur réservées
-  const isBuyerOnly = isOrdersRoute || isAddressesRoute || isFavoritesRoute;
+  const isBuyerOnly = isOrdersRoute || isAddressesRoute || isFavoritesRoute || isCartRoute;
   if (isBuyerOnly && payload.role !== "buyer" && payload.role !== "admin") {
     return NextResponse.json(AUTH_ERROR, { status: 403 });
   }
@@ -105,5 +106,6 @@ export const config = {
     "/api/addresses/:path*",
     "/api/conversations/:path*",
     "/api/favorites/:path*",
+    "/api/cart/:path*", // 🔒 corrige V-01
   ],
 };

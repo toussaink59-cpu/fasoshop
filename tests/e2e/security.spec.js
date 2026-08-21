@@ -217,3 +217,20 @@ test.describe("7. Password reset", () => {
     expect(body.valid).toBe(false);
   });
 });
+
+test.describe("8. Panier abandonné — cart/sync (régression V-01)", () => {
+  test("POST /api/cart/sync sans cookie -> 401 (pas d'auth via x-user-id forgé)", async ({ request }) => {
+    const r = await request.post("/api/cart/sync", {
+      headers: { "x-user-id": "1" }, // tentative d'usurpation directe
+      data: { items: [{ productId: 1, quantity: 1, name: "test", price: 0 }], totalCents: 0 },
+    });
+    expect(r.status()).toBe(401);
+  });
+
+  test("DELETE /api/cart/sync sans cookie -> 401", async ({ request }) => {
+    const r = await request.delete("/api/cart/sync", {
+      headers: { "x-user-id": "1" },
+    });
+    expect(r.status()).toBe(401);
+  });
+});
