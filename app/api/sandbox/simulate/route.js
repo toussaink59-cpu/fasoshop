@@ -6,7 +6,7 @@ import { getProvider } from "@/lib/payment/provider";
 import { signSandboxPayload } from "@/lib/payment/adapters/sandbox";
 
 export async function POST(request) {
-  // 🔒 Actif UNIQUEMENT en mode sandbox (désactivé en production réelle)
+ // Actif UNIQUEMENT en mode sandbox (désactivé en production réelle)
   const provider = getProvider();
   if (provider.name !== "sandbox") {
     return Response.json({ error: "Mode sandbox inactif." }, { status: 404 });

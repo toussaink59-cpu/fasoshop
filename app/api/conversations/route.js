@@ -1,4 +1,4 @@
-﻿import sql from "@/lib/db";
+import sql from "@/lib/db";
 
 // GET /api/conversations?role=vendor|buyer — liste de l'utilisateur connecte
 export async function GET(request) {

@@ -10,7 +10,7 @@ export async function POST(request, { params }) {
   const userId = request.headers.get("x-user-id");
   const { id: orderId } = await params;
 
-  // 🔒 1) Rate limit : max 3 initiations par minute par utilisateur
+ // 1) Rate limit : max 3 initiations par minute par utilisateur
   const key = `pay:${userId}:${clientKey(request)}`;
   if (!(await rateLimit(key, { limit: 3, windowMs: 60_000 }))) {
     return Response.json(
@@ -20,7 +20,7 @@ export async function POST(request, { params }) {
   }
 
   try {
-    // 🔒 2) Vérifications strictes dans une seule requête
+ // 2) Vérifications strictes dans une seule requête
     const [order] = await sql`
       SELECT id, buyer_id, total, status, payment_method, phone, expires_at
       FROM orders
@@ -49,21 +49,21 @@ export async function POST(request, { params }) {
       );
     }
 
-    // 🔒 3) Obtient l'adaptateur actif
+ // 3) Obtient l'adaptateur actif
     const { name: providerName, adapter } = getProvider();
 
-    // 🔒 4) transaction_id unique (idempotence côté webhook garantie par contrainte UNIQUE)
+ // 4) transaction_id unique (idempotence côté webhook garantie par contrainte UNIQUE)
     const transactionId = `KMX-${order.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     const baseUrl = process.env.APP_BASE_URL || new URL(request.url).origin;
 
-    // 🔒 5) Appel à l'adaptateur
+ // 5) Appel à l'adaptateur
     const { paymentUrl, providerData } = await adapter.initiate({
       transactionId,
       amount: order.total,
       description: `Commande Kimoxa #${order.id}`,
       customerPhoneNumber: order.phone,
       notifyUrl: `${baseUrl}/api/payments/${providerName}/webhook`,
-      // 🔧 CORRECTION : retour vers ?paid=XX pour afficher la bannière verte "Paiement réussi"
+ // CORRECTION : retour vers ?paid=XX pour afficher la bannière verte "Paiement réussi"
       returnUrl: `${baseUrl}/orders?paid=${order.id}`,
       orderId: order.id,
     });
@@ -72,7 +72,7 @@ export async function POST(request, { params }) {
       throw new Error("Le fournisseur n'a pas retourné d'URL de paiement.");
     }
 
-    // 🔒 6) INSERT du payment (transaction_id UNIQUE protège contre les doublons)
+ // 6) INSERT du payment (transaction_id UNIQUE protège contre les doublons)
     await sql`
       INSERT INTO payments (order_id, provider, transaction_id, status, amount, raw_response)
       VALUES (
@@ -85,7 +85,7 @@ export async function POST(request, { params }) {
       )
     `;
 
-    // 🔒 7) Audit log
+ // 7) Audit log
     await sql`
       INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
       VALUES (${userId}, 'payment_initiated', 'payment', ${order.id}, ${clientKey(request)})

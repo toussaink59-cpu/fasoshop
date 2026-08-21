@@ -51,7 +51,7 @@ export async function POST(request) {
       return rows;
     });
 
-        // 📧 EMAILS LIVRAISON pour chaque commande auto-confirmée (fire-and-forget)
+ // EMAILS LIVRAISON pour chaque commande auto-confirmée (fire-and-forget)
     for (const r of processed) {
       try {
         const [buyer] = await sql`

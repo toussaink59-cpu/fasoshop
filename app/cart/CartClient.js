@@ -11,7 +11,7 @@ import BottomNav from "@/app/components/BottomNav";
 export default function CartClient({ initialUser, categories }) {
   const router = useRouter();
 
-  // ✅ Hydration-safe : panier vide au 1er rendu, chargé après montage
+ // Hydration-safe : panier vide au 1er rendu, chargé après montage
   const [cart, setCart] = useState([]);
   // 🆕 Options de livraison EN DIRECT depuis la DB (jamais périmées)
   const [liveShops, setLiveShops] = useState({});

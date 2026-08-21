@@ -4,8 +4,8 @@ import { sendOrderShippedEmail } from "@/lib/email/orders";
 
 // PATCH /api/vendor/orders/:orderId
 // VENDEUR : peut passer preparation → shipped, ou preparation → cancelled.
-// 🔒 P0 CRITIQUE : delivered INTERDIT au vendeur (c'est le rôle du client).
-// 🔒 P0 CRITIQUE : cancel après shipped INTERDIT (colis déjà en route).
+// P0 CRITIQUE : delivered INTERDIT au vendeur (c'est le rôle du client).
+// P0 CRITIQUE : cancel après shipped INTERDIT (colis déjà en route).
 export async function PATCH(request, { params }) {
   let user;
   try {
@@ -19,7 +19,7 @@ export async function PATCH(request, { params }) {
   try {
     const { status, reason } = await request.json();
 
-    // 🔒 P0 : seuls shipped (et cancel si préparation) autorisés
+ // P0 : seuls shipped (et cancel si préparation) autorisés
     const allowed = ["shipped", "cancelled"];
     if (!allowed.includes(status)) {
       return Response.json(
@@ -53,7 +53,7 @@ export async function PATCH(request, { params }) {
         return { error: "Cette commande ne concerne pas votre boutique.", status: 403 };
       }
 
-      // 4) 🔒 Machine à états STRICTE (P0)
+ // 4) Machine à états STRICTE (P0)
       //    preparation → shipped OK
       //    preparation → cancelled OK (avec restock à faire)
       //    shipped → rien (seul le client peut confirmer delivered)
@@ -86,7 +86,7 @@ export async function PATCH(request, { params }) {
         return { error: "État déjà modifié, rechargez la page.", status: 409 };
       }
 
-      // 6) 🔒 Si annulation depuis preparation → RESTOCK automatique
+ // 6) Si annulation depuis preparation → RESTOCK automatique
       if (status === "cancelled" && current.delivery_status === "preparation") {
         const items = await tx`
           SELECT oi.product_id, oi.quantity
@@ -145,7 +145,7 @@ export async function PATCH(request, { params }) {
                 ${request.headers.get("x-forwarded-for") || "unknown"})
       `.catch(() => {});
 
-            // 📧 EMAIL EXPEDITION (fire-and-forget, non-bloquant)
+ // EMAIL EXPEDITION (fire-and-forget, non-bloquant)
       if (status === "shipped") {
         try {
           const [buyer] = await tx`

@@ -10,7 +10,7 @@ const MAX_DESCRIPTION_LENGTH = 5000;
 const MAX_BRAND_LENGTH = 100;
 const MAX_IMAGES = 10;
 
-// 🔒 Sanitization : supprime caractères dangereux
+// Sanitization : supprime caractères dangereux
 function sanitize(str, maxLength = 200) {
   if (typeof str !== "string") return "";
   return str
@@ -21,7 +21,7 @@ function sanitize(str, maxLength = 200) {
     .slice(0, maxLength);
 }
 
-// 🔒 Validation URL image
+// Validation URL image
 function isValidImageUrl(url) {
   if (typeof url !== "string") return false;
   try {
@@ -63,13 +63,13 @@ export async function GET(request) {
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
   
-  // 🔒 1) Vérification de rôle en DB (défense en profondeur)
+ // 1) Vérification de rôle en DB (défense en profondeur)
   const check = await requireRole(userId, ["vendor", "admin"]);
   if (!check.ok) {
     return Response.json({ error: check.error }, { status: check.status });
   }
 
-  // 🔒 2) Rate limit : max 5 produits par minute
+ // 2) Rate limit : max 5 produits par minute
   const key = `product:${clientKey(request)}`;
   if (!(await rateLimit(key, { limit: 5, windowMs: 60_000 }))) {
     return Response.json(
@@ -81,7 +81,7 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    // 🔒 3) Validation stricte des champs
+ // 3) Validation stricte des champs
     const name = sanitize(body.name, MAX_NAME_LENGTH);
     const description = sanitize(body.description, MAX_DESCRIPTION_LENGTH);
     const brand = sanitize(body.brand, MAX_BRAND_LENGTH);
@@ -117,13 +117,13 @@ export async function POST(request) {
       }
     }
 
-    // 🔒 4) Validation images (URLs HTTPS, max 10)
+ // 4) Validation images (URLs HTTPS, max 10)
     let images = [];
     if (Array.isArray(body.images)) {
       images = body.images.slice(0, MAX_IMAGES).filter(isValidImageUrl);
     }
 
-    // 🔒 5) Vérification boutique (doit appartenir au vendeur + active)
+ // 5) Vérification boutique (doit appartenir au vendeur + active)
     const [shop] = await sql`
       SELECT id, status FROM shops WHERE vendor_id = ${userId} LIMIT 1
     `;
@@ -132,7 +132,7 @@ export async function POST(request) {
       return Response.json({ error: "Accès refusé." }, { status: 403 });
     }
 
-    // 🔒 6) Validation categoryId (doit exister si fourni)
+ // 6) Validation categoryId (doit exister si fourni)
     if (categoryId !== null) {
       const [category] = await sql`
         SELECT id FROM categories WHERE id = ${categoryId}
@@ -142,7 +142,7 @@ export async function POST(request) {
       }
     }
 
-        // 🔒 7) Création produit (transaction pour cohérence)
+ // 7) Création produit (transaction pour cohérence)
     const product = await sql.begin(async (tx) => {
       const [newProduct] = await tx`
         INSERT INTO products (shop_id, name, description, price, compare_at_price, sku, 
@@ -162,7 +162,7 @@ export async function POST(request) {
         `;
       }
 
-      // 🔒 8) Audit log (traçabilité)
+ // 8) Audit log (traçabilité)
       await tx`
         INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
         VALUES (${userId}, 'create_product', 'product', ${newProduct.id}, 

@@ -24,12 +24,12 @@ export function Stars({ rating }) {
 export default function ProductCard({ p, user, compact = false }) {
   const router = useRouter();
 
-  // ✅ Hooks TOUJOURS appelés (règle des hooks respectée)
+ // Hooks TOUJOURS appelés (règle des hooks respectée)
   const [favorited, setFavorited] = useState(Boolean(p.is_favorited));
   const [favBusy, setFavBusy] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
-  // ✅ Return conditionnel APRÈS les hooks (valide)
+ // Return conditionnel APRÈS les hooks (valide)
   if (p.stock_quantity <= 0) return null;
 
   async function handleFav(e) {

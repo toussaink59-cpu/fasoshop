@@ -6,13 +6,13 @@ export async function GET(request) {
   const userId = request.headers.get("x-user-id");
   const userRole = request.headers.get("x-user-role");
 
-  // 🔒 1) Auth + rôle
+ // 1) Auth + rôle
   if (!userId || userRole !== "vendor") {
     return Response.json({ error: "Accès refusé." }, { status: 403 });
   }
 
   try {
-    // 🔒 2) Vendeur actif + boutique active (pas pending, pas suspended)
+ // 2) Vendeur actif + boutique active (pas pending, pas suspended)
     const [row] = await sql`
       SELECT u.id AS user_id, u.status AS user_status,
              s.id AS shop_id, s.status AS shop_status, s.delivers_own_orders
@@ -53,26 +53,26 @@ export async function POST(request) {
   const userId = request.headers.get("x-user-id");
   const userRole = request.headers.get("x-user-role");
 
-  // 🔒 1) Auth + rôle
+ // 1) Auth + rôle
   if (!userId || userRole !== "vendor") {
     return Response.json({ error: "Accès refusé." }, { status: 403 });
   }
 
-  // 🔒 2) Rate limit : max 5 changements par minute
+ // 2) Rate limit : max 5 changements par minute
   const key = `vendor-delivery:${userId}`;
   if (!(await rateLimit(key, { limit: 5, windowMs: 60_000 }))) {
     return Response.json({ error: "Trop de modifications. Réessayez dans une minute." }, { status: 429 });
   }
 
   try {
-    // 🔒 3) Validation stricte enabled === boolean
+ // 3) Validation stricte enabled === boolean
     const body = await request.json().catch(() => null);
     if (body === null || typeof body.enabled !== "boolean") {
       return Response.json({ error: "Paramètre 'enabled' invalide." }, { status: 400 });
     }
     const enabled = body.enabled;
 
-    // 🔒 4) Vendeur + boutique : contrôles d'autorisation complets
+ // 4) Vendeur + boutique : contrôles d'autorisation complets
     const [row] = await sql`
       SELECT u.id AS user_id, u.status AS user_status,
              s.id AS shop_id, s.status AS shop_status
@@ -98,7 +98,7 @@ export async function POST(request) {
       }, { status: 403 });
     }
 
-    // 🔒 5) UPDATE borné au vendeur courant (anti-IDOR)
+ // 5) UPDATE borné au vendeur courant (anti-IDOR)
     const [shop] = await sql`
       UPDATE shops
       SET delivers_own_orders = ${enabled}
@@ -109,7 +109,7 @@ export async function POST(request) {
       return Response.json({ error: "Boutique introuvable." }, { status: 404 });
     }
 
-    // 🔒 6) Audit log
+ // 6) Audit log
     sql`
       INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
       VALUES (${userId}, ${enabled ? "delivery_self_on" : "delivery_self_off"}, 'shop', ${row.shop_id}, ${clientKey(request)})

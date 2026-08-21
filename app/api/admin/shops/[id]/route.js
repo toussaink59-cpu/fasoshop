@@ -40,7 +40,7 @@ export async function PATCH(request, { params }) {
       return Response.json({ error: "Boutique introuvable." }, { status: 404 });
     }
 
-    // 📧 Notifier le vendeur avec templates HTML professionnels
+ // Notifier le vendeur avec templates HTML professionnels
     if (status === "active" || status === "rejected") {
       const [vendor] = await sql`
         SELECT email, full_name FROM users WHERE id = ${shop.vendor_id}

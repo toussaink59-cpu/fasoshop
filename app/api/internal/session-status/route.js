@@ -2,7 +2,7 @@ import sql from "@/lib/db";
 import { timingSafeEqual } from "crypto";
 
 // GET /api/internal/session-status?uid=123
-// 🔒 Réservé au middleware (secret partagé). Ne jamais exposer publiquement.
+// Réservé au middleware (secret partagé). Ne jamais exposer publiquement.
 export async function GET(request) {
   const secret = request.headers.get("x-internal-secret");
   const expected = process.env.INTERNAL_STATUS_SECRET || "";

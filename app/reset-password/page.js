@@ -1,4 +1,4 @@
-﻿import ResetPasswordClient from "./ResetPasswordClient";
+import ResetPasswordClient from "./ResetPasswordClient";
 
 export const metadata = { title: "Nouveau mot de passe — Kimoxa" };
 

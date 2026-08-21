@@ -40,7 +40,7 @@ export async function POST(request) {
       return Response.json({ error: "Lien de reinitialisation invalide." }, { status: 400 });
     }
 
-    // 🔒 Rate-limit : 10 tentatives/heure par IP (le token est déjà un
+ // Rate-limit : 10 tentatives/heure par IP (le token est déjà un
     // secret à 256 bits, mais on freine quand même les scripts automatisés).
     const ipKey = `reset-pwd:ip:${clientKey(request)}`;
     if (!(await rateLimit(ipKey, { limit: 10, windowMs: 3_600_000 }))) {
@@ -101,7 +101,7 @@ export async function POST(request) {
         SET used_at = now()
         WHERE id = ${matched.id}
       `;
-      // 🔒 token_version incrémenté ci-dessus : tous les JWT déjà émis pour
+ // token_version incrémenté ci-dessus : tous les JWT déjà émis pour
       // cet utilisateur deviennent invalides dès la prochaine requête
       // (vérifié dans middleware.js via /api/internal/session-status).
     });

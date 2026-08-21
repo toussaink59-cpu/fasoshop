@@ -25,7 +25,7 @@ export async function POST(request) {
 
     const normalizedEmail = email.trim().toLowerCase();
 
-    // 🔒 Rate-limit : 5 demandes/heure par e-mail, 10/heure par IP.
+ // Rate-limit : 5 demandes/heure par e-mail, 10/heure par IP.
     // En cas de blocage, on renvoie EXACTEMENT la même réponse que le cas
     // "email inconnu" (ok:true) pour ne jamais laisser un attaquant
     // distinguer "rate-limité" de "email inexistant" (anti-énumération).

@@ -47,7 +47,7 @@ function nearestCity(lat, lon) {
 
 // ====== SHEET DE FILTRES (mobile + desktop, façon Temu) ======
 // Anonymat Option B : PAS de filtre boutique.
-// « Ville » devient « 📍 Près de chez moi » (côté acheteur, pas vendeur).
+// « Ville » devient « Près de chez moi » (côté acheteur, pas vendeur).
 function FilterSheet({
   open,
   onClose,
@@ -343,7 +343,7 @@ function ShopContent({
     setSheetOpen(true);
   }
 
-  // 🔧 CORRECTION 1 : applyFilters — traduit la clé interne "categorySlug"
+ // CORRECTION 1 : applyFilters — traduit la clé interne "categorySlug"
   // en paramètre URL "category" attendu par l'API et le server component
   function applyFilters() {
     const params = new URLSearchParams();
@@ -366,7 +366,7 @@ function ShopContent({
     });
   }
 
-  // 🔧 CORRECTION 2 : removeFilter — quand on clique sur le chip "categorySlug",
+ // CORRECTION 2 : removeFilter — quand on clique sur le chip "categorySlug",
   // il faut supprimer le paramètre URL "category" (et non "categorySlug" qui n'existe pas)
   function removeFilter(key) {
     const params = new URLSearchParams(searchParams.toString());

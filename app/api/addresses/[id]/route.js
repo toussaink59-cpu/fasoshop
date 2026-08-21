@@ -10,12 +10,12 @@ export async function PATCH(request, { params }) {
   const userRole = request.headers.get("x-user-role");
   const { id } = await params;
 
-  // 🔒 1) Vérification rôle explicite
+ // 1) Vérification rôle explicite
   if (!userId || (userRole !== "buyer" && userRole !== "admin")) {
     return Response.json({ error: "Accès refusé." }, { status: 403 });
   }
 
-  // 🔒 2) Rate limit : max 10 modifications par minute
+ // 2) Rate limit : max 10 modifications par minute
   const key = `address-update:${clientKey(request)}`;
   if (!(await rateLimit(key, { limit: 10, windowMs: 60_000 }))) {
     return Response.json(
@@ -27,14 +27,14 @@ export async function PATCH(request, { params }) {
   try {
     const body = await request.json();
 
-    // 🔒 3) Validation + sanitization via helper commun
+ // 3) Validation + sanitization via helper commun
     const validation = validateUpdateAddress(body);
     if (!validation.valid) {
       return Response.json({ error: validation.error }, { status: 400 });
     }
     const updates = validation.data;
 
-    // 🔒 4) Vérifie que l'adresse appartient bien à l'utilisateur connecté (anti-IDOR)
+ // 4) Vérifie que l'adresse appartient bien à l'utilisateur connecté (anti-IDOR)
     const [existing] = await sql`
       SELECT id FROM addresses WHERE id = ${id} AND user_id = ${userId}
     `;
@@ -42,8 +42,8 @@ export async function PATCH(request, { params }) {
       return Response.json({ error: "Adresse introuvable." }, { status: 404 });
     }
 
-    // 🔒 5) Transaction pour cohérence (surtout pour parDefaut)
-    // ⚠️ IMPORTANT : sql.begin() retourne l'objet directement (PAS un tableau)
+ // 5) Transaction pour cohérence (surtout pour parDefaut)
+ // ️ IMPORTANT : sql.begin() retourne l'objet directement (PAS un tableau)
     const address = await sql.begin(async (tx) => {
       // Si parDefaut = true, désactiver tous les autres
       if (updates.parDefaut === true) {
@@ -62,7 +62,7 @@ export async function PATCH(request, { params }) {
         RETURNING id, libelle, adresse_texte, phone, par_defaut, latitude, longitude
       `;
 
-      // 🔒 6) Audit log
+ // 6) Audit log
       await tx`
         INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
         VALUES (${userId}, 'update_address', 'address', ${id}, ${clientKey(request)})
@@ -87,12 +87,12 @@ export async function DELETE(request, { params }) {
   const userRole = request.headers.get("x-user-role");
   const { id } = await params;
 
-  // 🔒 1) Vérification rôle explicite
+ // 1) Vérification rôle explicite
   if (!userId || (userRole !== "buyer" && userRole !== "admin")) {
     return Response.json({ error: "Accès refusé." }, { status: 403 });
   }
 
-  // 🔒 2) Rate limit : max 5 suppressions par minute
+ // 2) Rate limit : max 5 suppressions par minute
   const key = `address-delete:${clientKey(request)}`;
   if (!(await rateLimit(key, { limit: 5, windowMs: 60_000 }))) {
     return Response.json(
@@ -102,15 +102,15 @@ export async function DELETE(request, { params }) {
   }
 
   try {
-    // 🔒 3) Vérification ownership + suppression dans une transaction
-    // ⚠️ IMPORTANT : sql.begin() retourne l'objet directement (PAS un tableau)
+ // 3) Vérification ownership + suppression dans une transaction
+ // ️ IMPORTANT : sql.begin() retourne l'objet directement (PAS un tableau)
     const deleted = await sql.begin(async (tx) => {
       const [addr] = await tx`
         DELETE FROM addresses WHERE id = ${id} AND user_id = ${userId} RETURNING id
       `;
 
       if (addr) {
-        // 🔒 4) Audit log
+ // 4) Audit log
         await tx`
           INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
           VALUES (${userId}, 'delete_address', 'address', ${id}, ${clientKey(request)})

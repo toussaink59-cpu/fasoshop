@@ -9,12 +9,12 @@ export async function GET(request) {
   const userId = request.headers.get("x-user-id");
   const userRole = request.headers.get("x-user-role");
 
-  // 🔒 1) Vérification rôle explicite
+ // 1) Vérification rôle explicite
   if (!userId || (userRole !== "buyer" && userRole !== "admin")) {
     return Response.json({ error: "Accès refusé." }, { status: 403 });
   }
 
-  // 🔒 2) Rate limit : max 30 consultations par minute
+ // 2) Rate limit : max 30 consultations par minute
   const key = `favorites:${clientKey(request)}`;
   if (!(await rateLimit(key, { limit: 30, windowMs: 60_000 }))) {
     return Response.json(
@@ -26,7 +26,7 @@ export async function GET(request) {
   try {
     const products = await getFavoriteProducts(userId);
 
-    // 🔒 3) Audit log
+ // 3) Audit log
     sql`
       INSERT INTO security_audit_log (user_id, action, resource_type, ip_address)
       VALUES (${userId}, 'view_favorites', 'favorite', ${clientKey(request)})
@@ -44,12 +44,12 @@ export async function POST(request) {
   const userId = request.headers.get("x-user-id");
   const userRole = request.headers.get("x-user-role");
 
-  // 🔒 1) Vérification rôle explicite
+ // 1) Vérification rôle explicite
   if (!userId || (userRole !== "buyer" && userRole !== "admin")) {
     return Response.json({ error: "Accès refusé." }, { status: 403 });
   }
 
-  // 🔒 2) Rate limit : max 20 ajouts par minute
+ // 2) Rate limit : max 20 ajouts par minute
   const key = `favorite:${clientKey(request)}`;
   if (!(await rateLimit(key, { limit: 20, windowMs: 60_000 }))) {
     return Response.json(
@@ -61,13 +61,13 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
-    // 🔒 3) Validation stricte productId
+ // 3) Validation stricte productId
     const productId = Number(body.productId);
     if (!Number.isInteger(productId) || productId <= 0) {
       return Response.json({ error: "Produit invalide." }, { status: 400 });
     }
 
-    // 🔒 4) Vérification existence produit + statut actif
+ // 4) Vérification existence produit + statut actif
     const [product] = await sql`
       SELECT id, status FROM products WHERE id = ${productId}
     `;
@@ -75,7 +75,7 @@ export async function POST(request) {
       return Response.json({ error: "Produit non disponible." }, { status: 404 });
     }
 
-    // 🔒 5) Limite nombre de favoris par utilisateur
+ // 5) Limite nombre de favoris par utilisateur
     const [existingCount] = await sql`
       SELECT COUNT(*)::int AS count FROM favorites WHERE user_id = ${userId}
     `;
@@ -86,14 +86,14 @@ export async function POST(request) {
       );
     }
 
-    // 🔒 6) Ajout avec ON CONFLICT (évite doublons)
+ // 6) Ajout avec ON CONFLICT (évite doublons)
     await sql`
       INSERT INTO favorites (user_id, product_id)
       VALUES (${userId}, ${productId})
       ON CONFLICT (user_id, product_id) DO NOTHING
     `;
 
-    // 🔒 7) Audit log
+ // 7) Audit log
     sql`
       INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
       VALUES (${userId}, 'add_favorite', 'favorite', ${productId}, ${clientKey(request)})

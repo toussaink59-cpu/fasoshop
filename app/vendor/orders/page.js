@@ -67,7 +67,7 @@ export default function VendorOrdersPage() {
     load();
   }
 
-  // 🔒 P0 : annulation vendeur UNIQUEMENT depuis "preparation" (restock auto côté API)
+ // P0 : annulation vendeur UNIQUEMENT depuis "preparation" (restock auto côté API)
   async function handleCancel(orderId) {
     if (
       !window.confirm(

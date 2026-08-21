@@ -95,7 +95,7 @@ export async function PATCH(request, { params }) {
       RETURNING id, name, stock_quantity, price, compare_at_price, flash_sale_ends_at, flash_sale_stock_snapshot
     `;
 
-    // 🔒 Audit log de la modification produit
+ // Audit log de la modification produit
     await sql`
       INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
       VALUES (${userId}, 'update_product', 'product', ${productId}, ${clientKey(request)})
@@ -159,7 +159,7 @@ export async function DELETE(request, { params }) {
     `;
 
     if (orderCount > 0) {
-      // 🔒 Anti-arnaque : tracer les tentatives de suppression d'un produit vendu
+ // Anti-arnaque : tracer les tentatives de suppression d'un produit vendu
       await sql`
         INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
         VALUES (${userId}, 'delete_product_denied', 'product', ${productId}, ${clientKey(request)})
@@ -173,7 +173,7 @@ export async function DELETE(request, { params }) {
       );
     }
 
-    // 🔒 Audit log de la suppression produit
+ // Audit log de la suppression produit
     await sql`
       INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
       VALUES (${userId}, 'delete_product', 'product', ${productId}, ${clientKey(request)})

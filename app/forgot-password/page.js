@@ -1,4 +1,4 @@
-﻿import ForgotPasswordClient from "./ForgotPasswordClient";
+import ForgotPasswordClient from "./ForgotPasswordClient";
 
 export const metadata = { title: "Mot de passe oublie — Kimoxa" };
 

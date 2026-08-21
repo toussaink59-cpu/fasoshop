@@ -26,7 +26,7 @@ export default function AdminPayoutsPage() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
 
-  // 🔒 Modale de paiement vendeur sécurisé
+ // Modale de paiement vendeur sécurisé
   const [payingPayout, setPayingPayout] = useState(null);
   const [serverMode, setServerMode] = useState("manual");
   const [payMode, setPayMode] = useState("manual");
@@ -39,7 +39,7 @@ export default function AdminPayoutsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState("");
 
-  // 🔒 Modale de paiement livreur 🆕
+ // Modale de paiement livreur 🆕
   const [payingCourier, setPayingCourier] = useState(null);
   const [courierRef, setCourierRef] = useState("");
   const [courierError, setCourierError] = useState("");
@@ -86,7 +86,7 @@ export default function AdminPayoutsPage() {
     setFormError("");
   }
 
-  // 🔒 Validation temps réel (payout vendeur)
+ // Validation temps réel (payout vendeur)
   function validate() {
     if (!payingPayout) return "Aucun payout sélectionné.";
     if (payMode === "auto") return "";
@@ -173,7 +173,7 @@ export default function AdminPayoutsPage() {
     }
   }
 
-  // 🛵 Paiement livreur 🆕
+ // Paiement livreur 🆕
   async function submitCourier(e) {
     e.preventDefault();
     if (courierRef.trim().length < 5) {

@@ -38,7 +38,7 @@ export async function POST(request) {
       );
     }
 
-    // 🔒 Rate-limit : 8 tentatives/min par email + 10 tentatives/min par IP
+ // Rate-limit : 8 tentatives/min par email + 10 tentatives/min par IP
     const emailKey = `login:email:${cleanEmail}`;
     const ipKey = `login:ip:${clientKey(request)}`;
 
@@ -148,7 +148,7 @@ export async function POST(request) {
       path: "/",
     });
 
-    // 🔒 Audit log de connexion réussie
+ // Audit log de connexion réussie
     await sql`
       INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
       VALUES (${user.id}, 'login_success', 'user', ${user.id}, ${clientKey(request)})

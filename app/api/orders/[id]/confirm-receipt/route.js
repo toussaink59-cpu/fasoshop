@@ -114,7 +114,7 @@ export async function POST(request, { params }) {
                 ${request.headers.get("x-forwarded-for") || "unknown"})
       `.catch(() => {});
 
-            // 📧 EMAIL LIVRAISON (fire-and-forget, non-bloquant)
+ // EMAIL LIVRAISON (fire-and-forget, non-bloquant)
       try {
         const [buyer] = await tx`
           SELECT u.email, u.full_name FROM users u WHERE u.id = ${order.buyer_id} LIMIT 1

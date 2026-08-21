@@ -9,12 +9,12 @@ export async function GET(request) {
   const userId = request.headers.get("x-user-id");
   const userRole = request.headers.get("x-user-role");
 
-  // 🔒 1) Vérification rôle explicite (défense en profondeur)
+ // 1) Vérification rôle explicite (défense en profondeur)
   if (!userId || userRole !== "admin") {
     return Response.json({ error: "Accès refusé." }, { status: 403 });
   }
 
-  // 🔒 2) Rate limit : max 10 consultations par minute (même pour admin)
+ // 2) Rate limit : max 10 consultations par minute (même pour admin)
   const key = `admin-payouts:${clientKey(request)}`;
   if (!(await rateLimit(key, { limit: 10, windowMs: 60_000 }))) {
     return Response.json(
@@ -24,7 +24,7 @@ export async function GET(request) {
   }
 
   try {
-    // 🔒 3) Vérification que l'admin existe et n'est pas suspendu
+ // 3) Vérification que l'admin existe et n'est pas suspendu
     const [admin] = await sql`
       SELECT id, role, status FROM users WHERE id = ${userId}
     `;
@@ -32,7 +32,7 @@ export async function GET(request) {
       return Response.json({ error: "Accès refusé." }, { status: 403 });
     }
 
-    // 🔒 4) Pagination (évite de charger 100 000 lignes d'un coup)
+ // 4) Pagination (évite de charger 100 000 lignes d'un coup)
     const url = new URL(request.url);
     const limit = Math.min(Number(url.searchParams.get("limit")) || MAX_RESULTS_PER_PAGE, MAX_RESULTS_PER_PAGE);
     const offset = Math.max(Number(url.searchParams.get("offset")) || 0, 0);
@@ -55,7 +55,7 @@ export async function GET(request) {
       LIMIT ${limit} OFFSET ${offset}
     `;
 
-    // 🛵 Payouts livreurs (argent de livraison Kimoxa)
+ // Payouts livreurs (argent de livraison Kimoxa)
     const couriers = await sql`
       SELECT c.id, c.order_id, c.amount, c.status, c.paid_at, c.payment_reference,
              o.shipping_address, o.fulfilled_by
@@ -66,7 +66,7 @@ export async function GET(request) {
       LIMIT ${limit}
     `;
 
-    // 🔒 5) Audit log (traçabilité consultation payouts — donnée très sensible)
+ // 5) Audit log (traçabilité consultation payouts — donnée très sensible)
     sql`
       INSERT INTO security_audit_log (user_id, action, resource_type, ip_address)
       VALUES (${userId}, 'view_payouts', 'payout', ${clientKey(request)})

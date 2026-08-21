@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
-// 🏪 Interrupteur : la boutique livre elle-même ses commandes.
+// Interrupteur : la boutique livre elle-même ses commandes.
 export default function VendorDeliveryToggle() {
   const router = useRouter();
   const [enabled, setEnabled] = useState(false);
