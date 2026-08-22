@@ -74,7 +74,8 @@ export async function POST(request) {
     const firstName = (user.full_name || "").split(" ")[0] || "Client";
 
     if (!resend) {
-      console.warn("[forgot-password] RESEND_API_KEY non configure. Token:", rawToken);
+      console.warn("[DIAGNOSTIC_EMAIL] RESEND_API_KEY absente sur Vercel prod - email simule, non envoye");
+    console.warn("[forgot-password] RESEND_API_KEY non configure. Token:", rawToken);
       return genericResponse;
     }
 
