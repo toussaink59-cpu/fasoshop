@@ -1,16 +1,22 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import VendorBottomNav from "@/app/components/VendorBottomNav";
+import {
+  ClockIcon, CheckCircleIcon, XCircleIcon, ShieldXIcon, BadgeCheckIcon,
+  TruckIcon, StoreIcon, SmartphoneIcon, MapPinIcon, ShoppingCartIcon,
+  LightbulbIcon,
+} from "@/app/components/Icons";
 
 const DOC_LABELS = { cni: "CNI", passeport: "Passeport", permis: "Permis de conduire" };
+
 const STATUS_CONFIG = {
-  pending: { label: "En attente de vérification", color: "#f59e0b", icon: "⏳" },
-  active: { label: "Boutique vérifiée", color: "var(--millet-600, #2f7a3d)", icon: "✅" },
-  suspended: { label: "Boutique suspendue", color: "#dc2626", icon: "🚫" },
-  rejected: { label: "Demande non validée", color: "var(--bissap-600, #b91c3c)", icon: "❌" },
+  pending: { label: "En attente de vérification", color: "#f59e0b", Icon: ClockIcon },
+  active: { label: "Boutique vérifiée", color: "var(--millet-600, #2f7a3d)", Icon: CheckCircleIcon },
+  suspended: { label: "Boutique suspendue", color: "#dc2626", Icon: ShieldXIcon },
+  rejected: { label: "Demande non validée", color: "var(--bissap-600, #b91c3c)", Icon: XCircleIcon },
 };
 
 export default function VendorAccountPage() {
@@ -24,7 +30,6 @@ export default function VendorAccountPage() {
   const [cityInput, setCityInput] = useState("");
   const [citySaved, setCitySaved] = useState(false);
 
-  // 🆕 Livraison par la boutique
   const [deliveryFee, setDeliveryFee] = useState(1500);
   const [offersDelivery, setOffersDelivery] = useState(true);
   const [offersPickup, setOffersPickup] = useState(true);
@@ -150,7 +155,6 @@ export default function VendorAccountPage() {
     }
   }
 
-  // 🆕 Sauvegarde paramètres livraison
   async function handleSaveDelivery(e) {
     e.preventDefault();
     setDeliveryError("");
@@ -189,6 +193,7 @@ export default function VendorAccountPage() {
 
   const status = shop?.status || "pending";
   const statusConfig = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
+  const StatusIcon = statusConfig.Icon;
   const needsVerification = status === "pending" && !shop?.id_document_type;
   const isRejected = status === "rejected";
 
@@ -196,7 +201,8 @@ export default function VendorAccountPage() {
     <div className="shell">
       <div className="topbar">
         <div className="brand">
-          🛒 Kimoxa <span className="role-tag">Vendeur</span>
+          <ShoppingCartIcon size={20} style={{ marginRight: 6, verticalAlign: "middle" }} />
+          Kimoxa <span className="role-tag">Vendeur</span>
         </div>
         <div className="topbar-actions">
           <Link href="/messages" style={{ marginRight: 10, color: "var(--sand-50)", fontSize: "0.85rem" }}>
@@ -209,8 +215,8 @@ export default function VendorAccountPage() {
 
       <div className="vendor-account-wrap">
         <div className="vendor-status-banner" style={{ borderColor: statusConfig.color }}>
-          <div className="vendor-status-icon" style={{ background: statusConfig.color }}>
-            {statusConfig.icon}
+          <div className="vendor-status-icon" style={{ background: statusConfig.color, display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <StatusIcon size={24} style={{ color: "#fff" }} />
           </div>
           <div className="vendor-status-text">
             <h2>{statusConfig.label}</h2>
@@ -220,11 +226,12 @@ export default function VendorAccountPage() {
         </div>
 
         <div className="vendor-settings-grid">
-          {/* Vérification identité */}
           {(needsVerification || isRejected) && (
             <div className="vendor-setting-card">
               <div className="vendor-setting-header">
-                <span className="vendor-setting-icon">🪪</span>
+                <span className="vendor-setting-icon" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 8, background: "var(--cream-100, #f5f0e8)" }}>
+                  <BadgeCheckIcon size={24} style={{ color: "var(--gold-600)" }} />
+                </span>
                 <h3>{isRejected ? "Resoumettre votre identité" : "Vérification d'identité"}</h3>
               </div>
               {isRejected && (
@@ -273,7 +280,9 @@ export default function VendorAccountPage() {
           {status === "pending" && shop?.id_document_type && (
             <div className="vendor-setting-card">
               <div className="vendor-setting-header">
-                <span className="vendor-setting-icon">⏳</span>
+                <span className="vendor-setting-icon" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 8, background: "var(--cream-100, #f5f0e8)" }}>
+                  <ClockIcon size={24} style={{ color: "#f59e0b" }} />
+                </span>
                 <h3>Vérification en cours</h3>
               </div>
               <p className="vendor-setting-desc">
@@ -285,11 +294,12 @@ export default function VendorAccountPage() {
             </div>
           )}
 
-          {/* 🆕 PARAMÈTRES LIVRAISON (prioritaire) */}
           {status === "active" && (
             <div className="vendor-setting-card" style={{ gridColumn: "1 / -1" }}>
               <div className="vendor-setting-header">
-                <span className="vendor-setting-icon">🚚</span>
+                <span className="vendor-setting-icon" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 8, background: "var(--cream-100, #f5f0e8)" }}>
+                  <TruckIcon size={24} style={{ color: "var(--gold-600)" }} />
+                </span>
                 <h3>Options de livraison</h3>
               </div>
               <p className="vendor-setting-desc">
@@ -301,16 +311,17 @@ export default function VendorAccountPage() {
               {deliverySaved && <div className="success-box">Options enregistrées.</div>}
 
               <form onSubmit={handleSaveDelivery}>
-                {/* Option 1 : livraison à domicile */}
                 <label style={{ display: "flex", gap: 10, padding: 12, background: "var(--cream-50, #faf7f2)", borderRadius: 8, marginBottom: 8, cursor: "pointer" }}>
                   <input
-  type="checkbox"
-  checked={offersDelivery}
-  onChange={(e) => setOffersDelivery(e.target.checked)}
-  style={{ width: 18, height: 18, marginTop: 4, accentColor: "var(--millet-600, #2f7a3d)", flexShrink: 0 }}
-/>
+                    type="checkbox"
+                    checked={offersDelivery}
+                    onChange={(e) => setOffersDelivery(e.target.checked)}
+                    style={{ width: 18, height: 18, marginTop: 4, accentColor: "var(--millet-600, #2f7a3d)", flexShrink: 0 }}
+                  />
                   <div style={{ flex: 1 }}>
-                    <strong>🚚 Livraison à domicile</strong>
+                    <strong style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <TruckIcon size={18} style={{ color: "var(--gold-600)" }} /> Livraison à domicile
+                    </strong>
                     <div style={{ fontSize: "0.85rem", color: "var(--ink-500)", marginTop: 2 }}>
                       Vous livrez vous-même les clients à leur adresse.
                     </div>
@@ -329,23 +340,24 @@ export default function VendorAccountPage() {
                       onChange={(e) => setDeliveryFee(e.target.value)}
                       style={{ maxWidth: 200 }}
                     />
-                    <div style={{ fontSize: "0.78rem", color: "var(--ink-400)", marginTop: 4 }}>
-                      💡 0 = livraison gratuite · 1 500 FCFA recommandé pour Ouaga
-                      · Ce montant va directement à vous (0% de commission Kimoxa)
+                    <div style={{ fontSize: "0.78rem", color: "var(--ink-400)", marginTop: 4, display: "flex", alignItems: "flex-start", gap: 6 }}>
+                      <LightbulbIcon size={14} style={{ flexShrink: 0, marginTop: 2, color: "#f59e0b" }} />
+                      <span>0 = livraison gratuite · 1 500 FCFA recommandé pour Ouaga · Ce montant va directement à vous (0% de commission Kimoxa)</span>
                     </div>
                   </div>
                 )}
 
-                {/* Option 2 : retrait en boutique */}
                 <label style={{ display: "flex", gap: 10, padding: 12, background: "var(--cream-50, #faf7f2)", borderRadius: 8, cursor: "pointer" }}>
-                 <input
-  type="checkbox"
-  checked={offersPickup}
-  onChange={(e) => setOffersPickup(e.target.checked)}
-  style={{ width: 18, height: 18, marginTop: 4, accentColor: "var(--millet-600, #2f7a3d)", flexShrink: 0 }}
-/>
+                  <input
+                    type="checkbox"
+                    checked={offersPickup}
+                    onChange={(e) => setOffersPickup(e.target.checked)}
+                    style={{ width: 18, height: 18, marginTop: 4, accentColor: "var(--millet-600, #2f7a3d)", flexShrink: 0 }}
+                  />
                   <div style={{ flex: 1 }}>
-                    <strong>🏪 Retrait en boutique (toujours gratuit)</strong>
+                    <strong style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <StoreIcon size={18} style={{ color: "var(--gold-600)" }} /> Retrait en boutique (toujours gratuit)
+                    </strong>
                     <div style={{ fontSize: "0.85rem", color: "var(--ink-500)", marginTop: 2 }}>
                       Le client vient chercher le colis chez vous — aucune frais à facturer.
                     </div>
@@ -359,10 +371,11 @@ export default function VendorAccountPage() {
             </div>
           )}
 
-          {/* Mobile Money */}
           <div className="vendor-setting-card">
             <div className="vendor-setting-header">
-              <span className="vendor-setting-icon">📱</span>
+              <span className="vendor-setting-icon" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 8, background: "var(--cream-100, #f5f0e8)" }}>
+                <SmartphoneIcon size={24} style={{ color: "var(--gold-600)" }} />
+              </span>
               <h3>Reversements Mobile Money</h3>
             </div>
             <p className="vendor-setting-desc">
@@ -400,10 +413,11 @@ export default function VendorAccountPage() {
             </form>
           </div>
 
-          {/* Ville */}
           <div className="vendor-setting-card">
             <div className="vendor-setting-header">
-              <span className="vendor-setting-icon">📍</span>
+              <span className="vendor-setting-icon" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 8, background: "var(--cream-100, #f5f0e8)" }}>
+                <MapPinIcon size={24} style={{ color: "var(--gold-600)" }} />
+              </span>
               <h3>Ville de la boutique</h3>
             </div>
             <p className="vendor-setting-desc">
@@ -424,7 +438,9 @@ export default function VendorAccountPage() {
           {status === "suspended" && (
             <div className="vendor-setting-card vendor-alert-card">
               <div className="vendor-setting-header">
-                <span className="vendor-setting-icon">🚫</span>
+                <span className="vendor-setting-icon" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 8, background: "var(--cream-100, #f5f0e8)" }}>
+                  <ShieldXIcon size={24} style={{ color: "#dc2626" }} />
+                </span>
                 <h3>Boutique suspendue</h3>
               </div>
               <p className="vendor-setting-desc">
