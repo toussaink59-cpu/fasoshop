@@ -1,10 +1,15 @@
-"use client";
+﻿"use client";
 
 import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
 import { COUNTRIES } from "@/lib/countries";
+import {
+  ShoppingCartIcon, StoreIcon, ShieldCheckIcon, LockIcon,
+  BadgeCheckIcon, RotateCcwIcon, CheckCircleIcon, XCircleIcon,
+  ChevronRightIcon, UserIcon, SmartphoneIcon, CalendarIcon,
+} from "@/app/components/Icons";
 
 function getPasswordStrength(pwd) {
   if (!pwd) return 0;
@@ -36,7 +41,6 @@ function RegisterForm() {
   const [countryOfResidenceCode, setCountryOfResidenceCode] = useState("BF");
   const [agreeTerms, setAgreeTerms] = useState(false);
 
-  // Vendeur
   const [shopName, setShopName] = useState("");
   const [mainCategoryId, setMainCategoryId] = useState("");
   const [city, setCity] = useState("");
@@ -68,22 +72,10 @@ function RegisterForm() {
     e.preventDefault();
     setError("");
 
-    if (!agreeTerms) {
-      setError("Vous devez accepter les conditions d'utilisation.");
-      return;
-    }
-    if (password.length < 8) {
-      setError("Le mot de passe doit contenir au moins 8 caractères.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError("Les deux mots de passe ne correspondent pas.");
-      return;
-    }
-    if (role === "vendor" && !shopName.trim()) {
-      setError("Le nom de la boutique est requis.");
-      return;
-    }
+    if (!agreeTerms) { setError("Vous devez accepter les conditions d'utilisation."); return; }
+    if (password.length < 8) { setError("Le mot de passe doit contenir au moins 8 caractères."); return; }
+    if (password !== confirmPassword) { setError("Les deux mots de passe ne correspondent pas."); return; }
+    if (role === "vendor" && !shopName.trim()) { setError("Le nom de la boutique est requis."); return; }
 
     setSubmitting(true);
     const res = await fetch("/api/auth/register", {
@@ -100,19 +92,14 @@ function RegisterForm() {
     const data = await res.json();
     setSubmitting(false);
 
-    if (!res.ok) {
-      setError(data.error || "Erreur lors de l'inscription.");
-      return;
-    }
+    if (!res.ok) { setError(data.error || "Erreur lors de l'inscription."); return; }
     router.push(role === "vendor" ? "/vendor/dashboard" : "/");
   }
 
   return (
     <div className="shell">
       <div className="register-topbar">
-        <Link href="/" aria-label="Accueil Kimoxa">
-          <KimoxaLogo size={30} />
-        </Link>
+        <Link href="/" aria-label="Accueil Kimoxa"><KimoxaLogo size={30} /></Link>
         <span className="register-topbar-link">
           Déjà inscrit ? <Link href="/login">Se connecter</Link>
         </span>
@@ -132,7 +119,9 @@ function RegisterForm() {
                 className={`account-type-card ${role === "buyer" ? "is-selected" : ""}`}
                 onClick={() => setRole("buyer")}
               >
-                <strong>🛍️ Je veux acheter</strong>
+                <strong style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <ShoppingCartIcon size={18} style={{ color: "var(--gold-600)" }} /> Je veux acheter
+                </strong>
                 <span>Accès immédiat et gratuit</span>
               </button>
               <button
@@ -140,13 +129,17 @@ function RegisterForm() {
                 className={`account-type-card ${role === "vendor" ? "is-selected" : ""}`}
                 onClick={() => setRole("vendor")}
               >
-                <strong>🏪 Je veux vendre</strong>
+                <strong style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <StoreIcon size={18} style={{ color: "var(--gold-600)" }} /> Je veux vendre
+                </strong>
                 <span>Boutique vérifiée, sans limite de vente</span>
               </button>
             </div>
 
             <div className="register-section">
-              <h2 className="register-section-title">1 · Mon profil</h2>
+              <h2 className="register-section-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <UserIcon size={16} style={{ color: "var(--gold-600)" }} /> 1 · Mon profil
+              </h2>
               <div className="form-row">
                 <div>
                   <label htmlFor="r-firstname">Prénom *</label>
@@ -163,13 +156,17 @@ function RegisterForm() {
                   <input id="r-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@exemple.com" />
                 </div>
                 <div>
-                  <label htmlFor="r-phone">Téléphone *</label>
+                  <label htmlFor="r-phone" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <SmartphoneIcon size={14} /> Téléphone *
+                  </label>
                   <input id="r-phone" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+226 70 00 00 00" />
                 </div>
               </div>
               <div className="form-row">
                 <div>
-                  <label htmlFor="r-dob">Date de naissance *</label>
+                  <label htmlFor="r-dob" style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                    <CalendarIcon size={14} /> Date de naissance *
+                  </label>
                   <input id="r-dob" type="date" required max={maxDateStr} value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
                 </div>
                 <div>
@@ -188,28 +185,22 @@ function RegisterForm() {
             </div>
 
             <div className="register-section">
-              <h2 className="register-section-title">2 · Sécurité</h2>
+              <h2 className="register-section-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <LockIcon size={16} style={{ color: "var(--gold-600)" }} /> 2 · Sécurité
+              </h2>
               <div className="form-row">
                 <div>
                   <label htmlFor="r-password">Mot de passe *</label>
                   <input
-                    id="r-password"
-                    type="password"
-                    required
-                    minLength={8}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    id="r-password" type="password" required minLength={8}
+                    value={password} onChange={(e) => setPassword(e.target.value)}
                     placeholder="8 caractères minimum"
                   />
                   {password && (
                     <div className="pwd-strength">
                       <div className="pwd-strength-bars">
                         {[1, 2, 3, 4].map((i) => (
-                          <div
-                            key={i}
-                            className="pwd-strength-bar"
-                            style={{ background: i <= pwdStrength ? STRENGTH_COLORS[pwdStrength] : "#e5e7eb" }}
-                          />
+                          <div key={i} className="pwd-strength-bar" style={{ background: i <= pwdStrength ? STRENGTH_COLORS[pwdStrength] : "#e5e7eb" }} />
                         ))}
                       </div>
                       <span className="pwd-strength-label" style={{ color: STRENGTH_COLORS[pwdStrength] }}>
@@ -221,24 +212,22 @@ function RegisterForm() {
                 <div>
                   <label htmlFor="r-password-confirm">Confirmer *</label>
                   <input
-                    id="r-password-confirm"
-                    type="password"
-                    required
-                    minLength={8}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    id="r-password-confirm" type="password" required minLength={8}
+                    value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="Retapez le mot de passe"
                     style={{ borderColor: pwdMismatch ? "#dc2626" : pwdMatch ? "#16a34a" : undefined }}
                   />
-                  {pwdMatch && <small style={{ color: "#16a34a", fontSize: "0.75rem" }}>✓ Identiques</small>}
-                  {pwdMismatch && <small style={{ color: "#dc2626", fontSize: "0.75rem" }}>✗ Différents</small>}
+                  {pwdMatch && <small style={{ color: "#16a34a", fontSize: "0.75rem", display: "inline-flex", alignItems: "center", gap: 4 }}><CheckCircleIcon size={12} /> Identiques</small>}
+                  {pwdMismatch && <small style={{ color: "#dc2626", fontSize: "0.75rem", display: "inline-flex", alignItems: "center", gap: 4 }}><XCircleIcon size={12} /> Différents</small>}
                 </div>
               </div>
             </div>
 
             {role === "vendor" && (
               <div className="register-section">
-                <h2 className="register-section-title">3 · Ma boutique</h2>
+                <h2 className="register-section-title" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <StoreIcon size={16} style={{ color: "var(--gold-600)" }} /> 3 · Ma boutique
+                </h2>
                 <p style={{ fontSize: "0.82rem", color: "var(--ink-400)", margin: "0 0 12px", lineHeight: 1.5 }}>
                   Votre boutique est créée immédiatement. Une fois connecté, votre tableau de bord
                   vous demandera votre <strong>pièce d'identité</strong> pour tout débloquer —
@@ -271,40 +260,47 @@ function RegisterForm() {
               </span>
             </label>
 
-            <button type="submit" className="btn btn-primary register-submit" disabled={submitting}>
-              {submitting ? "Création en cours..." : role === "vendor" ? "Ouvrir ma boutique →" : "Créer mon compte →"}
+            <button type="submit" className="btn btn-primary register-submit" disabled={submitting} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              {submitting ? "Création en cours..." : (
+                <>
+                  {role === "vendor" ? "Ouvrir ma boutique" : "Créer mon compte"}
+                  <ChevronRightIcon size={16} />
+                </>
+              )}
             </button>
           </form>
         </div>
 
         <aside className="register-trust-col">
           <div className="trust-card">
-            <h2>🛡️ Achetez en toute confiance</h2>
+            <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <ShieldCheckIcon size={20} style={{ color: "var(--gold-600)" }} /> Achetez en toute confiance
+            </h2>
             <ul className="trust-list">
               <li>
-                <span className="trust-icon">🔒</span>
+                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><LockIcon size={20} /></span>
                 <div>
                   <strong>Paiement sécurisé</strong>
                   <span>L'argent est libéré uniquement à la livraison</span>
                 </div>
               </li>
               <li>
-                <span className="trust-icon">🪪</span>
+                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><BadgeCheckIcon size={20} /></span>
                 <div>
                   <strong>Vendeurs vérifiés</strong>
                   <span>Identité contrôlée avant de vendre</span>
                 </div>
               </li>
               <li>
-                <span className="trust-icon">↩️</span>
+                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><RotateCcwIcon size={20} /></span>
                 <div>
                   <strong>Retours 7 jours</strong>
                   <span>Satisfait ou remboursé</span>
                 </div>
               </li>
             </ul>
-            <div className="trust-security">
-              <span>🔒</span>
+            <div className="trust-security" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <LockIcon size={14} />
               <span>Connexion sécurisée SSL · Données protégées</span>
             </div>
           </div>
