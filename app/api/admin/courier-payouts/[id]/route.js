@@ -1,8 +1,12 @@
 import sql from "@/lib/db";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
+import { adminGuard } from "@/lib/adminAuth";
 
 // POST : l'admin paie le livreur (référence obligatoire)
 export async function POST(request, { params }) {
+  const guardError = adminGuard(request);
+  if (guardError) return guardError;
+
   const userId = request.headers.get("x-user-id");
   const userRole = request.headers.get("x-user-role");
   if (!userId || userRole !== "admin") {

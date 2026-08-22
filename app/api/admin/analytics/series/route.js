@@ -1,10 +1,14 @@
 import sql from "@/lib/db";
+import { adminGuard } from "@/lib/adminAuth";
 
 // GET /api/admin/analytics/series?mode=range&days=1|7|30
 // GET /api/admin/analytics/series?mode=year&year=2026
 // Renvoie la série de ventes selon la période demandée, avec la bonne
 // granularité (heure pour 1 jour, jour pour 7/30 jours, mois pour une année).
 export async function GET(request) {
+  const guardError = adminGuard(request);
+  if (guardError) return guardError;
+
   const { searchParams } = new URL(request.url);
   const mode = searchParams.get("mode") || "range";
   const days = Number(searchParams.get("days")) || 30;

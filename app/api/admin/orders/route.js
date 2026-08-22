@@ -1,9 +1,13 @@
 import sql from "@/lib/db";
+import { adminGuard } from "@/lib/adminAuth";
 
 // GET /api/admin/orders
 // Vue d'ensemble des ventes pour l'admin : commandes récentes + statistiques
 // (commandes du jour, chiffre d'affaires du jour, total, en attente).
-export async function GET() {
+export async function GET(request) {
+  const guardError = adminGuard(request);
+  if (guardError) return guardError;
+
   const orders = await sql`
     SELECT o.id, o.status, o.created_at, u.full_name AS buyer_name, u.email AS buyer_email,
            COALESCE(SUM(l.gross_amount), 0) AS total_amount,

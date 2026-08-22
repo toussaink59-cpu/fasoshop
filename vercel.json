@@ -11,6 +11,10 @@
     {
       "path": "/api/cron/abandoned-carts",
       "schedule": "0 14 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-reset-tokens",
+      "schedule": "0 4 * * 1"
     }
   ]
 }

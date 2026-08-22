@@ -2,7 +2,7 @@ import { req, report } from '../lib.js';
 
 async function main() {
   console.log('\n=== 02 - cron auth (fail-closed) ===');
-  const endpoints = ['/api/cron/expire-orders', '/api/cron/auto-confirm'];
+  const endpoints = ['/api/cron/expire-orders', '/api/cron/auto-confirm', '/api/cron/cleanup-reset-tokens'];
   let allPass = true;
 
   for (const ep of endpoints) {

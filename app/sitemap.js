@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 // Sitemap dynamique : produits + boutiques actifs uniquement
 export default async function sitemap() {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://fasoshop-xi.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kimoxa.com";
 
   const [products, shops] = await Promise.all([
     sql`SELECT id FROM products WHERE status = 'active' AND stock_quantity > 0`,

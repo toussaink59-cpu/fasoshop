@@ -1,4 +1,5 @@
 import sql from "@/lib/db";
+import { adminGuard } from "@/lib/adminAuth";
 
 const SPONSOR_DURATION_DAYS = 30;
 
@@ -6,6 +7,9 @@ const SPONSOR_DURATION_DAYS = 30;
 // Approuve ou rejette une demande de sponsoring.
 // body: { status: 'approved' | 'rejected', adminNotes? }
 export async function PATCH(request, { params }) {
+  const guardError = adminGuard(request);
+  if (guardError) return guardError;
+
   const { id } = await params;
 
   try {

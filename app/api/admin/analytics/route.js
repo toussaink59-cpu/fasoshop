@@ -1,9 +1,13 @@
 import sql from "@/lib/db";
+import { adminGuard } from "@/lib/adminAuth";
 
 // GET /api/admin/analytics
 // Vue d'ensemble des ventes pour l'admin : série quotidienne (30 jours),
 // série mensuelle (6 mois), ventes par catégorie, par vendeur, top produits.
-export async function GET() {
+export async function GET(request) {
+  const guardError = adminGuard(request);
+  if (guardError) return guardError;
+
   const dailyRows = await sql`
     SELECT created_at::date AS day, COALESCE(SUM(gross_amount), 0)::float AS gross
     FROM shop_commission_ledger

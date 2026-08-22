@@ -6,7 +6,7 @@ import { rateLimit, clientKey } from "@/lib/rate-limit";
 
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 const FROM = process.env.EMAIL_FROM || "Kimoxa <no-reply@kimoxa.com>";
-const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://fasoshop-xi.vercel.app";
+const BASE_URL = process.env.NEXT_PUBLIC_APP_URL || "https://kimoxa.com";
 
 /**
  * POST /api/auth/forgot-password
