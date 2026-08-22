@@ -4,8 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
 import {
-  LockIcon, UserIcon, ShieldCheckIcon, ChevronLeftIcon,
-  CheckCircleIcon, MailIcon, ClockIcon, ShieldXIcon,
+  LockIcon, UserIcon, ShieldCheckIcon, ChevronLeftIcon, CheckCircleIcon, MailIcon, ClockIcon, ShieldXIcon, ChevronRightIcon
 } from "@/app/components/Icons";
 
 export default function ForgotPasswordClient() {
