@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { SearchIcon, ClockIcon } from "@/app/components/Icons";
 
 const HISTORY_KEY = "fasoshop-search-history";
 const MAX_HISTORY = 5;
@@ -23,8 +24,6 @@ function pushHistory(term) {
   localStorage.setItem(HISTORY_KEY, JSON.stringify(updated));
 }
 
-// Barre de recherche pleine largeur avec suggestions produits (débattues à
-// 300ms sur /api/products) et historique de recherche local à l'appareil.
 export default function SearchBar({ initialValue = "", autoFocus = false }) {
   const router = useRouter();
   const [value, setValue] = useState(initialValue);
@@ -70,6 +69,8 @@ export default function SearchBar({ initialValue = "", autoFocus = false }) {
     router.push(trimmed ? `/shop?q=${encodeURIComponent(trimmed)}` : "/shop");
   }
 
+  const iconStyle = { display: "inline-flex", color: "var(--ink-400)", flexShrink: 0 };
+
   return (
     <div className="search-bar-wrap" ref={containerRef}>
       <form
@@ -80,7 +81,9 @@ export default function SearchBar({ initialValue = "", autoFocus = false }) {
           goToSearch(value);
         }}
       >
-        <span className="search-bar-icon" aria-hidden="true">🔍</span>
+        <span className="search-bar-icon" aria-hidden="true" style={iconStyle}>
+          <SearchIcon size={16} />
+        </span>
         <input
           type="search"
           value={value}
@@ -99,7 +102,7 @@ export default function SearchBar({ initialValue = "", autoFocus = false }) {
               <div className="search-suggestions-label">Recherches récentes</div>
               {history.map((term) => (
                 <button key={term} type="button" className="search-suggestion-item" onClick={() => goToSearch(term)}>
-                  <span aria-hidden="true">🕘</span> {term}
+                  <span aria-hidden="true" style={iconStyle}><ClockIcon size={14} /></span> {term}
                 </button>
               ))}
             </>
@@ -111,7 +114,7 @@ export default function SearchBar({ initialValue = "", autoFocus = false }) {
               className="search-suggestion-item"
               onClick={() => goToSearch(p.name)}
             >
-              <span aria-hidden="true">🔍</span> {p.name}
+              <span aria-hidden="true" style={iconStyle}><SearchIcon size={14} /></span> {p.name}
             </button>
           ))}
         </div>
