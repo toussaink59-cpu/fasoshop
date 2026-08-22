@@ -5,7 +5,7 @@ import { adminGuard } from "@/lib/adminAuth";
 // Liste toutes les boutiques avec stock total + infos pièce d'identité + PHOTO
 // (id_document_url) pour vérification visuelle par l'admin.
 export async function GET(request) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const shops = await sql`

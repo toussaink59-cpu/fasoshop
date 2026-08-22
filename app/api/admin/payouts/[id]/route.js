@@ -47,7 +47,7 @@ async function finalizeLedgerPaid(ledgerId, userId, ip, { amount, method, refere
 }
 
 export async function POST(request, { params }) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const userId = request.headers.get("x-user-id");

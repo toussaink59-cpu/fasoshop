@@ -5,7 +5,7 @@ import { adminGuard } from "@/lib/adminAuth";
 // Vue d'ensemble des ventes pour l'admin : commandes récentes + statistiques
 // (commandes du jour, chiffre d'affaires du jour, total, en attente).
 export async function GET(request) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const orders = await sql`

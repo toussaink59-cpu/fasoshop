@@ -6,7 +6,7 @@ import { adminGuard } from "@/lib/adminAuth";
 // Renvoie la série de ventes selon la période demandée, avec la bonne
 // granularité (heure pour 1 jour, jour pour 7/30 jours, mois pour une année).
 export async function GET(request) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const { searchParams } = new URL(request.url);

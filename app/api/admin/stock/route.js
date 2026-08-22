@@ -5,7 +5,7 @@ import { adminGuard } from "@/lib/adminAuth";
 // L'administrateur voit TOUS les produits de TOUTES les boutiques.
 // Filtres optionnels via query params : ?shopId=  &lowStockOnly=true
 export async function GET(request) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const { searchParams } = new URL(request.url);

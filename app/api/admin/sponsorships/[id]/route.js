@@ -7,7 +7,7 @@ const SPONSOR_DURATION_DAYS = 30;
 // Approuve ou rejette une demande de sponsoring.
 // body: { status: 'approved' | 'rejected', adminNotes? }
 export async function PATCH(request, { params }) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const { id } = await params;

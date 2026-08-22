@@ -4,7 +4,7 @@ import { adminGuard } from "@/lib/adminAuth";
 // DELETE /api/admin/reviews/[id]
 // Supprime un avis (modération admin).
 export async function DELETE(request, { params }) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const { id } = await params;

@@ -5,7 +5,7 @@ import { adminGuard } from "@/lib/adminAuth";
 // Vue d'ensemble des ventes pour l'admin : série quotidienne (30 jours),
 // série mensuelle (6 mois), ventes par catégorie, par vendeur, top produits.
 export async function GET(request) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const dailyRows = await sql`

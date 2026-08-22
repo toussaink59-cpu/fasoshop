@@ -14,7 +14,7 @@ import { adminGuard } from "@/lib/adminAuth";
  * - Top 3 vendeurs
  */
 export async function GET(request) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const userId = request.headers.get("x-user-id");

@@ -4,7 +4,7 @@ import { adminGuard } from "@/lib/adminAuth";
 // GET /api/admin/export?kind=orders|shops|payouts
 // Export CSV — séparateur « ; » + BOM UTF-8 (compatible Excel FR)
 export async function GET(request) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const userId = request.headers.get("x-user-id");

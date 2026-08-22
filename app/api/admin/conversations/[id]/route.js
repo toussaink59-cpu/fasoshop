@@ -4,7 +4,7 @@ import { adminGuard } from "@/lib/adminAuth";
 
 // GET /api/admin/conversations/[id] — lit un fil complet (admin seul)
 export async function GET(request, { params }) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const userId = request.headers.get("x-user-id");

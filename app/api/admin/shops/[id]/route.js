@@ -8,7 +8,7 @@ import { adminGuard } from "@/lib/adminAuth";
 // Si status === "rejected", rejectionReason est requis.
 // Envoie une notification HTML au vendeur lors d'une validation ou d'un rejet.
 export async function PATCH(request, { params }) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const { id } = await params;

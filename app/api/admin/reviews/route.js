@@ -4,7 +4,7 @@ import { adminGuard } from "@/lib/adminAuth";
 // GET /api/admin/reviews
 // Liste tous les avis, avec le produit, la boutique et l'auteur — pour modération admin.
 export async function GET(request) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const reviews = await sql`

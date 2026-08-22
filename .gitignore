@@ -22,3 +22,6 @@ blob-report/
 .env.test.local
 .env.development.local
 .env.production.local
+
+# Artifacts locaux
+kimoxa-lot*-securite*.zip

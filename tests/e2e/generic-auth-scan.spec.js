@@ -82,7 +82,7 @@ test.describe("9. Scan générique — auth obligatoire par défaut (V-04)", () 
   for (const { routePath, methods } of toTest) {
     for (const method of methods) {
       test(`${method} ${routePath} sans cookie -> refuse (401/403), jamais un succès`, async ({ request }) => {
-        const url = toConcreteUrl(routePath);
+        const url = "/api" + toConcreteUrl(routePath);
         const res = await request.fetch(url, {
           method,
           data: method === "GET" || method === "DELETE" ? undefined : {},

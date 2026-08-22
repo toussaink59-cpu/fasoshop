@@ -3,7 +3,7 @@ import { getAdminEarnings } from "@/lib/queries/earnings";
 import { adminGuard } from "@/lib/adminAuth";
 
 export async function GET(request) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const userId = request.headers.get("x-user-id");

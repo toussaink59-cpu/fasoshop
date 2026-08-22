@@ -4,7 +4,7 @@ import { adminGuard } from "@/lib/adminAuth";
 // GET /api/admin/sponsorships
 // Liste les demandes de sponsoring (par défaut toutes, triées par date).
 export async function GET(request) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const requests = await sql`

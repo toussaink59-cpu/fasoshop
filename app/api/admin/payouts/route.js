@@ -7,7 +7,7 @@ const MAX_RESULTS_PER_PAGE = 100;
 
 // GET /api/admin/payouts — liste les payouts vendeurs + payouts livreurs
 export async function GET(request) {
-  const guardError = adminGuard(request);
+  const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
   const userId = request.headers.get("x-user-id");

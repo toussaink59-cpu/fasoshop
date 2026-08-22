@@ -1,8 +1,7 @@
-Contact: mailto:security@kimoxa.com
+Contact: mailto:bkuemde@gmail.com
 Expires: 2027-08-21T00:00:00.000Z
 Preferred-Languages: fr, en
-Canonical: https://kimoxa.com/.well-known/security.txt
 
-# Merci de signaler toute vulnérabilité de sécurité de manière responsable
-# à l'adresse ci-dessus plutôt que de la divulguer publiquement.
-# Nous nous engageons à accuser réception sous 5 jours ouvrés.
+# Merci de signaler toute vulnerabilite de securite de maniere responsable.
+# Accuse de reception sous 5 jours ouvres.
+# (security@kimoxa.com prendra le relais des que le domaine sera actif.)
