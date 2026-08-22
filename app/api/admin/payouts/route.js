@@ -1,11 +1,15 @@
 import sql from "@/lib/db";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
 import { payoutMode } from "@/lib/payouts";
+import { adminGuard } from "@/lib/adminAuth";
 
 const MAX_RESULTS_PER_PAGE = 100;
 
 // GET /api/admin/payouts — liste les payouts vendeurs + payouts livreurs
 export async function GET(request) {
+  const guardError = adminGuard(request);
+  if (guardError) return guardError;
+
   const userId = request.headers.get("x-user-id");
   const userRole = request.headers.get("x-user-role");
 

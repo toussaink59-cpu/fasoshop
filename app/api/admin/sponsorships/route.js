@@ -1,8 +1,12 @@
 import sql from "@/lib/db";
+import { adminGuard } from "@/lib/adminAuth";
 
 // GET /api/admin/sponsorships
 // Liste les demandes de sponsoring (par défaut toutes, triées par date).
-export async function GET() {
+export async function GET(request) {
+  const guardError = adminGuard(request);
+  if (guardError) return guardError;
+
   const requests = await sql`
     SELECT sr.id, sr.status, sr.requested_at, sr.reviewed_at, sr.admin_notes,
            p.id AS product_id, p.name AS product_name, p.price,

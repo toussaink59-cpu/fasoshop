@@ -1,9 +1,13 @@
 import sql from "@/lib/db";
+import { adminGuard } from "@/lib/adminAuth";
 
 // GET /api/admin/stock
 // L'administrateur voit TOUS les produits de TOUTES les boutiques.
 // Filtres optionnels via query params : ?shopId=  &lowStockOnly=true
 export async function GET(request) {
+  const guardError = adminGuard(request);
+  if (guardError) return guardError;
+
   const { searchParams } = new URL(request.url);
   const shopId = searchParams.get("shopId");
   const lowStockOnly = searchParams.get("lowStockOnly") === "true";

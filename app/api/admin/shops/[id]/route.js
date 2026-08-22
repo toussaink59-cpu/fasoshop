@@ -1,5 +1,6 @@
 import sql from "@/lib/db";
 import { sendMail, emailTemplates } from "@/lib/email";
+import { adminGuard } from "@/lib/adminAuth";
 
 // PATCH /api/admin/shops/[id]
 // Change le statut d'une boutique. Réservé aux admins (vérifié par middleware.js).
@@ -7,6 +8,9 @@ import { sendMail, emailTemplates } from "@/lib/email";
 // Si status === "rejected", rejectionReason est requis.
 // Envoie une notification HTML au vendeur lors d'une validation ou d'un rejet.
 export async function PATCH(request, { params }) {
+  const guardError = adminGuard(request);
+  if (guardError) return guardError;
+
   const { id } = await params;
 
   try {

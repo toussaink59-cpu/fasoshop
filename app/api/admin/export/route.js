@@ -1,8 +1,12 @@
 import sql from "@/lib/db";
+import { adminGuard } from "@/lib/adminAuth";
 
 // GET /api/admin/export?kind=orders|shops|payouts
 // Export CSV — séparateur « ; » + BOM UTF-8 (compatible Excel FR)
 export async function GET(request) {
+  const guardError = adminGuard(request);
+  if (guardError) return guardError;
+
   const userId = request.headers.get("x-user-id");
   const [user] = await sql`SELECT role FROM users WHERE id = ${userId}`;
   if (!user || user.role !== "admin") {

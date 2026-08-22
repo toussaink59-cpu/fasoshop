@@ -1,9 +1,13 @@
 import sql from "@/lib/db";
+import { adminGuard } from "@/lib/adminAuth";
 
 // GET /api/admin/shops
 // Liste toutes les boutiques avec stock total + infos pièce d'identité + PHOTO
 // (id_document_url) pour vérification visuelle par l'admin.
-export async function GET() {
+export async function GET(request) {
+  const guardError = adminGuard(request);
+  if (guardError) return guardError;
+
   const shops = await sql`
     SELECT s.id, s.name, s.status, s.id_document_type, s.id_document_number,
            s.id_document_url, s.rejection_reason, s.verified_at, s.city,

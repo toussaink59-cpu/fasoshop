@@ -1,5 +1,6 @@
 import sql from "@/lib/db";
 import { getAdminEarnings } from "@/lib/queries/earnings";
+import { adminGuard } from "@/lib/adminAuth";
 
 /**
  * GET /api/admin/dashboard
@@ -13,6 +14,9 @@ import { getAdminEarnings } from "@/lib/queries/earnings";
  * - Top 3 vendeurs
  */
 export async function GET(request) {
+  const guardError = adminGuard(request);
+  if (guardError) return guardError;
+
   const userId = request.headers.get("x-user-id");
   const [user] = await sql`SELECT role FROM users WHERE id = ${userId}`;
   if (!user || user.role !== "admin") {
