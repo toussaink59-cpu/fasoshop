@@ -19,6 +19,7 @@ export default function BottomNav({ user }) {
   }, []);
 
   useEffect(() => {
+    if (!user) { setUnread(0); return; }
     let alive = true;
     const load = async () => {
       try {
