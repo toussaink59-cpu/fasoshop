@@ -6,8 +6,7 @@ import Link from "next/link";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
 import { COUNTRIES } from "@/lib/countries";
 import {
-  ShoppingCartIcon, StoreIcon, ShieldCheckIcon, LockIcon,
-  BadgeCheckIcon, RotateCcwIcon, CheckCircleIcon, XCircleIcon,
+  ShoppingCartIcon, StoreIcon, LockIcon, CheckCircleIcon, XCircleIcon,
   ChevronRightIcon, UserIcon, SmartphoneIcon, CalendarIcon,
 } from "@/app/components/Icons";
 
@@ -105,7 +104,7 @@ function RegisterForm() {
         </span>
       </div>
 
-      <div className="register-layout">
+      <div className="register-layout" style={{ gridTemplateColumns: "minmax(0, 680px)", justifyContent: "center" }}>
         <div className="register-form-col">
           <h1>Créer mon compte</h1>
           <p className="register-subtitle">Rejoignez la marketplace de confiance de l'Afrique</p>
@@ -268,43 +267,14 @@ function RegisterForm() {
                 </>
               )}
             </button>
+
+          <p style={{ textAlign: "center", marginTop: 16, fontSize: "0.8rem", color: "var(--ink-400)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <LockIcon size={12} /> Inscription securisee SSL - Donnees protegees
+          </p>
           </form>
         </div>
 
-        <aside className="register-trust-col">
-          <div className="trust-card">
-            <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <ShieldCheckIcon size={20} style={{ color: "var(--gold-600)" }} /> Achetez en toute confiance
-            </h2>
-            <ul className="trust-list">
-              <li>
-                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><LockIcon size={20} /></span>
-                <div>
-                  <strong>Paiement sécurisé</strong>
-                  <span>L'argent est libéré uniquement à la livraison</span>
-                </div>
-              </li>
-              <li>
-                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><BadgeCheckIcon size={20} /></span>
-                <div>
-                  <strong>Vendeurs vérifiés</strong>
-                  <span>Identité contrôlée avant de vendre</span>
-                </div>
-              </li>
-              <li>
-                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><RotateCcwIcon size={20} /></span>
-                <div>
-                  <strong>Retours 7 jours</strong>
-                  <span>Satisfait ou remboursé</span>
-                </div>
-              </li>
-            </ul>
-            <div className="trust-security" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <LockIcon size={14} />
-              <span>Connexion sécurisée SSL · Données protégées</span>
-            </div>
-          </div>
-        </aside>
+        
       </div>
     </div>
   );

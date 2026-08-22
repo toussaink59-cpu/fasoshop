@@ -5,8 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
 import {
-  LockIcon, ShieldCheckIcon, BadgeCheckIcon, RotateCcwIcon,
-  ChevronRightIcon, UserIcon, EyeIcon, EyeOffIcon,
+  LockIcon, ChevronRightIcon, UserIcon, EyeIcon, EyeOffIcon,
 } from "@/app/components/Icons";
 
 export default function LoginPage() {
@@ -50,7 +49,7 @@ export default function LoginPage() {
 
   return (
     <div className="shell">
-      <div className="register-layout">
+      <div className="register-layout" style={{ gridTemplateColumns: "minmax(0, 620px)", justifyContent: "center" }}>
         <div className="register-form-col">
           <div style={{ marginBottom: 24 }}>
             <KimoxaLogo size={42} withTagline />
@@ -129,42 +128,13 @@ export default function LoginPage() {
             Pas encore de compte ?{" "}
             <Link href="/register" style={{ fontWeight: 600, color: "var(--gold-700)" }}>Inscrivez-vous</Link>
           </p>
+
+          <p style={{ textAlign: "center", marginTop: 16, fontSize: "0.8rem", color: "var(--ink-400)", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+            <LockIcon size={12} /> Connexion securisee SSL - Donnees protegees
+          </p>
         </div>
 
-        <aside className="register-trust-col">
-          <div className="trust-card">
-            <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <ShieldCheckIcon size={20} style={{ color: "var(--gold-600)" }} /> Connexion sécurisée
-            </h2>
-            <ul className="trust-list">
-              <li>
-                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><LockIcon size={20} /></span>
-                <div>
-                  <strong>Chiffrement SSL</strong>
-                  <span>Vos données sont protégées en transit</span>
-                </div>
-              </li>
-              <li>
-                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><BadgeCheckIcon size={20} /></span>
-                <div>
-                  <strong>Session sécurisée</strong>
-                  <span>Cookie chiffré, expiration automatique</span>
-                </div>
-              </li>
-              <li>
-                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><RotateCcwIcon size={20} /></span>
-                <div>
-                  <strong>Récupération facile</strong>
-                  <span>Réinitialisez votre mot de passe en 1 clic</span>
-                </div>
-              </li>
-            </ul>
-            <div className="trust-security" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <LockIcon size={14} />
-              <span>Connexion sécurisée SSL · Données protégées</span>
-            </div>
-          </div>
-        </aside>
+        
       </div>
     </div>
   );
