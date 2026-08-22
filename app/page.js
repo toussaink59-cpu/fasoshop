@@ -58,7 +58,7 @@ export default async function HomePage() {
 
       <HorizontalProductSection
         title="Nouveautés"
-        icon="✨"
+        icon={null}
         seeAllHref={null}
         products={newArrivals}
         user={user}

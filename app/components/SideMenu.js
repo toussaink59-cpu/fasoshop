@@ -1,5 +1,6 @@
 "use client";
 
+import { XIcon, BarChartIcon, ShieldIcon, UserIcon, PackageIcon, HeartIcon, MessageCircleIcon, MapPinIcon, StoreIcon, LockIcon } from "@/app/components/Icons";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
@@ -141,10 +142,10 @@ export default function SideMenu({ open, onClose, user, categories = [], onLogou
               onClick={onClose}
             >
               {user.role === "vendor"
-                ? "📊 Tableau de bord vendeur"
+                ? <><BarChartIcon size={18} style={{ marginRight: 8 }} /> Tableau de bord vendeur</>
                 : user.role === "admin"
-                ? "🛡️ Tableau de bord admin"
-                : "👤 Mon compte"}
+                ? <><ShieldIcon size={18} style={{ marginRight: 8 }} /> Tableau de bord admin</>
+                : <><UserIcon size={18} style={{ marginRight: 8 }} /> Mon compte</>}
             </Link>
           )}
 

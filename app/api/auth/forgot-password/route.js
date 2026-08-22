@@ -108,7 +108,7 @@ export async function POST(request) {
       await resend.emails.send({
         from: FROM,
         to: normalizedEmail,
-        subject: "🔐 Reinitialiser votre mot de passe Kimoxa",
+        subject: "Reinitialiser votre mot de passe Kimoxa",
         html,
       });
     } catch (err) {

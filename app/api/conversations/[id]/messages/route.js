@@ -33,7 +33,7 @@ export async function POST(request, { params }) {
       return Response.json({ error: "Accès non autorisé." }, { status: 403 });
     }
 
-    const finalBody = cleanBody || "📷 Photo";
+    const finalBody = cleanBody || "Photo";
 
     const [message] = await sql`
       INSERT INTO messages (conversation_id, sender_id, sender_role, body, image_url)

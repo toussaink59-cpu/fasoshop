@@ -60,7 +60,7 @@ export async function PATCH(request, { params }) {
       //    delivered/cancelled → rien
       const transitions = {
         preparation: ["shipped", "cancelled"],
-        shipped: [],              // 🔒 verrouillé : client-only
+        shipped: [],              // verrouillé : client-only
         delivered: [],
         cancelled: [],
       };

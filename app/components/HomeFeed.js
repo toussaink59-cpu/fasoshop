@@ -1,5 +1,6 @@
 "use client";
 
+import { CheckIcon } from "@/app/components/Icons";
 import { useState, useMemo } from "react";
 import ProductCard from "@/app/components/ProductCard";
 
@@ -61,7 +62,7 @@ export default function HomeFeed({ initialProducts = [], user, excludeIds = new 
       ) : (
         filteredProducts.length > PAGE && (
           <div className="load-more-wrap">
-            <p className="load-more-done">✓ Vous avez vu tous les produits</p>
+            <p className="load-more-done" style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}><CheckIcon size={16} style={{ color: "var(--millet-600)" }} /> Vous avez vu tous les produits</p>
           </div>
         )
       )}

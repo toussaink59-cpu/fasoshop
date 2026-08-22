@@ -41,7 +41,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Mode de livraison invalide" }, { status: 400 });
   }
 
-  // === 🆕 CAST explicite des IDs (localStorage donne des strings) ===
+  // === CAST explicite des IDs (localStorage donne des strings) ===
   const productIds = items.map((i) => Number(i.productId)).filter((n) => Number.isInteger(n) && n > 0);
 
   if (productIds.length !== items.length) {

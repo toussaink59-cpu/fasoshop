@@ -1,5 +1,6 @@
 "use client";
 
+import { ZapIcon, ShoppingBagIcon } from "@/app/components/Icons";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -38,7 +39,7 @@ export default function FlashSaleSection({ initialProducts = [] }) {
     <div className="flash-section">
       <div className="flash-header">
         <div className="flash-title">
-          <span className="flash-lightning">⚡</span>
+          <span className="flash-lightning" style={{ display: "inline-flex", color: "var(--gold-600)" }}><ZapIcon size={20} /></span>
           <h2>Vente Flash</h2>
         </div>
         <div className="flash-timer">
@@ -79,7 +80,7 @@ export default function FlashSaleSection({ initialProducts = [] }) {
                     loading="lazy"
                   />
                 ) : (
-                  <div className="flash-card-image flash-card-image-placeholder">🛍️</div>
+                  <div className="flash-card-image flash-card-image-placeholder" style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "var(--ink-300)" }}><ShoppingBagIcon size={48} /></div>
                 )}
                 <div className="name">{p.name}</div>
                 <div className="shop">{p.shop_name}</div>

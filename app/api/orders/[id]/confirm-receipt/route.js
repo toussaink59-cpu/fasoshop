@@ -55,7 +55,7 @@ export async function POST(request, { params }) {
       }
 
       // 3) Machine à états + idempotence stricte
-      // 🆕 Distinction MM/COD : payout libéré SEULEMENT si mobile_money
+      // Distinction MM/COD : payout libéré SEULEMENT si mobile_money
       const shouldReleasePayout = order.payment_method === "mobile_money";
       const targetPayoutStatus = shouldReleasePayout ? "released" : "cod_pending";
 

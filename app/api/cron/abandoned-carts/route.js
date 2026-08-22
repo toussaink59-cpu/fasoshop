@@ -24,7 +24,7 @@ export async function GET(request) {
       const rawItems = Array.isArray(c.items) ? c.items : [];
       if (rawItems.length === 0) continue;
 
-      // 🔒 Corrige V-03 : on ne fait plus confiance au nom/prix/image stockés
+      // Corrige V-03 : on ne fait plus confiance au nom/prix/image stockés
       // (potentiellement fournis par le client via /api/cart/sync). On les
       // re-résout depuis la table products, source de vérité, juste avant
       // l'envoi de l'e-mail. Un produit supprimé/désactivé est simplement

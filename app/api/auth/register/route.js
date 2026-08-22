@@ -8,7 +8,7 @@ import { rateLimit, clientKey } from "@/lib/rate-limit";
 
 // POST /api/auth/register
 // Inscription simple. La pièce d'identité du vendeur est soumise
-// APRÈS connexion, depuis le dashboard (alerte 🪪), puis validée par l'admin.
+// APRÈS connexion, depuis le dashboard (alerte ), puis validée par l'admin.
 export async function POST(request) {
   try {
     // Limite par IP : empêche la création massive automatisée de comptes.

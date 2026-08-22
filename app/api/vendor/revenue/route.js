@@ -19,7 +19,7 @@ export async function GET() {
     today.setHours(0, 0, 0, 0);
     const firstDayMonth = new Date(today.getFullYear(), today.getMonth(), 1);
 
-    // 🆕 Date pré-calculée côté JS (évite le bug SQL timestamp - interval)
+    // Date pré-calculée côté JS (évite le bug SQL timestamp - interval)
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
     thirtyDaysAgo.setHours(0, 0, 0, 0);
@@ -77,7 +77,7 @@ export async function GET() {
         AND scl.status = 'due'
     `;
 
-    // 🆕 Série 30 derniers jours — date pré-calculée (plus de bug SQL)
+    // Série 30 derniers jours — date pré-calculée (plus de bug SQL)
     const dailySeries = await sql`
       SELECT
         DATE(o.created_at) AS day,
