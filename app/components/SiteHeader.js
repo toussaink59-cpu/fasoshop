@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -7,8 +7,8 @@ import { getCart, cartCount } from "@/lib/cart";
 import SideMenu from "@/app/components/SideMenu";
 import SearchBar from "@/app/components/SearchBar";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
+import { MenuIcon, UserIcon, ShoppingCartIcon } from "@/app/components/Icons";
 
-// Header style Temu : UNE rangée — logo | recherche compacte | icônes fines.
 export default function SiteHeader({ initialUser, categories = [], searchValue = "" }) {
   const router = useRouter();
   const [user, setUser] = useState(initialUser);
@@ -46,59 +46,50 @@ export default function SiteHeader({ initialUser, categories = [], searchValue =
       <header className="site-header">
         <div className="site-header-row">
 
-          {/* Logo à gauche */}
           <Link href="/" className="site-header-logo" aria-label="Kimoxa — accueil">
             <KimoxaLogo size={24} />
           </Link>
 
-          {/* Recherche compacte au centre */}
           <div className="site-header-search-compact">
             <SearchBar initialValue={searchValue} />
           </div>
 
-          {/* Actions desktop (PC uniquement) */}
           <div className="site-header-desktop-actions">
-            <Link href="/devenir-vendeur"><button className="btn-header-link">Devenir vendeur</button></Link>
+            <Link href="/devenir-vendeur" className="btn-header-link">Devenir vendeur</Link>
             {user ? (
               <>
-                <Link href={accountLink()}><button className="btn-header-link">Bonjour, {user.full_name?.split(" ")[0]}</button></Link>
+                <Link href={accountLink()} className="btn-header-link">
+                  <UserIcon size={16} style={{ marginRight: 6 }} />
+                  Bonjour, {user.full_name?.split(" ")[0]}
+                </Link>
                 <button className="btn-header-link" onClick={handleDesktopLogout}>Déconnexion</button>
               </>
             ) : (
-              <Link href="/login"><button className="btn-header-link">Compte</button></Link>
+              <Link href="/login" className="btn-header-link">
+                <UserIcon size={16} style={{ marginRight: 6 }} />
+                Compte
+              </Link>
             )}
           </div>
 
-          {/* Icônes fines à droite, comme Temu */}
           <div className="site-header-actions">
             <button
-              ref={hamburgerRef}
               className="site-header-icon-btn site-header-hamburger"
               onClick={() => setMenuOpen(true)}
               aria-label="Ouvrir le menu"
               aria-expanded={menuOpen}
               aria-haspopup="dialog"
+              ref={hamburgerRef}
             >
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                <line x1="4" y1="6" x2="20" y2="6" />
-                <line x1="4" y1="12" x2="14" y2="12" />
-                <line x1="4" y1="18" x2="20" y2="18" />
-              </svg>
+              <MenuIcon size={22} />
             </button>
 
             <Link href={accountLink()} className="site-header-icon-btn site-header-account" aria-label="Compte">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
-                <circle cx="12" cy="8" r="4" />
-                <path d="M4 20c0-4 4-6 8-6s8 2 8 6" />
-              </svg>
+              <UserIcon size={22} />
             </Link>
 
             <Link href="/cart" className="site-header-icon-btn" aria-label="Panier">
-              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <circle cx="9" cy="20" r="1.5" />
-                <circle cx="17" cy="20" r="1.5" />
-                <path d="M3 4h2l2.6 12h10.8L21 8H6" />
-              </svg>
+              <ShoppingCartIcon size={22} />
               {cartCountValue > 0 && (
                 <span className="site-header-badge">{cartCountValue > 9 ? "9+" : cartCountValue}</span>
               )}
