@@ -67,7 +67,7 @@ export async function GET(request) {
       }
 
       const realTotalCents = Math.round(
-        safeItems.reduce((sum, it) => sum + it.price * it.quantity, 0) * 100
+        safeItems.reduce((sum, it) => sum + it.price * it.quantity, 0)
       );
 
       const result = await sendAbandonedCartEmail(c.email, c.full_name, safeItems, realTotalCents);
