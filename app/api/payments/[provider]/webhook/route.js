@@ -11,7 +11,7 @@ import { sendMail, emailTemplates } from "@/lib/email";
  * - Idempotence : transaction_id UNIQUE en base (deux webhooks = un seul effet)
  * - Machine à états stricte : pending → paid (jamais paid → paid)
  *
- * ️ IMPORTANT : Next.js 15 — on lit rawBody pour la signature AVANT de parser JSON.
+ *  IMPORTANT : Next.js 15 — on lit rawBody pour la signature AVANT de parser JSON.
  */
 export async function POST(request, { params }) {
   const { provider: providerName } = await params;

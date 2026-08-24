@@ -43,7 +43,7 @@ export async function PATCH(request, { params }) {
     }
 
  // 5) Transaction pour cohérence (surtout pour parDefaut)
- // ️ IMPORTANT : sql.begin() retourne l'objet directement (PAS un tableau)
+ //  IMPORTANT : sql.begin() retourne l'objet directement (PAS un tableau)
     const address = await sql.begin(async (tx) => {
       // Si parDefaut = true, désactiver tous les autres
       if (updates.parDefaut === true) {
@@ -103,7 +103,7 @@ export async function DELETE(request, { params }) {
 
   try {
  // 3) Vérification ownership + suppression dans une transaction
- // ️ IMPORTANT : sql.begin() retourne l'objet directement (PAS un tableau)
+ //  IMPORTANT : sql.begin() retourne l'objet directement (PAS un tableau)
     const deleted = await sql.begin(async (tx) => {
       const [addr] = await tx`
         DELETE FROM addresses WHERE id = ${id} AND user_id = ${userId} RETURNING id

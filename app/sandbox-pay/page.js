@@ -39,7 +39,7 @@ function SandboxPayContent() {
 
   return (
     <div className="shell" style={{ maxWidth: 500, margin: "50px auto", padding: 20 }}>
-      <h1>🧪 Sandbox Mobile Money</h1>
+      <h1>[TEST] Sandbox Mobile Money</h1>
       <p style={{ color: "#888" }}>Mode test — aucun vrai paiement n'est effectué.</p>
 
       <div style={{ background: "#f5f5f5", padding: 16, borderRadius: 8, margin: "20px 0" }}>
@@ -53,14 +53,14 @@ function SandboxPayContent() {
           onClick={() => simulatePayment("success")}
           style={{ padding: 14 }}
         >
-          ✅ Simuler paiement RÉUSSI
+          [OK] Simuler paiement RÉUSSI
         </button>
         <button
           className="btn btn-ghost"
           onClick={() => simulatePayment("failed")}
           style={{ padding: 14 }}
         >
-          ❌ Simuler paiement ÉCHOUÉ
+          [FAIL] Simuler paiement ÉCHOUÉ
         </button>
       </div>
     </div>

@@ -84,7 +84,7 @@ export async function POST(request) {
     const shouldBeDefault = parDefaut || existingCount.count === 0;
 
  // 5) Transaction pour cohérence
- // ️ IMPORTANT : sql.begin() retourne l'objet directement (PAS un tableau)
+ //  IMPORTANT : sql.begin() retourne l'objet directement (PAS un tableau)
     const address = await sql.begin(async (tx) => {
       if (shouldBeDefault) {
         await tx`UPDATE addresses SET par_defaut = false WHERE user_id = ${userId}`;
