@@ -50,17 +50,17 @@ export default function ShopClient({ shop, products, initialUser, categories }) 
               flexShrink: 0,
             }}
           >
-            🏪
+            
           </div>
           <div>
             <h1 style={{ margin: 0, fontSize: "1.4rem", color: "var(--ink-900)" }}>
               {shop.name}{" "}
               <span style={{ color: "var(--gold-600, #c9a44c)", fontWeight: 700 }} title="Boutique vérifiée">
-                ✓
+                
               </span>
             </h1>
             <div style={{ color: "var(--ink-600)", fontSize: "0.85rem", marginTop: 4 }}>
-              {shop.city && <>📍 {shop.city} · </>}
+              {shop.city && <> {shop.city} · </>}
               {since && <>Sur Kimoxa depuis {since}</>}
             </div>
             {shop.description && (
@@ -73,12 +73,12 @@ export default function ShopClient({ shop, products, initialUser, categories }) 
 
         {/* ===== Produits de la boutique ===== */}
         <h2 style={{ fontSize: "1.05rem", marginBottom: 12, color: "var(--ink-900)" }}>
-          📦 Produits de la boutique ({products.length})
+           Produits de la boutique ({products.length})
         </h2>
 
         {products.length === 0 ? (
           <div className="empty-state">
-            <div className="glyph">📦</div>
+            <div className="glyph"></div>
             <p>Cette boutique n'a pas encore de produits actifs.</p>
           </div>
         ) : (
@@ -133,7 +133,7 @@ export default function ShopClient({ shop, products, initialUser, categories }) 
                       />
                     ) : (
                       <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2.5rem" }}>
-                        📦
+                        
                       </div>
                     )}
                   </div>
@@ -155,7 +155,7 @@ export default function ShopClient({ shop, products, initialUser, categories }) 
                     <PriceDisplay product={p} />
                     {p.stock_quantity > 0 && p.stock_quantity <= 5 && (
                       <div style={{ fontSize: "0.7rem", color: "var(--bissap-600, #a4243b)", fontWeight: 600, marginTop: 4 }}>
-                        🔥 Plus que {p.stock_quantity} !
+                         Plus que {p.stock_quantity} !
                       </div>
                     )}
                     {p.stock_quantity <= 0 && (

@@ -185,13 +185,13 @@ function FilterSheet({
                   className={`temu-chip ${filters.minRating === String(n) ? "is-active" : ""}`}
                   onClick={() => setFilters((f) => ({ ...f, minRating: String(n) }))}
                 >
-                  {"★".repeat(n)} et plus
+                  {"".repeat(n)} et plus
                 </button>
               ))}
             </div>
           </section>
 
-          {/* 📍 Près de chez moi (remplace l'ancien filtre Ville vendeur) */}
+          {/*  Près de chez moi (remplace l'ancien filtre Ville vendeur) */}
           <section className="temu-filter-section">
             <h3>Près de chez moi</h3>
             <button
@@ -265,7 +265,7 @@ function ActiveFilterChips({ filters, categories, onRemove }) {
     chips.push({ key: "condition", label: CONDITION_LABELS[filters.condition] || filters.condition });
   }
   if (filters.minRating) {
-    chips.push({ key: "minRating", label: `${"★".repeat(Number(filters.minRating))} et plus` });
+    chips.push({ key: "minRating", label: `${"".repeat(Number(filters.minRating))} et plus` });
   }
   if (filters.minPrice || filters.maxPrice) {
     chips.push({
@@ -552,7 +552,7 @@ function ShopContent({
             {!hasMore && products.length > ITEMS_PER_PAGE && (
               <div className="load-more-wrap">
                 <p className="load-more-done">
-                  ✓ Vous avez vu tous les {products.length} produits
+                   Vous avez vu tous les {products.length} produits
                 </p>
               </div>
             )}

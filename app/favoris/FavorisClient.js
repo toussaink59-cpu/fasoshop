@@ -49,7 +49,7 @@ export default function FavorisClient({ initialUser, categories, initialProducts
                     />
                   ) : (
                     <div style={{ width: "100%", aspectRatio: "1 / 1", background: "var(--sand-100)", borderRadius: 6, marginBottom: 8, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "2rem" }}>
-                      🛍️
+                      
                     </div>
                   )}
                   <div className="name">{p.name}</div>

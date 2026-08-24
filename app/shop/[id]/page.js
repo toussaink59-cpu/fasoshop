@@ -41,7 +41,7 @@ export default async function ProductDetailPage({ params }) {
         <SiteHeader initialUser={user} categories={categories} />
         <div className="content">
           <div className="empty-state">
-            <div className="glyph">🛍️</div>
+            <div className="glyph"></div>
             <p>Produit introuvable.</p>
             <Link href="/shop">← Retour au catalogue</Link>
           </div>
