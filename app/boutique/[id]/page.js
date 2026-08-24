@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import sql from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { getPublicShop, getShopProducts } from "@/lib/queries/shopPublic";
+import { storeJsonLd } from "@/lib/structuredData";
 import ShopClient from "./ShopClient";
 
 export async function generateMetadata({ params }) {
@@ -31,11 +32,22 @@ export default async function BoutiquePage({ params }) {
   if (!shop) notFound();
 
   return (
-    <ShopClient
-      shop={shop}
-      products={products}
-      initialUser={user}
-      categories={categories}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: storeJsonLd(
+            shop,
+            `${process.env.NEXT_PUBLIC_SITE_URL || "https://kimoxa.com"}/boutique/${id}`
+          ),
+        }}
+      />
+      <ShopClient
+        shop={shop}
+        products={products}
+        initialUser={user}
+        categories={categories}
+      />
+    </>
   );
 }

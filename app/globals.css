@@ -14,9 +14,9 @@
   --millet-100: #e5ede2;
   --border: #e5ddcd;
   --radius: 10px;
-  --font-display: 'Fraunces', serif;
-  --font-body: 'Work Sans', sans-serif;
-  --font-mono: 'IBM Plex Mono', monospace;
+  --font-display: var(--font-fraunces), serif;
+  --font-body: var(--font-work-sans), sans-serif;
+  --font-mono: var(--font-ibm-plex-mono), monospace;
 }
 
 * {

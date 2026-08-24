@@ -1,8 +1,9 @@
-import { ShoppingBagIcon } from "@/app/components/Icons";
+﻿import { ShoppingBagIcon } from "@/app/components/Icons";
 import Link from "next/link";
 import { getProductDetail, getProductReviews } from "@/lib/queries/productDetail";
 import { getCurrentUser } from "@/lib/session";
 import { getCategoriesTree } from "@/lib/queries/categories";
+import { productJsonLd } from "@/lib/structuredData";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
 import ProductDetailClient from "@/app/shop/[id]/ProductDetailClient";
@@ -41,7 +42,7 @@ export default async function ProductDetailPage({ params }) {
         <SiteHeader initialUser={user} categories={categories} />
         <div className="content">
           <div className="empty-state">
-            <div className="glyph"></div>
+            <div className="glyph"><ShoppingBagIcon size={48} style={{ color: "var(--ink-300)" }} /></div>
             <p>Produit introuvable.</p>
             <Link href="/shop">← Retour au catalogue</Link>
           </div>
@@ -52,12 +53,23 @@ export default async function ProductDetailPage({ params }) {
   }
 
   return (
-    <ProductDetailClient
-      id={id}
-      product={product}
-      initialReviews={initialReviews}
-      initialUser={user}
-      categories={categories}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: productJsonLd(
+            product,
+            `${process.env.NEXT_PUBLIC_SITE_URL || "https://kimoxa.com"}/shop/${id}`
+          ),
+        }}
+      />
+      <ProductDetailClient
+        id={id}
+        product={product}
+        initialReviews={initialReviews}
+        initialUser={user}
+        categories={categories}
+      />
+    </>
   );
 }

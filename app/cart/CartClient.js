@@ -370,11 +370,28 @@ export default function CartClient({ initialUser, categories }) {
                         <div className="cart-item-price">{item.price.toLocaleString("fr-FR")} FCFA</div>
                         <div className="cart-item-actions">
                           <div className="qty-stepper" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                            <button onClick={() => changeQty(item.productId, item.quantity - 1)} style={{ padding: "4px 8px" }}><MinusIcon size={14} /></button>
-                            <span style={{ padding: "0 8px" }}>{item.quantity}</span>
-                            <button onClick={() => changeQty(item.productId, item.quantity + 1)} style={{ padding: "4px 8px" }}><PlusIcon size={14} /></button>
+                            <button
+                              onClick={() => changeQty(item.productId, item.quantity - 1)}
+                              style={{ padding: "4px 8px" }}
+                              aria-label={`Diminuer la quantité de ${item.name}`}
+                            >
+                              <MinusIcon size={14} />
+                            </button>
+                            <span style={{ padding: "0 8px" }} aria-live="polite">{item.quantity}</span>
+                            <button
+                              onClick={() => changeQty(item.productId, item.quantity + 1)}
+                              style={{ padding: "4px 8px" }}
+                              aria-label={`Augmenter la quantité de ${item.name}`}
+                            >
+                              <PlusIcon size={14} />
+                            </button>
                           </div>
-                          <button className="cart-item-remove" onClick={() => removeItem(item.productId)} style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                          <button
+                            className="cart-item-remove"
+                            onClick={() => removeItem(item.productId)}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                            aria-label={`Supprimer ${item.name} du panier`}
+                          >
                             <TrashIcon size={14} /> Supprimer
                           </button>
                         </div>
