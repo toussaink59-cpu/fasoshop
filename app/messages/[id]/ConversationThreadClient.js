@@ -168,7 +168,7 @@ export default function ConversationThreadClient({ id, initialThread, initialUse
             disabled={sending || !text.trim()}
             aria-label="Envoyer"
           >
-            ➤
+            <SendIcon size={18} />
           </button>
         </form>
       </div>

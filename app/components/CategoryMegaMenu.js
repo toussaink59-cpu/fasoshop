@@ -1,5 +1,6 @@
 "use client";
 
+import { MenuIcon } from "@/app/components/Icons";
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 
@@ -29,7 +30,7 @@ export default function CategoryMegaMenu({ categories = [] }) {
   return (
     <div className="mega-menu-wrap" ref={wrapRef}>
       <button className="mega-menu-trigger" onClick={() => setOpen((o) => !o)}>
-        <span className="mega-menu-icon">☰</span>
+        <span className="mega-menu-icon"><MenuIcon size={18} /></span>
         <span className="mega-menu-label-full">Toutes les catégories</span>
         <span className="mega-menu-label-short">Catégories</span>
       </button>

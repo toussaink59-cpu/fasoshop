@@ -130,7 +130,7 @@ export default function SideMenu({ open, onClose, user, categories = [], onLogou
             onClick={onClose}
             aria-label="Fermer le menu"
           >
-            ✕
+            <XIcon size={20} />
           </button>
         </div>
 
@@ -151,25 +151,25 @@ export default function SideMenu({ open, onClose, user, categories = [], onLogou
 
           {user && user.role === "buyer" && (
             <Link href="/orders" className="side-menu-link" onClick={onClose}>
-              📦 Mes commandes
+              <><PackageIcon size={18} style={{ marginRight: 8 }} />Mes commandes</>
             </Link>
           )}
 
           {user && user.role === "buyer" && (
             <Link href="/favoris" className="side-menu-link" onClick={onClose}>
-              ❤️ Mes favoris
+              <><HeartIcon size={18} style={{ marginRight: 8 }} />Mes favoris</>
             </Link>
           )}
 
           {user && (
             <Link href="/messages" className="side-menu-link" onClick={onClose}>
-              💬 Messages
+              <><MessageCircleIcon size={18} style={{ marginRight: 8 }} />Messages</>
             </Link>
           )}
 
           {user && (
             <Link href="/account/addresses" className="side-menu-link" onClick={onClose}>
-              📍 Mes adresses
+              <><MapPinIcon size={18} style={{ marginRight: 8 }} />Mes adresses</>
             </Link>
           )}
 
@@ -195,7 +195,7 @@ export default function SideMenu({ open, onClose, user, categories = [], onLogou
               className="side-menu-link side-menu-link-accent"
               onClick={onClose}
             >
-              🏪 Devenir vendeur
+              <><StoreIcon size={18} style={{ marginRight: 8 }} />Devenir vendeur</>
             </Link>
           )}
 
@@ -228,7 +228,7 @@ export default function SideMenu({ open, onClose, user, categories = [], onLogou
                 className="side-menu-link side-menu-logout"
                 onClick={handleLogout}
               >
-                🔒 Déconnexion
+                <><LockIcon size={18} style={{ marginRight: 8 }} />Déconnexion</>
               </button>
             </>
           )}

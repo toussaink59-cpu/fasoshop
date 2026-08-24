@@ -1,0 +1,42 @@
+﻿config:
+  target: "https://fasoshop-xi.vercel.app"
+  phases:
+    # Phase 1 : 10 users pendant 30s (échauffement)
+    - duration: 30
+      arrivalRate: 2
+      name: "warmup"
+    # Phase 2 : montée progressive
+    - duration: 60
+      arrivalRate: 5
+      name: "ramp up"
+    # Phase 3 : pic 10 users/sec pendant 1 min
+    - duration: 60
+      arrivalRate: 10
+      name: "peak"
+
+  # Limiter les requêtes parallèles pour ne pas noyer Neon
+  http:
+    timeout: 15
+
+scenarios:
+  - name: "Parcours acheteur (GET only)"
+    weight: 80
+    flow:
+      - get:
+          url: "/"
+      - think: 2
+      - get:
+          url: "/shop"
+      - think: 3
+      - get:
+          url: "/shop/30"
+      - think: 2
+
+  - name: "Recherche catalogue"
+    weight: 20
+    flow:
+      - get:
+          url: "/shop?q=telephone"
+      - think: 3
+      - get:
+          url: "/shop/30"

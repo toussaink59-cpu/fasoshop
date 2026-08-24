@@ -1,0 +1,50 @@
+﻿config:
+  target: "https://fasoshop-xi.vercel.app"
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "montee progressive"
+    - duration: 60
+      arrivalRate: 15
+      name: "charge soutenue"
+
+  http:
+    timeout: 15
+
+scenarios:
+  - name: "Parcours complet acheteur"
+    weight: 70
+    flow:
+      - get:
+          url: "/"
+      - think: 2
+      - get:
+          url: "/shop"
+      - think: 2
+      - get:
+          url: "/shop/30"
+      - think: 3
+      # POST API panier (simule add to cart)
+      - post:
+          url: "/api/cart/sync"
+          json:
+            items:
+              - productId: 30
+                quantity: 1
+                shopId: 1
+                shopName: "Kimoxa Extension"
+                price: 12000
+          headers:
+            Content-Type: "application/json"
+      - think: 2
+      - get:
+          url: "/cart"
+
+  - name: "Recherche catalogue"
+    weight: 30
+    flow:
+      - get:
+          url: "/shop?q=telephone"
+      - think: 3
+      - get:
+          url: "/shop/30"

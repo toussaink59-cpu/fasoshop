@@ -7,7 +7,7 @@ import { PrinterIcon } from "@/app/components/Icons";
 export default function PrintButton() {
   return (
     <button onClick={() => window.print()} className="btn btn-primary">
-      🖨️ Imprimer / Enregistrer en PDF
+      <PrinterIcon size={16} style={{ marginRight: 8 }} /> Imprimer / Enregistrer en PDF
     </button>
   );
 }
