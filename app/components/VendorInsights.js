@@ -1,5 +1,6 @@
 "use client";
 
+import { ClockIcon, TrophyIcon, StarIcon, ArrowRightIcon } from "@/app/components/Icons";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -12,7 +13,11 @@ const STATUS_BADGES = {
 
 function Stars({ rating }) {
   const n = Math.round(Number(rating) || 0);
-  return <span>{"★".repeat(n)}{"☆".repeat(5 - n)}</span>;
+  return <span style={{ display: "inline-flex", gap: 1 }}>
+    {Array.from({ length: 5 }).map((_, i) => (
+      <StarIcon key={i} size={14} style={{ color: i < n ? "var(--gold-500)" : "#d4d4d4", fill: i < n ? "var(--gold-500)" : "#d4d4d4" }} />
+    ))}
+  </span>;
 }
 
 export default function VendorInsights() {
@@ -51,8 +56,8 @@ export default function VendorInsights() {
       {/* Commandes récentes */}
       <div className="va-card">
         <h3>
-          🕐 Commandes récentes{" "}
-          <Link href="/vendor/orders" className="va-seeall">Voir tout →</Link>
+          <ClockIcon size={16} style={{ marginRight: 4 }} /> Commandes récentes{" "}
+          <Link href="/vendor/orders" className="va-seeall">Voir tout <ArrowRightIcon size={14} style={{ marginLeft: 2 }} /></Link>
         </h3>
         {recent.length === 0 ? (
           <div className="va-empty"><p>Aucune commande pour l'instant.</p></div>
@@ -75,7 +80,7 @@ export default function VendorInsights() {
 
       {/* Top produits */}
       <div className="va-card">
-        <h3>🏆 Produits les plus vendus</h3>
+        <h3><TrophyIcon size={16} style={{ marginRight: 4 }} /> Produits les plus vendus</h3>
         {top.length === 0 ? (
           <div className="va-empty"><p>Pas encore de ventes.</p></div>
         ) : (

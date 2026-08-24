@@ -1,5 +1,6 @@
-"use client";
+﻿"use client";
 
+import { StoreIcon } from "@/app/components/Icons";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -62,8 +63,8 @@ export default function VendorDeliveryToggle() {
         setEnabled(Boolean(data.enabled));
         setMsg(
           data.enabled
-            ? "✅ Vous livrez vous-même : les frais de livraison seront ajoutés à vos payouts."
-            : "✅ Livraison confiée aux livreurs Kimoxa."
+            ? "Vous livrez vous-même : les frais de livraison seront ajoutés à vos payouts."
+            : "Livraison confiée aux livreurs Kimoxa."
         );
       } else {
         setError(data.error || "Impossible de modifier le réglage.");
@@ -92,8 +93,8 @@ export default function VendorDeliveryToggle() {
       };
 
   const buttonLabel = isMobile
-    ? (saving ? "…" : enabled ? "✅" : "○")
-    : (saving ? "..." : enabled ? "✅ Activé" : "Désactivé");
+    ? (saving ? "..." : enabled ? "ON" : "OFF")
+    : (saving ? "..." : enabled ? "Activé" : "Désactivé");
 
   const buttonTitle = enabled
     ? "Livraison assurée par vous (cliquez pour désactiver)"
@@ -104,7 +105,7 @@ export default function VendorDeliveryToggle() {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: isMobile ? 8 : 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <strong style={{ fontSize: isMobile ? "0.85rem" : "0.95rem" }}>
-            🏪 Je livre moi-même mes commandes
+            <StoreIcon size={16} style={{ marginRight: 4 }} /> Je livre moi-même mes commandes
           </strong>
           <p style={{ margin: "4px 0 0", fontSize: isMobile ? "0.72rem" : "0.78rem", color: "var(--ink-400)", lineHeight: 1.4 }}>
             {isMobile

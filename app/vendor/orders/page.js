@@ -1,5 +1,6 @@
 "use client";
 
+import { MessageCircleIcon, LockIcon, MailIcon, MapPinIcon, PhoneIcon, SmartphoneIcon, CheckCircleIcon, ArrowRightIcon, XCircleIcon } from "@/app/components/Icons";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -133,7 +134,7 @@ export default function VendorOrdersPage() {
         </div>
         <div className="topbar-actions">
           <Link href="/messages" className="topbar-icon" aria-label="Messages">
-            💬
+            <MessageCircleIcon size={18} />
             {unreadCount > 0 && (
               <span className="topbar-badge">{unreadCount > 9 ? "9+" : unreadCount}</span>
             )}
@@ -149,7 +150,7 @@ export default function VendorOrdersPage() {
           <p>Le statut concerne uniquement votre boutique.</p>
         </div>
 
-        {/* 🔒 Rappel règle P0 */}
+        {/* <LockIcon size={16} style={{ color: "var(--gold-600)" }} /> Rappel règle P0 */}
         <div
           style={{
             background: "#eff6ff",
@@ -161,7 +162,7 @@ export default function VendorOrdersPage() {
             marginBottom: "16px",
           }}
         >
-          🔒 Règle Kimoxa : vous marquez « Expédiée », <strong>le client confirme la réception</strong>.
+          <LockIcon size={16} style={{ color: "var(--gold-600)" }} /> Règle Kimoxa : vous marquez « Expédiée », <strong>le client confirme la réception</strong>.
           Le paiement vous est libéré après confirmation client (Mobile Money) ou selon votre reversement de commission (espèces).
         </div>
 
@@ -190,7 +191,7 @@ export default function VendorOrdersPage() {
           <p>Chargement...</p>
         ) : filteredOrders.length === 0 ? (
           <div className="empty-state">
-            <div className="glyph">📬</div>
+            <div className="glyph"><MailIcon size={48} style={{ color: "var(--ink-300)" }} /></div>
             <p>Aucune commande {orderFilter !== "all" ? "pour ce filtre" : "pour l'instant"}.</p>
           </div>
         ) : (
@@ -221,28 +222,28 @@ export default function VendorOrdersPage() {
               </div>
 
               <div className="order-meta">
-                📍 {o.shipping_address} · 📞 {o.phone}
+                <MapPinIcon size={14} style={{ marginRight: 4 }} /> {o.shipping_address} · <PhoneIcon size={14} style={{ marginRight: 4 }} /> {o.phone}
               </div>
               <div className="order-payment">
-                {o.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 Paiement à la livraison"}
+                {o.payment_method === "mobile_money" ? "<SmartphoneIcon size={16} style={{ marginRight: 4 }} /> Mobile Money" : "💵 Paiement à la livraison"}
               </div>
 
               <div className="order-actions">
-                {/* ✅ preparation → shipped (seule transition "envoi" du vendeur) */}
+                {/* <CheckCircleIcon size={16} style={{ marginRight: 4 }} /> preparation → shipped (seule transition "envoi" du vendeur) */}
                 {o.delivery_status === "preparation" && (
                   <button className="btn btn-primary" onClick={() => updateStatus(o.order_id, "shipped", "vendor_ship")}>
-                    Marquer expédiée ➜
+                    Marquer expédiée <ArrowRightIcon size={16} style={{ marginLeft: 4 }} />
                   </button>
                 )}
 
-                {/* 🔒 P0 : annulation possible UNIQUEMENT en preparation */}
+                {/* <LockIcon size={16} style={{ color: "var(--gold-600)" }} /> P0 : annulation possible UNIQUEMENT en preparation */}
                 {o.delivery_status === "preparation" && (
                   <button className="btn btn-ghost" onClick={() => handleCancel(o.order_id)}>
-                    ❌ Annuler (restock)
+                    <XCircleIcon size={16} style={{ marginRight: 4 }} /> Annuler (restock)
                   </button>
                 )}
 
-                {/* 🔒 P0 : PLUS DE BOUTON "Marquer livrée" — réservé au client */}
+                {/* <LockIcon size={16} style={{ color: "var(--gold-600)" }} /> P0 : PLUS DE BOUTON "Marquer livrée" — réservé au client */}
                 {o.delivery_status === "shipped" && (
                   <div
                     style={{
@@ -252,7 +253,7 @@ export default function VendorOrdersPage() {
                       padding: "6px 4px",
                     }}
                   >
-                    📱 Colis en route — en attente de confirmation du client.
+                    <SmartphoneIcon size={16} style={{ marginRight: 4 }} /> Colis en route — en attente de confirmation du client.
                   </div>
                 )}
 
@@ -261,7 +262,7 @@ export default function VendorOrdersPage() {
                   onClick={() => handleContact(o.order_id)}
                   disabled={!shopId || contactingId === o.order_id}
                 >
-                  💬 {contactingId === o.order_id ? "..." : "Contacter"}
+                  <MessageCircleIcon size={18} /> {contactingId === o.order_id ? "..." : "Contacter"}
                 </button>
               </div>
             </div>

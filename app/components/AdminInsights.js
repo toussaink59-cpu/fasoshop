@@ -1,5 +1,6 @@
 "use client";
 
+import { DollarSignIcon, TrophyIcon, ClockIcon, ArrowRightIcon } from "@/app/components/Icons";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
@@ -33,8 +34,8 @@ export default function AdminInsights() {
       {/* Payouts à libérer */}
       <div className="va-card">
         <h3>
-          💸 Payouts à libérer{" "}
-          <Link href="/admin/payouts" className="va-seeall">Voir tout →</Link>
+          <DollarSignIcon size={16} style={{ marginRight: 4 }} /> Payouts à libérer{" "}
+          <Link href="/admin/payouts" className="va-seeall">Voir tout <ArrowRightIcon size={14} style={{ marginLeft: 2 }} /></Link>
         </h3>
         {releasedCount === 0 ? (
           <div className="va-empty"><p>Aucun payout à traiter.</p></div>
@@ -47,7 +48,7 @@ export default function AdminInsights() {
               vendeur{releasedCount > 1 ? "s" : ""} en attente de paiement
             </div>
             <Link href="/admin/payouts" className="btn btn-primary" style={{ marginTop: 12, display: "inline-block" }}>
-              Traiter les payouts →
+              Traiter les payouts <ArrowRightIcon size={14} style={{ marginLeft: 2 }} />
             </Link>
           </div>
         )}
@@ -55,7 +56,7 @@ export default function AdminInsights() {
 
       {/* Top vendeurs */}
       <div className="va-card">
-        <h3>🏆 Top vendeurs</h3>
+        <h3><TrophyIcon size={16} style={{ marginRight: 4 }} /> Top vendeurs</h3>
         {topVendors.length === 0 ? (
           <div className="va-empty"><p>Pas encore de ventes.</p></div>
         ) : (
@@ -74,8 +75,8 @@ export default function AdminInsights() {
       {/* Boutiques en attente */}
       <div className="va-card">
         <h3>
-          ⏳ Boutiques en attente{" "}
-          <Link href="/admin/shops" className="va-seeall">Voir tout →</Link>
+          <ClockIcon size={16} style={{ marginRight: 4 }} /> Boutiques en attente{" "}
+          <Link href="/admin/shops" className="va-seeall">Voir tout <ArrowRightIcon size={14} style={{ marginLeft: 2 }} /></Link>
         </h3>
         {pendingShops.length === 0 ? (
           <div className="va-empty"><p>Aucune boutique à vérifier.</p></div>

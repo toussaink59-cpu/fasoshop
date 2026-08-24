@@ -1,5 +1,6 @@
 "use client";
 
+import { RocketIcon, StarIcon } from "@/app/components/Icons";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -119,14 +120,14 @@ export default function AdminModerationPage() {
         {/* Cartes stats (même style que le dashboard) */}
         <div className="vendor-stats-grid">
           <div className="vendor-stat-card">
-            <div className="vendor-stat-icon">🚀</div>
+            <div className="vendor-stat-icon"><RocketIcon size={24} /></div>
             <div className="vendor-stat-value" style={{ color: pendingModerationCount > 0 ? "var(--gold-600)" : "inherit" }}>
               {pendingModerationCount}
             </div>
             <div className="vendor-stat-label">Sponsorings en attente</div>
           </div>
           <div className="vendor-stat-card">
-            <div className="vendor-stat-icon">⭐</div>
+            <div className="vendor-stat-icon"><StarIcon size={24} style={{ color: "var(--gold-500)" }} /></div>
             <div className="vendor-stat-value">{reviews.length}</div>
             <div className="vendor-stat-label">Avis clients</div>
           </div>
@@ -216,7 +217,7 @@ export default function AdminModerationPage() {
                         <td>{r.product_name}</td>
                         <td>{r.shop_name}</td>
                         <td>{r.buyer_name}</td>
-                        <td>{"⭐".repeat(r.rating)}</td>
+                        <td><span style={{ display: "inline-flex", gap: 1 }}>{Array.from({ length: r.rating }).map((_, i) => <StarIcon key={i} size={14} style={{ color: "var(--gold-500)", fill: "var(--gold-500)" }} />)}</span></td>
                         <td style={{ maxWidth: 260 }}>{r.comment || "—"}</td>
                         <td>{new Date(r.created_at).toLocaleDateString("fr-FR")}</td>
                         <td>

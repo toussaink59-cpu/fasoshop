@@ -1,5 +1,6 @@
 "use client";
 
+import { PackageIcon, AlertTriangleIcon, BarChartIcon } from "@/app/components/Icons";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -88,12 +89,12 @@ export default function AdminProductsPage() {
         {/* Cartes stats (même style que le dashboard) */}
         <div className="vendor-stats-grid">
           <div className="vendor-stat-card">
-            <div className="vendor-stat-icon">📦</div>
+            <div className="vendor-stat-icon"><PackageIcon size={24} /></div>
             <div className="vendor-stat-value">{totalStock}</div>
             <div className="vendor-stat-label">Unités en stock</div>
           </div>
           <div className="vendor-stat-card">
-            <div className="vendor-stat-icon">⚠️</div>
+            <div className="vendor-stat-icon"><AlertTriangleIcon size={24} style={{ color: "var(--bissap-600)" }} /></div>
             <div className="vendor-stat-value" style={{ color: lowStockCount > 0 ? "var(--bissap-600)" : "inherit" }}>
               {lowStockCount}
             </div>
@@ -128,7 +129,7 @@ export default function AdminProductsPage() {
             <p style={{ marginTop: 16 }}>Chargement...</p>
           ) : products.length === 0 ? (
             <div className="empty-state">
-              <div className="glyph">📊</div>
+              <div className="glyph"><BarChartIcon size={48} style={{ color: "var(--ink-300)" }} /></div>
               <p>Aucun produit ne correspond à ce filtre.</p>
             </div>
           ) : (

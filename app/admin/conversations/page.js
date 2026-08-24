@@ -1,5 +1,6 @@
 "use client";
 
+import { MessageCircleIcon, StoreIcon, UserIcon, ArrowLeftIcon } from "@/app/components/Icons";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -68,11 +69,11 @@ export default function AdminConversationsPage() {
           <>
             <div className="vendor-dashboard-header">
               <button className="btn btn-ghost" onClick={() => setSelected(null)} style={{ marginBottom: 10 }}>
-                ← Toutes les conversations
+                <ArrowLeftIcon size={16} style={{ marginRight: 4 }} /> Toutes les conversations
               </button>
-              <h1>💬 #{selected.conversation.id}</h1>
+              <h1><MessageCircleIcon size={18} style={{ marginRight: 4 }} /> #{selected.conversation.id}</h1>
               <p>
-                🏪 {selected.conversation.shop_name} ({selected.conversation.vendor_name}) ↔ 👤 {selected.conversation.buyer_name} · Commande #{selected.conversation.order_id}
+                <StoreIcon size={16} style={{ marginRight: 4 }} /> {selected.conversation.shop_name} ({selected.conversation.vendor_name}) ↔ <UserIcon size={16} style={{ marginRight: 4 }} /> {selected.conversation.buyer_name} · Commande #{selected.conversation.order_id}
               </p>
             </div>
 
@@ -86,7 +87,7 @@ export default function AdminConversationsPage() {
                     className={`chat-bubble ${m.sender_role === "vendor" ? "chat-bubble-mine" : "chat-bubble-theirs"}`}
                   >
                     <span style={{ fontSize: "0.62rem", fontWeight: 800, display: "block", marginBottom: 2 }}>
-                      {m.sender_role === "vendor" ? "🏪 Vendeur" : "👤 Client"} : {m.sender_name}
+                      {m.sender_role === "vendor" ? "<StoreIcon size={16} style={{ marginRight: 4 }} /> Vendeur" : "<UserIcon size={16} style={{ marginRight: 4 }} /> Client"} : {m.sender_name}
                     </span>
                     {m.image_url && <img src={m.image_url} alt="Photo" className="chat-bubble-img" />}
                     {m.body && <p>{m.body}</p>}
@@ -101,7 +102,7 @@ export default function AdminConversationsPage() {
         ) : (
           <>
             <div className="vendor-dashboard-header">
-              <h1>💬 Surveillance des conversations</h1>
+              <h1><MessageCircleIcon size={18} style={{ marginRight: 4 }} /> Surveillance des conversations</h1>
               <p>{conversations.length} conversation{conversations.length > 1 ? "s" : ""} — vous voyez TOUT ce qui s'échange entre vendeurs et clients.</p>
             </div>
 
@@ -109,7 +110,7 @@ export default function AdminConversationsPage() {
               <p>Chargement...</p>
             ) : conversations.length === 0 ? (
               <div className="empty-state">
-                <div className="glyph">💬</div>
+                <div className="glyph"><MessageCircleIcon size={18} style={{ marginRight: 4 }} /></div>
                 <p>Aucune conversation pour l'instant.</p>
               </div>
             ) : (
@@ -123,7 +124,7 @@ export default function AdminConversationsPage() {
                 >
                   <div className="order-head">
                     <div>
-                      <strong>🏪 {c.shop_name} ↔ 👤 {c.buyer_name}</strong>
+                      <strong><StoreIcon size={16} style={{ marginRight: 4 }} /> {c.shop_name} ↔ <UserIcon size={16} style={{ marginRight: 4 }} /> {c.buyer_name}</strong>
                       <span className="order-date">Commande #{c.order_id} · {c.message_count} message{c.message_count > 1 ? "s" : ""}</span>
                     </div>
                   </div>
