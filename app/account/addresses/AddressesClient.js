@@ -1,5 +1,6 @@
 "use client";
 
+import { MapPinIcon } from "@/app/components/Icons";
 import { useState } from "react";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
@@ -173,7 +174,7 @@ export default function AddressesClient({ initialUser, categories, initialAddres
                 disabled={locating}
                 style={{ marginBottom: 10 }}
               >
-                {locating ? "Localisation en cours..." : "📍 Utiliser ma position actuelle"}
+                {locating ? "Localisation en cours..." : "Utiliser ma position actuelle"}
               </button>
               {locateError && <div className="error-box" style={{ marginBottom: 10 }}>{locateError}</div>}
               {coords && (
@@ -201,7 +202,7 @@ export default function AddressesClient({ initialUser, categories, initialAddres
 
           {addresses.length === 0 ? (
             <div className="empty-state">
-              <div className="glyph">📍</div>
+              <div className="glyph"><MapPinIcon size={48} style={{ color: "var(--ink-300)" }} /></div>
               <p>Aucune adresse enregistrée pour l'instant.</p>
             </div>
           ) : (
@@ -223,7 +224,7 @@ export default function AddressesClient({ initialUser, categories, initialAddres
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                       <strong>{a.libelle}</strong>
                       {a.par_defaut && <span className="badge badge-ok">Par défaut</span>}
-                      {a.latitude && <span className="badge badge-ok">📍 Géolocalisée</span>}
+                      {a.latitude && <span className="badge badge-ok" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}><MapPinIcon size={12} /> Géolocalisée</span>}
                     </div>
                     <div style={{ fontSize: "0.9rem", color: "var(--ink-400)" }}>{a.adresse_texte}</div>
                     {a.phone && <div className="sku" style={{ marginTop: 4 }}>{a.phone}</div>}

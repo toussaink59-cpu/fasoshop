@@ -1,5 +1,6 @@
 "use client";
 
+import { PaperclipIcon, SendIcon } from "@/app/components/Icons";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import SiteHeader from "@/app/components/SiteHeader";
@@ -145,7 +146,7 @@ export default function ConversationThreadClient({ id, initialThread, initialUse
             aria-label="Joindre une photo"
             title="Joindre une photo"
           >
-            {uploading ? "…" : "📎"}
+            {uploading ? "…" : <PaperclipIcon size={18} />}
           </button>
           <input
             ref={fileInputRef}

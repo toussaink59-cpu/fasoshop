@@ -1,3 +1,4 @@
+import { MessageCircleIcon } from "@/app/components/Icons";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
@@ -46,7 +47,7 @@ export default async function MessagesListPage() {
 
         {conversations.length === 0 ? (
           <div className="chat-empty">
-            <div className="chat-empty-icon">💬</div>
+            <div className="chat-empty-icon"><MessageCircleIcon size={48} style={{ color: "var(--ink-300)" }} /></div>
             <p>Aucune conversation pour l'instant.</p>
             <p className="chat-empty-hint">
               {isBuyer

@@ -1,3 +1,4 @@
+import { SmartphoneIcon, BanknoteIcon, StoreIcon, BadgeCheckIcon, TruckIcon, PartyPopperIcon } from "@/app/components/Icons";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/session";
 import { getInvoiceData } from "@/lib/queries/invoice";
@@ -84,7 +85,7 @@ export default async function InvoicePage({ params }) {
           <div className="invoice-meta-block">
             <div className="invoice-meta-label">PAIEMENT</div>
             <div className="invoice-meta-value">
-              {invoice.payment_method === "mobile_money" ? "📱 Mobile Money" : "💵 À la réception"}
+              {invoice.payment_method === "mobile_money" ? <><SmartphoneIcon size={14} style={{ display: "inline-flex", marginRight: 4 }} /> Mobile Money</> : <><BanknoteIcon size={14} style={{ display: "inline-flex", marginRight: 4 }} /> À la réception</>}
             </div>
             <div className="invoice-meta-detail">
               Statut : <strong style={{ color: invoice.total > 0 ? "var(--millet-600)" : "var(--ink-600)" }}>
@@ -109,7 +110,7 @@ export default async function InvoicePage({ params }) {
               <div>
                 <div className="invoice-shop-label">VENDU PAR</div>
                 <div className="invoice-shop-name">
-                  🏪 {sub.shopName} <span className="invoice-verified">✓</span>
+                  <StoreIcon size={14} style={{ display: "inline-flex", marginRight: 6 }} />{sub.shopName} <span className="invoice-verified" style={{ display: "inline-flex" }}><BadgeCheckIcon size={14} /></span>
                 </div>
                 <div className="invoice-shop-info">
                   {sub.vendorName}
@@ -170,9 +171,9 @@ export default async function InvoicePage({ params }) {
             <span>{subtotalProducts.toLocaleString("fr-FR")} FCFA</span>
           </div>
           <div className="invoice-totals-row">
-            <span>🚚 Livraison</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 6 }}><TruckIcon size={14} /> Livraison</span>
             <span className={deliveryFee === 0 ? "delivery-free" : ""}>
-              {deliveryFee === 0 ? "Gratuite 🎉" : `${deliveryFee.toLocaleString("fr-FR")} FCFA`}
+              {deliveryFee === 0 ? <span style={{ display: "flex", alignItems: "center", gap: 6 }}>Gratuite <PartyPopperIcon size={14} style={{ color: "var(--gold-600)" }} /></span> : `${deliveryFee.toLocaleString("fr-FR")} FCFA`}
             </span>
           </div>
           <div className="invoice-totals-row invoice-totals-grand">
