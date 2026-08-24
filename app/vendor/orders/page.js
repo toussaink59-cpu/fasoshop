@@ -1,6 +1,6 @@
 "use client";
 
-import { MessageCircleIcon, LockIcon, MailIcon, MapPinIcon, PhoneIcon, SmartphoneIcon, CheckCircleIcon, ArrowRightIcon, XCircleIcon } from "@/app/components/Icons";
+import { MessageCircleIcon, LockIcon, MailIcon, MapPinIcon, PhoneIcon, SmartphoneIcon, CheckCircleIcon, ArrowRightIcon, XCircleIcon, BanknoteIcon } from "@/app/components/Icons";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -225,7 +225,7 @@ export default function VendorOrdersPage() {
                 <MapPinIcon size={14} style={{ marginRight: 4 }} /> {o.shipping_address} · <PhoneIcon size={14} style={{ marginRight: 4 }} /> {o.phone}
               </div>
               <div className="order-payment">
-                {o.payment_method === "mobile_money" ? "<SmartphoneIcon size={16} style={{ marginRight: 4 }} /> Mobile Money" : "💵 Paiement à la livraison"}
+                {o.payment_method === "mobile_money" ? <><SmartphoneIcon size={16} style={{ marginRight: 4 }} /> Mobile Money</> : <><BanknoteIcon size={16} style={{ marginRight: 4 }} /> Paiement à la livraison</>}
               </div>
 
               <div className="order-actions">

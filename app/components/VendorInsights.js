@@ -98,7 +98,7 @@ export default function VendorInsights() {
 
       {/* Avis récents */}
       <div className="va-card">
-        <h3>⭐ Avis récents</h3>
+        <h3><StarIcon size={16} style={{ marginRight: 4, color: "var(--gold-500)" }} /> Avis récents</h3>
         {reviews.length === 0 ? (
           <div className="va-empty"><p>Aucun avis pour le moment.</p></div>
         ) : (
