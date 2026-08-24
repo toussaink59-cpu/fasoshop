@@ -1,5 +1,8 @@
 "use client";
 
+import { HeartIcon, ShoppingBagIcon } from "@/app/components/Icons";
+
+
 import { useState } from "react";
 import Link from "next/link";
 import Footer from "@/app/components/Footer";
@@ -28,7 +31,7 @@ export default function FavorisClient({ initialUser, categories, initialProducts
 
         {products.length === 0 ? (
           <div className="empty-state">
-            <div className="glyph">♡</div>
+            <div className="glyph"><HeartIcon size={48} style={{ color: "var(--ink-300)" }} /></div>
             <p>Aucun favori pour l'instant.</p>
             <Link href="/shop"><button className="btn btn-primary" style={{ marginTop: 10 }}>Parcourir le catalogue</button></Link>
           </div>

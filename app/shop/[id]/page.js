@@ -1,3 +1,4 @@
+import { ShoppingBagIcon } from "@/app/components/Icons";
 import Link from "next/link";
 import { getProductDetail, getProductReviews } from "@/lib/queries/productDetail";
 import { getCurrentUser } from "@/lib/session";

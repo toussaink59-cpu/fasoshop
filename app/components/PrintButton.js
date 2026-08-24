@@ -1,5 +1,8 @@
 "use client";
 
+import { PrinterIcon } from "@/app/components/Icons";
+
+
 // Petit bouton client pour l'impression (le PDF se fait via le navigateur)
 export default function PrintButton() {
   return (

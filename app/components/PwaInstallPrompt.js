@@ -1,5 +1,8 @@
 "use client";
 
+import { SmartphoneIcon, XIcon, ShareIcon } from "@/app/components/Icons";
+
+
 import { useEffect, useState } from "react";
 
 // Bannière d'installation PWA :
@@ -50,13 +53,13 @@ export default function PwaInstallPrompt() {
   if (deferredPrompt) {
     return (
       <div className="pwa-install-banner">
-        <span className="pwa-install-icon">📲</span>
+        <span className="pwa-install-icon" style={{ display: "inline-flex" }}><SmartphoneIcon size={24} /></span>
         <div className="pwa-install-text">
           <strong>Installez Kimoxa</strong>
           <span>Accès rapide depuis votre écran d'accueil</span>
         </div>
         <button className="btn btn-primary" onClick={handleInstall}>Installer</button>
-        <button className="pwa-install-close" onClick={handleDismiss} aria-label="Fermer">✕</button>
+        <button className="pwa-install-close" onClick={handleDismiss} aria-label="Fermer"><XIcon size={18} /></button>
       </div>
     );
   }
@@ -64,12 +67,12 @@ export default function PwaInstallPrompt() {
   if (showIosHint) {
     return (
       <div className="pwa-install-banner">
-        <span className="pwa-install-icon">📲</span>
+        <span className="pwa-install-icon" style={{ display: "inline-flex" }}><SmartphoneIcon size={24} /></span>
         <div className="pwa-install-text">
           <strong>Installez Kimoxa sur iPhone</strong>
-          <span>Appuyez sur Partager 📤 puis « Sur l'écran d'accueil »</span>
+          <span>Appuyez sur Partager puis « Sur l'écran d'accueil »</span>
         </div>
-        <button className="pwa-install-close" onClick={handleDismiss} aria-label="Fermer">✕</button>
+        <button className="pwa-install-close" onClick={handleDismiss} aria-label="Fermer"><XIcon size={18} /></button>
       </div>
     );
   }

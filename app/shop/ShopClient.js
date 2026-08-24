@@ -1,5 +1,8 @@
 "use client";
 
+import { SparklesIcon, ArrowUpDownIcon, StarIcon, XIcon, TargetIcon, SettingsIcon, ShoppingBagIcon, CheckIcon, MapPinIcon } from "@/app/components/Icons";
+
+
 import { useState, useEffect, useRef, Suspense, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Footer from "@/app/components/Footer";
@@ -9,10 +12,10 @@ import ProductCard from "@/app/components/ProductCard";
 
 const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
 const SORT_OPTIONS = [
-  { value: "newest", label: "✨ Nouveautés" },
-  { value: "price_asc", label: "↑ Prix croissant" },
-  { value: "price_desc", label: "↓ Prix décroissant" },
-  { value: "rating", label: "★ Mieux notés" },
+  { value: "newest", label: "Nouveautés" },
+  { value: "price_asc", label: "Prix croissant" },
+  { value: "price_desc", label: "Prix décroissant" },
+  { value: "rating", label: "Mieux notés" },
 ];
 const ITEMS_PER_PAGE = 24;
 
@@ -79,7 +82,7 @@ function FilterSheet({
         const city = nearestCity(pos.coords.latitude, pos.coords.longitude);
         setFilters((f) => ({ ...f, city }));
         setDetecting(false);
-        setLocMsg(`✅ Ville détectée : ${city}`);
+        setLocMsg(`Ville détectée : ${city}`);
       },
       () => {
         setDetecting(false);
@@ -96,7 +99,7 @@ function FilterSheet({
       <div className="temu-sheet" onClick={(e) => e.stopPropagation()}>
         <div className="temu-sheet-head">
           <h2>Filtres</h2>
-          <button className="temu-sheet-close" onClick={onClose} aria-label="Fermer">✕</button>
+          <button className="temu-sheet-close" onClick={onClose} aria-label="Fermer"><XIcon size={24} /></button>
         </div>
 
         <div className="temu-sheet-body">
@@ -190,14 +193,14 @@ function FilterSheet({
 
           {/* 📍 Près de chez moi (remplace l'ancien filtre Ville vendeur) */}
           <section className="temu-filter-section">
-            <h3>📍 Près de chez moi</h3>
+            <h3>Près de chez moi</h3>
             <button
               type="button"
               className="temu-nearme-btn"
               onClick={handleDetectLocation}
               disabled={detecting}
             >
-              {detecting ? "Détection en cours..." : "🎯 Détecter ma position"}
+              {detecting ? "Détection en cours..." : "Détecter ma position"}
             </button>
             {locMsg && <div className="temu-nearme-msg">{locMsg}</div>}
             <div style={{ marginTop: 10 }}>
@@ -271,7 +274,7 @@ function ActiveFilterChips({ filters, categories, onRemove }) {
     });
   }
   if (filters.brand) chips.push({ key: "brand", label: filters.brand });
-  if (filters.city) chips.push({ key: "city", label: `📍 Près de ${filters.city}` });
+  if (filters.city) chips.push({ key: "city", label: `Près de ${filters.city}` });
 
   if (chips.length === 0) return null;
 
@@ -285,7 +288,7 @@ function ActiveFilterChips({ filters, categories, onRemove }) {
           aria-label={`Retirer le filtre ${chip.label}`}
         >
           <span>{chip.label}</span>
-          <span className="temu-active-chip-x">✕</span>
+          <span className="temu-active-chip-x"><XIcon size={24} /></span>
         </button>
       ))}
     </div>
@@ -493,7 +496,7 @@ function ShopContent({
               ))}
             </select>
             <button className="temu-filter-btn" onClick={openSheet}>
-              <span>⚙</span>
+              <span><SettingsIcon size={16} /></span>
               <span>Filtres</span>
               {hasActiveFilters && <span className="temu-filter-dot" />}
             </button>
@@ -513,7 +516,7 @@ function ShopContent({
           </div>
         ) : products.length === 0 ? (
           <div className="empty-state">
-            <div className="glyph">🛍️</div>
+            <div className="glyph"><ShoppingBagIcon size={48} style={{ color: "var(--ink-300)" }} /></div>
             <p>Aucun produit ne correspond à votre recherche.</p>
             <button className="btn btn-ghost" onClick={() => router.push("/shop")}>
               Voir tous les produits
@@ -537,9 +540,9 @@ function ShopContent({
                   disabled={loadingMore}
                 >
                   {loadingMore ? (
-                    <span className="load-more-spinner">↓</span>
+                    <span className="load-more-spinner"><ArrowUpDownIcon size={16} /></span>
                   ) : (
-                    <span className="load-more-icon">↓</span>
+                    <span className="load-more-icon"><ArrowUpDownIcon size={16} /></span>
                   )}
                   {loadingMore ? "Chargement..." : `Afficher plus (${remaining})`}
                 </button>

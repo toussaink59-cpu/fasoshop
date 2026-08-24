@@ -1,5 +1,6 @@
 "use client";
 
+import { StoreIcon, BadgeCheckIcon, MapPinIcon, PackageIcon, FlameIcon } from "@/app/components/Icons";
 import Link from "next/link";
 import Image from "next/image";
 import SiteHeader from "@/app/components/SiteHeader";
