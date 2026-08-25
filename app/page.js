@@ -1,3 +1,4 @@
+import RoleRedirect from "@/app/components/RoleRedirect";
 import { redirect } from "next/navigation";
 import { getCategoriesTree } from "@/lib/queries/categories";
 import { getCurrentUser } from "@/lib/session";
