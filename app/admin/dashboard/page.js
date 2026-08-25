@@ -174,7 +174,7 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
               <div className="va-card">
                 <h3 style={{ margin: "0 0 12px 0", fontSize: "1.1rem", display: "flex", alignItems: "center", gap: 8 }}>
                   <ZapIcon size={18} /> Actions rapides

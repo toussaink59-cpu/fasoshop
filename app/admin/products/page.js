@@ -133,7 +133,7 @@ export default function AdminProductsPage() {
               <p>Aucun produit ne correspond à ce filtre.</p>
             </div>
           ) : (
-            <table style={{ marginTop: 16 }}>
+            <table className="admin-products-table" style={{ marginTop: 16 }}>
               <thead>
                 <tr>
                   <th>Produit</th>

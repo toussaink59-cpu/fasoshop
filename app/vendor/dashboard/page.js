@@ -417,6 +417,15 @@ export default function VendorDashboard() {
             <PackageIcon size={18} />
             {newOrdersCount > 0 && <span className="topbar-badge">{newOrdersCount > 9 ? "9+" : newOrdersCount}</span>}
           </Link>
+          {lowStockCount > 0 && (
+            <button className="topbar-icon" onClick={() => { setActiveFilter("low"); setLowStockAlertDismissed(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-label="Stock faible" title="Stock faible" style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", position: "relative", color: "#fff" }}>
+              <AlertTriangleIcon size={18} />
+              <span className="topbar-badge">{lowStockCount > 9 ? "9+" : lowStockCount}</span>
+            </button>
+          )}
+          <Link href="/vendor/account" className="topbar-icon" aria-label="Options de livraison" title="Options de livraison" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <TruckIcon size={18} />
+          </Link>
           <button className="topbar-logout" onClick={handleLogout}>Déconnexion</button>
         </div>
       </div>
@@ -512,44 +521,11 @@ export default function VendorDashboard() {
           </div>
         )}
 
-        {shop && shop.status === "active" && (
-          <div className="vendor-alert vendor-alert-info">
-            <strong style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <TruckIcon size={18} /> Vous livrez vous-même vos commandes
-            </strong>
-            <p>
-              Fixez votre prix de livraison dans{" "}
-              <a href="/vendor/account" style={{ fontWeight: 600 }}>Mon compte → Options de livraison</a>.
-              Ce montant vous est reversé à 100% (0% de commission Kimoxa).
-            </p>
-          </div>
-        )}
 
-        {!loading && lowStockCount > 0 && !lowStockAlertDismissed && (
-          <div className="vendor-alert vendor-alert-warning">
-            <div style={{ flex: 1 }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                <AlertTriangleIcon size={18} />
-                <strong>{lowStockCount} produit{lowStockCount > 1 ? "s" : ""} en stock faible</strong> — réapprovisionnez pour éviter les ruptures.
-              </span>
-              <button className="btn btn-ghost" style={{ fontWeight: 600 }} onClick={() => { setActiveFilter("low"); setLowStockAlertDismissed(true); }}>Voir les produits →</button>
-            </div>
-            <button className="btn btn-ghost" onClick={() => setLowStockAlertDismissed(true)}>Fermer</button>
-          </div>
-        )}
 
-        {!loading && newOrdersCount > 0 && !newOrdersAlertDismissed && (
-          <div className="vendor-alert vendor-alert-success">
-            <div style={{ flex: 1 }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                <ShoppingCartIcon size={18} />
-                <strong>{newOrdersCount} nouvelle{newOrdersCount > 1 ? "s" : ""} commande{newOrdersCount > 1 ? "s" : ""}</strong> en attente de préparation.
-              </span>
-              <a href="/vendor/orders" style={{ fontWeight: 600 }}>Voir les commandes reçues →</a>
-            </div>
-            <button className="btn btn-ghost" onClick={() => setNewOrdersAlertDismissed(true)}>Fermer</button>
-          </div>
-        )}
+
+
+
 
         {error && <div className="error-box">{error}</div>}
         {success && <div className="success-box">{success}</div>}

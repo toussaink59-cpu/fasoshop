@@ -50,7 +50,7 @@ a {
   color: inherit;
 }
 
-/* Signature : bande tissÃ©e inspirÃ©e du Faso Dan Fani, utilisÃ©e avec parcimonie */
+/* Signature : bande tissée inspirée du Faso Dan Fani, utilisée avec parcimonie */
 .woven-strip {
   height: 6px;
   width: 100%;
@@ -62,7 +62,7 @@ a {
   );
 }
 
-/* Layout gÃ©nÃ©ral */
+/* Layout général */
 .shell {
   min-height: 100vh;
   display: flex;
@@ -634,7 +634,7 @@ tbody tr:hover {
 }
 /* ============================================
    Ajouts pour la nouvelle page d'accueil
-   Ã€ coller Ã  la fin de app/globals.css
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .home-topbar {
@@ -734,14 +734,14 @@ tbody tr:hover {
 }
 
 /* Correctif : --blue-600 n'existe pas dans la palette FasoShop.
-   On rÃ©utilise le gold pour rester cohÃ©rent avec l'identitÃ© visuelle. */
+   On réutilise le gold pour rester cohérent avec l'identité visuelle. */
 .view-all {
   color: var(--gold-600);
 }
 
 /* ============================================
-   Carrousel de banniÃ¨res promotionnelles
-   Ã€ coller Ã  la fin de app/globals.css
+   Carrousel de bannières promotionnelles
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .banner-carousel {
@@ -879,7 +879,7 @@ tbody tr:hover {
 }
 /* ============================================
    Slide "fondateur" du carrousel
-   Ã€ coller Ã  la fin de app/globals.css
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .slide-ink {
@@ -940,8 +940,8 @@ tbody tr:hover {
   .founder-quote { font-size: 1.02rem; }
 }
 /* ============================================
-   Mega-menu de catÃ©gories (faÃ§on Jumia)
-   Ã€ coller Ã  la fin de app/globals.css
+   Mega-menu de catégories (façon Jumia)
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .mega-menu-wrap {
@@ -1065,9 +1065,9 @@ tbody tr:hover {
   .mega-menu-list { width: 150px; }
 }
 /* ============================================
-   Correctif : le mega-menu Ã©tait coupÃ© par le
+   Correctif : le mega-menu était coupé par le
    overflow-x: auto de .category-nav.
-   Ã€ coller Ã  la fin de app/globals.css
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .category-bar {
@@ -1086,9 +1086,9 @@ tbody tr:hover {
   margin: 12px 0;
 }
 /* ============================================
-   Correctif : la grille de catÃ©gories s'affichait
+   Correctif : la grille de catégories s'affichait
    en colonne verticale au lieu d'une grille.
-   RÃ¨gle prioritaire ajoutÃ©e en dernier dans le fichier
+   Règle prioritaire ajoutée en dernier dans le fichier
    pour garantir qu'elle l'emporte sur les doublons.
    ============================================ */
 
@@ -1103,8 +1103,8 @@ tbody tr:hover {
   width: auto !important;
 }
 /* ============================================
-   Slides "photo" du carrousel (fond image rÃ©elle)
-   Ã€ coller Ã  la fin de app/globals.css
+   Slides "photo" du carrousel (fond image réelle)
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .slide-photo {
@@ -1143,7 +1143,7 @@ tbody tr:hover {
 }
 /* ============================================
    Slides photo du carrousel + section "Pourquoi FasoShop"
-   Ã€ coller Ã  la fin de app/globals.css
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .slide-photo-base {
@@ -1225,8 +1225,8 @@ tbody tr:hover {
   .why-grid { padding: 0 16px; }
 }
 /* ============================================
-   Badge de rÃ©duction + prix barrÃ©
-   Ã€ coller Ã  la fin de app/globals.css
+   Badge de réduction + prix barré
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .product-card {
@@ -1269,8 +1269,8 @@ tbody tr:hover {
   font-weight: 600;
 }
 /* ============================================
-   Section Ventes Flash (compte Ã  rebours + barre de stock)
-   Ã€ coller Ã  la fin de app/globals.css
+   Section Ventes Flash (compte à rebours + barre de stock)
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .flash-section {
@@ -1370,8 +1370,8 @@ tbody tr:hover {
   }
 }
 /* ============================================
-   Section Ventes Flash (compte Ã  rebours + barre de stock)
-   Ã€ coller Ã  la fin de app/globals.css
+   Section Ventes Flash (compte à rebours + barre de stock)
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 
@@ -1416,7 +1416,7 @@ tbody tr:hover {
 }
 /* ============================================
    Carte d'adresse (page /addresses)
-   Ã€ coller Ã  la fin de app/globals.css
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .address-card {
@@ -1432,12 +1432,12 @@ tbody tr:hover {
 }
 
 /* ============================================
-   IdentitÃ© visuelle enrichie : orange vif + vert +
-   animations de survol modernes (cartes qui s'Ã©lÃ¨vent,
-   boutons qui rÃ©agissent). Palette Burkina Faso :
+   Identité visuelle enrichie : orange vif + vert +
+   animations de survol modernes (cartes qui s'élèvent,
+   boutons qui réagissent). Palette Burkina Faso :
    blanc dominant, orange en CTA, vert en validation,
    or en touches (mega-menu, badges).
-   Ã€ coller Ã  la fin de app/globals.css
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 :root {
@@ -1446,7 +1446,7 @@ tbody tr:hover {
   --orange-100: #fdead9;
 }
 
-/* CTA principal recolorÃ© en orange vif â€” plus visible, faÃ§on Jumia/Amazon */
+/* CTA principal recoloré en orange vif "€” plus visible, façon Jumia/Amazon */
 .btn-primary {
   background: var(--orange-500);
   color: white;
@@ -1462,7 +1462,7 @@ tbody tr:hover {
   color: var(--ink-900);
 }
 
-/* Boutons : transition plus douce + lÃ©gÃ¨re Ã©lÃ©vation au survol */
+/* Boutons : transition plus douce + légère élévation au survol */
 .btn {
   transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
               box-shadow 0.18s cubic-bezier(0.22, 1, 0.36, 1),
@@ -1483,7 +1483,7 @@ tbody tr:hover {
   box-shadow: 0 8px 20px rgba(232, 114, 12, 0.4);
 }
 
-/* Cartes produit : Ã©lÃ©vation douce au survol, faÃ§on Apple */
+/* Cartes produit : élévation douce au survol, façon Apple */
 .product-card {
   transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
               box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
@@ -1496,7 +1496,7 @@ tbody tr:hover {
   border-color: var(--orange-500);
 }
 
-/* Tuiles catÃ©gories : transition affinÃ©e */
+/* Tuiles catégories : transition affinée */
 .category-tile {
   transition: transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
               box-shadow 0.22s cubic-bezier(0.22, 1, 0.36, 1),
@@ -1509,7 +1509,7 @@ tbody tr:hover {
   box-shadow: 0 12px 24px rgba(36, 23, 18, 0.1);
 }
 
-/* Cartes gÃ©nÃ©riques (panels, stat-cards) : lÃ©gÃ¨re rÃ©activitÃ© au survol */
+/* Cartes génériques (panels, stat-cards) : légère réactivité au survol */
 .stat-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -1519,7 +1519,7 @@ tbody tr:hover {
   box-shadow: 0 8px 18px rgba(36, 23, 18, 0.08);
 }
 
-/* Vert renforcÃ© sur les Ã©lÃ©ments de confiance / succÃ¨s */
+/* Vert renforcé sur les éléments de confiance / succès */
 .trust-item .trust-icon {
   color: var(--millet-600);
 }
@@ -1625,8 +1625,8 @@ tbody tr:hover {
 }
 
 /* ============================================
-   Vente Flash : dÃ©filement horizontal faÃ§on Jumia
-   Ã€ coller Ã  la fin de app/globals.css
+   Vente Flash : défilement horizontal façon Jumia
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .flash-scroll-wrap {
@@ -1691,7 +1691,7 @@ tbody tr:hover {
 
 /* ============================================
    Vente Flash : image produit + cartes plus grandes
-   Ã€ coller Ã  la fin de app/globals.css
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .flash-scroll-track .flash-card {
@@ -1720,8 +1720,8 @@ tbody tr:hover {
 }
 
 /* ============================================
-   Carrousel rÃ©duit + cartes "Pourquoi FasoShop" cliquables
-   Ã€ coller Ã  la fin de app/globals.css
+   Carrousel réduit + cartes "Pourquoi FasoShop" cliquables
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .banner-carousel {
@@ -1763,7 +1763,7 @@ tbody tr:hover {
 
 /* ============================================
    Messagerie acheteur/vendeur
-   Ã€ coller Ã  la fin de app/globals.css
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .conversation-row {
@@ -1826,7 +1826,7 @@ tbody tr:hover {
 
 /* ============================================
    Corrections affichage mobile
-   Ã€ coller Ã  la fin de app/globals.css
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .topbar-actions {
@@ -1903,9 +1903,9 @@ tbody tr:hover {
 }
 
 /* ============================================
-   Correctifs mobile v2 : grille confiance renforcÃ©e,
-   libellÃ© court pour le bouton catÃ©gories
-   Ã€ coller Ã  la fin de app/globals.css
+   Correctifs mobile v2 : grille confiance renforcée,
+   libellé court pour le bouton catégories
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .mega-menu-label-short {
@@ -1940,9 +1940,9 @@ tbody tr:hover {
 
 
 /* ============================================
-   Correctifs mobile v2 : grille confiance renforcÃ©e,
-   libellÃ© court pour le bouton catÃ©gories
-   Ã€ coller Ã  la fin de app/globals.css
+   Correctifs mobile v2 : grille confiance renforcée,
+   libellé court pour le bouton catégories
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .mega-menu-label-short {
@@ -1974,9 +1974,9 @@ tbody tr:hover {
 
 
 /* ============================================
-   Hero Carousel premium â€” remplace l'ancien banner-carousel
-   Breakpoints : mobile â‰¤767px, tablette 768-1023px, desktop â‰¥1024px
-   Ã€ coller Ã  la fin de app/globals.css
+   Hero Carousel premium "€” remplace l'ancien banner-carousel
+   Breakpoints : mobile "‰¤767px, tablette 768-1023px, desktop "‰¥1024px
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .hero-carousel {
@@ -1986,7 +1986,7 @@ tbody tr:hover {
   touch-action: pan-y;
 }
 
-/* ThÃ¨mes â€” 6 dÃ©gradÃ©s distincts dans la palette FasoShop */
+/* Thèmes "€” 6 dégradés distincts dans la palette FasoShop */
 .slide-t1 { background: linear-gradient(120deg, var(--ink-900) 0%, var(--orange-600) 140%); }
 .slide-t2 { background: linear-gradient(120deg, var(--ink-900) 0%, var(--millet-600) 140%); }
 .slide-t3 { background: linear-gradient(120deg, var(--ink-900) 0%, var(--bissap-600) 140%); }
@@ -2098,7 +2098,7 @@ tbody tr:hover {
   transform: translateY(-2px);
 }
 
-/* Zone visuelle Ã  droite : vraie photo OU panneau illustrÃ© (icÃ´ne) */
+/* Zone visuelle à droite : vraie photo OU panneau illustré (icône) */
 .hero-slide-visual {
   position: relative;
   height: 100%;
@@ -2136,7 +2136,7 @@ tbody tr:hover {
   filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.25));
 }
 
-/* FlÃ¨ches */
+/* Flèches */
 .hero-arrow {
   position: absolute;
   top: 50%;
@@ -2198,7 +2198,7 @@ tbody tr:hover {
   outline-offset: 2px;
 }
 
-/* ===== Tablette : 768â€“1023px ===== */
+/* ===== Tablette : 768"€“1023px ===== */
 @media (min-width: 768px) and (max-width: 1023px) {
   .hero-slide {
     height: 460px;
@@ -2213,7 +2213,7 @@ tbody tr:hover {
   .hero-cta-primary, .hero-cta-secondary { padding: 11px 22px; font-size: 0.88rem; }
 }
 
-/* ===== Mobile : â‰¤767px ===== */
+/* ===== Mobile : "‰¤767px ===== */
 @media (max-width: 767px) {
   .hero-carousel {
     margin: 12px 16px;
@@ -2243,15 +2243,15 @@ tbody tr:hover {
     justify-content: center;
   }
 
-  /* Description masquÃ©e sur mobile : avec le panneau icÃ´ne retirÃ©, elle
-     suffirait Ã  elle seule Ã  dÃ©passer la fourchette de hauteur cible
+  /* Description masquée sur mobile : avec le panneau icône retiré, elle
+     suffirait à elle seule à dépasser la fourchette de hauteur cible
      (240-300px). Le tag + titre + sous-titre restent le message principal. */
   .hero-description {
     display: none;
   }
 
-  /* Panneau icÃ´ne masquÃ© sur mobile : illustration dÃ©corative qui n'apporte
-     pas d'information, retirÃ©e pour garder le Hero compact comme demandÃ©. */
+  /* Panneau icône masqué sur mobile : illustration décorative qui n'apporte
+     pas d'information, retirée pour garder le Hero compact comme demandé. */
   .hero-slide-visual {
     display: none;
   }
@@ -2286,7 +2286,7 @@ tbody tr:hover {
     font-size: 0.82rem;
   }
 
-  /* FlÃ¨ches discrÃ¨tes sur mobile â€” le swipe est le mode principal */
+  /* Flèches discrètes sur mobile "€” le swipe est le mode principal */
   .hero-arrow {
     width: 32px;
     height: 32px;
@@ -2296,7 +2296,7 @@ tbody tr:hover {
   .hero-arrow-left { left: 8px; }
   .hero-arrow-right { right: 8px; }
 
-  /* Indicateurs plus faciles Ã  toucher */
+  /* Indicateurs plus faciles à toucher */
   .hero-dot {
     width: 8px;
     height: 8px;
@@ -2318,7 +2318,7 @@ tbody tr:hover {
 /* ============================================
    Catalogue Phase 1 : sidebar sticky, grille 5/3/2,
    cartes produit premium, panneau filtres mobile
-   Ã€ coller Ã  la fin de app/globals.css
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .shop-layout {
@@ -2549,7 +2549,7 @@ tbody tr:hover {
   margin: 12px 14px 16px;
 }
 
-/* CatÃ©gories horizontales â€” mobile uniquement */
+/* Catégories horizontales "€” mobile uniquement */
 .shop-mobile-cats {
   display: none;
 }
@@ -2564,7 +2564,7 @@ tbody tr:hover {
   display: none;
 }
 
-/* ===== Tablette : 768â€“1023px â€” 3 colonnes ===== */
+/* ===== Tablette : 768"€“1023px "€” 3 colonnes ===== */
 @media (min-width: 768px) and (max-width: 1023px) {
   .shop-grid {
     grid-template-columns: repeat(3, 1fr);
@@ -2577,7 +2577,7 @@ tbody tr:hover {
   }
 }
 
-/* ===== Mobile : â‰¤767px â€” 2 colonnes, sidebar en panneau ===== */
+/* ===== Mobile : "‰¤767px "€” 2 colonnes, sidebar en panneau ===== */
 @media (max-width: 767px) {
   .shop-layout {
     grid-template-columns: 1fr;
@@ -2675,8 +2675,8 @@ tbody tr:hover {
 }
 
 /* ============================================
-   Phase 2 : badge sponsorisÃ©, favori actif
-   Ã€ coller Ã  la fin de app/globals.css
+   Phase 2 : badge sponsorisé, favori actif
+   À€ coller à la fin de app/globals.css
    ============================================ */
 
 .shop-card-badge-sponsored {
@@ -2699,9 +2699,9 @@ tbody tr:hover {
 }
 
 /* ============================================
-   NAVIGATION MOBILE â€” SiteHeader / SideMenu / BottomNav
+   NAVIGATION MOBILE "€” SiteHeader / SideMenu / BottomNav
    Refonte mobile-first (grille 8px, coins 12-16px, zones tactiles 48px min).
-   Palette rÃ©utilisÃ©e depuis :root (identitÃ© FasoShop existante) :
+   Palette réutilisée depuis :root (identité FasoShop existante) :
      vert principal   -> --millet-600
      accent promo/CTA -> --gold-500 / --gold-600
      fond             -> --sand-50
@@ -2791,9 +2791,9 @@ tbody tr:hover {
   text-align: center;
 }
 
-/* Actions desktop (Devenir vendeur / Compte / DÃ©connexion) â€” masquÃ©es en
-   mobile pour ne pas surcharger le header compact, restaurÃ©es â‰¥768px pour
-   ne pas rÃ©gresser l'expÃ©rience desktop existante. */
+/* Actions desktop (Devenir vendeur / Compte / Déconnexion) "€” masquées en
+   mobile pour ne pas surcharger le header compact, restaurées "‰¥768px pour
+   ne pas régresser l'expérience desktop existante. */
 .site-header-desktop-actions {
   display: none;
   align-items: center;
@@ -2918,7 +2918,7 @@ tbody tr:hover {
   outline: none;
 }
 
-/* ---- Menu latÃ©ral (SideMenu) ---- */
+/* ---- Menu latéral (SideMenu) ---- */
 .side-menu-overlay {
   position: fixed;
   inset: 0;
@@ -3148,15 +3148,15 @@ tbody tr:hover {
     display: flex;
   }
 
-  /* Espace rÃ©servÃ© en bas pour que le contenu ne soit jamais masquÃ© par la
+  /* Espace réservé en bas pour que le contenu ne soit jamais masqué par la
      bottom nav fixe (footer, boutons de fin de page, etc.). */
   .shell {
     padding-bottom: calc(64px + env(safe-area-inset-bottom));
   }
 }
 
-/* Aucun Ã©lÃ©ment de la nouvelle navigation ne doit jamais provoquer de
-   dÃ©bordement horizontal, quelle que soit la largeur de l'Ã©cran testÃ©e. */
+/* Aucun élément de la nouvelle navigation ne doit jamais provoquer de
+   débordement horizontal, quelle que soit la largeur de l'écran testée. */
 .site-header,
 .side-menu,
 .bottom-nav {
@@ -3164,7 +3164,7 @@ tbody tr:hover {
 }
 
 /* ============================================
-   PHASE 2 â€” Hero compact, cartes de confiance, sections homepage
+   PHASE 2 "€” Hero compact, cartes de confiance, sections homepage
    ============================================ */
 
 /* ---- Cartes de confiance (remplace l'ancienne bande texte simple) ----
@@ -3242,7 +3242,7 @@ tbody tr:hover {
   font-size: 0.8rem;
 }
 
-/* ---- Sections produits en dÃ©filement horizontal (NouveautÃ©s, etc.) ---- */
+/* ---- Sections produits en défilement horizontal (Nouveautés, etc.) ---- */
 .home-hscroll-track {
   display: flex;
   gap: 12px;
@@ -3267,7 +3267,7 @@ tbody tr:hover {
   }
 }
 
-/* ---- Badge "Boutique vÃ©rifiÃ©e" sur les cartes produit ---- */
+/* ---- Badge "Boutique vérifiée" sur les cartes produit ---- */
 .shop-card-shop-row {
   display: flex;
   align-items: center;
@@ -3298,13 +3298,13 @@ tbody tr:hover {
 }
 
 /* ============================================
-   CORRECTIF â€” dÃ©bordement horizontal des tableaux back-office
-   (admin/vendeur) sur mobile. Les tableaux Ã  5-6 colonnes (Boutiques,
-   Avis clients, DÃ©tail produits...) n'avaient aucune protection : sur un
-   Ã©cran de 360-375px, ils forÃ§aient toute la page Ã  dÃ©border. Le panel
-   dÃ©file maintenant horizontalement, contenant le scroll au tableau
-   plutÃ´t qu'Ã  la page entiÃ¨re. Aucune largeur minimale forcÃ©e sur
-   desktop (les panels y sont dÃ©jÃ  plus larges que 640px).
+   CORRECTIF "€” débordement horizontal des tableaux back-office
+   (admin/vendeur) sur mobile. Les tableaux à 5-6 colonnes (Boutiques,
+   Avis clients, Détail produits...) n'avaient aucune protection : sur un
+   écran de 360-375px, ils forçaient toute la page à déborder. Le panel
+   défile maintenant horizontalement, contenant le scroll au tableau
+   plutôt qu'à la page entière. Aucune largeur minimale forcée sur
+   desktop (les panels y sont déjà plus larges que 640px).
    ============================================ */
 .panel {
   overflow-x: auto;
@@ -3316,7 +3316,7 @@ tbody tr:hover {
 }
 
 /* ============================================
-   Inscription â€” cartes de choix Acheteur / Vendeur
+   Inscription "€” cartes de choix Acheteur / Vendeur
    ============================================ */
 .account-type-choice {
   display: grid;
@@ -3358,7 +3358,7 @@ tbody tr:hover {
   border-color: var(--millet-600);
   background: var(--millet-100);
 }
-/* ===== MOBILE : tableaux vendeur â†’ cartes (zÃ©ro scroll horizontal) ===== */
+/* ===== MOBILE : tableaux vendeur "†’ cartes (zéro scroll horizontal) ===== */
 @media (max-width: 720px) {
   table { border: 0; }
   table thead { display: none; }
@@ -3374,7 +3374,7 @@ tbody tr:hover {
     box-shadow: 0 1px 3px rgba(0,0,0,.06);
   }
 
-  /* Chaque cellule devient une ligne Ã©tiquetÃ©e */
+  /* Chaque cellule devient une ligne étiquetée */
   table td {
     display: flex;
     justify-content: space-between;
@@ -3387,7 +3387,7 @@ tbody tr:hover {
   }
   table tr td:last-child { border-bottom: 0; }
 
-  /* Ã‰tiquettes automatiques (remplacent les en-tÃªtes de colonnes) */
+  /* Étiquettes automatiques (remplacent les en-têtes de colonnes) */
   table td::before {
     font-size: .7rem;
     font-weight: 800;
@@ -3396,9 +3396,9 @@ tbody tr:hover {
     color: #8a7f75;
   }
   table td:nth-child(2)::before { content: "SKU"; }
-  table td:nth-child(3)::before { content: "Ã‰tat"; }
+  table td:nth-child(3)::before { content: "État"; }
   table td:nth-child(4)::before { content: "Prix"; }
-  table td:nth-child(5)::before { content: "Prix barrÃ©"; }
+  table td:nth-child(5)::before { content: "Prix barré"; }
   table td:nth-child(6)::before { content: "Vente flash"; }
   table td:nth-child(7)::before { content: "Stock"; }
   table td:nth-child(8)::before { content: "Ajuster le stock"; }
@@ -3411,7 +3411,7 @@ tbody tr:hover {
     justify-content: flex-start;
   }
 
-  /* Cellules avec boutons/champs : label au-dessus, contrÃ´les pleine largeur */
+  /* Cellules avec boutons/champs : label au-dessus, contrôles pleine largeur */
   table td:nth-child(5),
   table td:nth-child(6),
   table td:nth-child(8) {
@@ -3430,7 +3430,7 @@ tbody tr:hover {
   /* Bouton Supprimer pleine largeur en bas de carte */
   table td:nth-child(10) .btn { width: 100%; }
 }
-/* ===== Annule la largeur minimale forcÃ©e des tableaux sur mobile ===== */
+/* ===== Annule la largeur minimale forcée des tableaux sur mobile ===== */
 @media (max-width: 720px) {
   .panel { overflow-x: visible; }
   .panel table { min-width: 0; }
@@ -3438,7 +3438,7 @@ tbody tr:hover {
 /* ===== COMPACT : cartes vendeur plus courtes (mobile) ===== */
 @media (max-width: 720px) {
 
-  /* Cible uniquement le tableau Ã  10 colonnes (celui des produits vendeur) */
+  /* Cible uniquement le tableau à 10 colonnes (celui des produits vendeur) */
   table:has(td:nth-child(10)) tbody tr {
     display: flex;
     flex-wrap: wrap;
@@ -3451,7 +3451,7 @@ tbody tr:hover {
   /* Ligne 1 : nom du produit (pleine largeur) */
   table:has(td:nth-child(10)) td:nth-child(1) { order: 1; width: 100%; font-size: .98rem; }
 
-  /* Ligne 2 : SKU | Ã‰tat */
+  /* Ligne 2 : SKU | État */
   table:has(td:nth-child(10)) td:nth-child(2) { order: 2; width: 55%; justify-content: flex-start; gap: 6px; border-bottom: 0; }
   table:has(td:nth-child(10)) td:nth-child(3) { order: 3; width: 45%; justify-content: flex-end; border-bottom: 0; }
 
@@ -3459,25 +3459,25 @@ tbody tr:hover {
   table:has(td:nth-child(10)) td:nth-child(4) { order: 4; width: 55%; }
   table:has(td:nth-child(10)) td:nth-child(7) { order: 5; width: 45%; justify-content: flex-end; border-bottom: 0; }
 
-  /* Lignes 4-5 : prix barrÃ© + vente flash, plus serrÃ©es */
+  /* Lignes 4-5 : prix barré + vente flash, plus serrées */
   table:has(td:nth-child(10)) td:nth-child(5) { order: 6; width: 100%; padding: 4px 0; }
   table:has(td:nth-child(10)) td:nth-child(6) { order: 7; width: 100%; padding: 4px 0; }
 
   /* Ligne 6 : ajuster le stock */
   table:has(td:nth-child(10)) td:nth-child(8) { order: 8; width: 100%; padding: 4px 0; }
 
-  /* Ligne 7 : Sponsoring | Supprimer cÃ´te Ã  cÃ´te */
+  /* Ligne 7 : Sponsoring | Supprimer côte à côte */
   table:has(td:nth-child(10)) td:nth-child(9) { order: 9; width: 50%; border-bottom: 0; }
   table:has(td:nth-child(10)) td:nth-child(10) { order: 10; width: 50%; border-bottom: 0; }
   table:has(td:nth-child(10)) td:nth-child(10) .btn { width: 100%; }
 
-  /* Textes et boutons plus serrÃ©s */
+  /* Textes et boutons plus serrés */
   table:has(td:nth-child(10)) td::before { font-size: .62rem; }
   table:has(td:nth-child(10)) td .btn { font-size: .78rem; padding: 7px 10px; min-height: 40px; }
   table:has(td:nth-child(10)) td .stock-adjust { gap: 6px; }
 }
 /* ============================================
-   TABLETTE & DESKTOP : tableau produits â†’ grille de cartes
+   TABLETTE & DESKTOP : tableau produits "†’ grille de cartes
    (supprime le scroll horizontal sur PC)
    ============================================ */
 @media (min-width: 721px) {
@@ -3520,15 +3520,15 @@ tbody tr:hover {
   }
   .panel table:has(td:nth-child(10)) tr td:last-child { border-bottom: 0; }
 
-  /* Ã‰tiquettes (remplacent les en-tÃªtes de colonnes) */
+  /* Étiquettes (remplacent les en-têtes de colonnes) */
   .panel table:has(td:nth-child(10)) td::before {
     font-size: .68rem; font-weight: 800; text-transform: uppercase;
     letter-spacing: .5px; color: #8a7f75;
   }
   .panel table:has(td:nth-child(10)) td:nth-child(2)::before { content: "SKU"; }
-  .panel table:has(td:nth-child(10)) td:nth-child(3)::before { content: "Ã‰tat"; }
+  .panel table:has(td:nth-child(10)) td:nth-child(3)::before { content: "État"; }
   .panel table:has(td:nth-child(10)) td:nth-child(4)::before { content: "Prix"; }
-  .panel table:has(td:nth-child(10)) td:nth-child(5)::before { content: "Prix barrÃ©"; }
+  .panel table:has(td:nth-child(10)) td:nth-child(5)::before { content: "Prix barré"; }
   .panel table:has(td:nth-child(10)) td:nth-child(6)::before { content: "Vente flash"; }
   .panel table:has(td:nth-child(10)) td:nth-child(7)::before { content: "Stock"; }
   .panel table:has(td:nth-child(10)) td:nth-child(8)::before { content: "Ajuster le stock"; }
@@ -3553,11 +3553,11 @@ tbody tr:hover {
   .panel table:has(td:nth-child(10)) td .stock-adjust input { flex: 1; min-width: 0; }
 }
 
-/* Grand Ã©cran (â‰¥1200px) : 3 colonnes */
+/* Grand écran ("‰¥1200px) : 3 colonnes */
 @media (min-width: 1200px) {
   .panel table:has(td:nth-child(10)) tbody { grid-template-columns: repeat(3, 1fr); }
 }
-/* ===== MENU PRINCIPAL STYLE TEMU : pilules de catÃ©gories ===== */
+/* ===== MENU PRINCIPAL STYLE TEMU : pilules de catégories ===== */
 .pill-bar { padding: 20px 0 4px; }
 .pill-bar-head { text-align: center; margin-bottom: 14px; padding: 0 16px; }
 .pill-bar-tag {
@@ -3605,9 +3605,9 @@ tbody tr:hover {
   color: #fff;
   font-weight: 700;
 }
-/* ===== HERO COMPACT : carrousel rÃ©duit significativement ===== */
+/* ===== HERO COMPACT : carrousel réduit significativement ===== */
 
-/* Desktop : 600px â†’ 320px */
+/* Desktop : 600px "†’ 320px */
 @media (min-width: 1024px) {
   .hero-slide { height: 320px; padding: 0 40px; gap: 20px; }
   .hero-title { font-size: 2rem; margin-bottom: 8px; }
@@ -3619,7 +3619,7 @@ tbody tr:hover {
   .hero-slide-icon { font-size: 5rem; }
 }
 
-/* Tablette : 460px â†’ 280px */
+/* Tablette : 460px "†’ 280px */
 @media (min-width: 768px) and (max-width: 1023px) {
   .hero-slide { height: 280px; padding: 0 32px; gap: 16px; }
   .hero-title { font-size: 1.6rem; margin-bottom: 6px; }
@@ -3631,7 +3631,7 @@ tbody tr:hover {
   .hero-slide-icon { font-size: 4rem; }
 }
 
-/* Mobile : 240-300px â†’ 180-220px */
+/* Mobile : 240-300px "†’ 180-220px */
 @media (max-width: 767px) {
   .hero-carousel { margin: 8px 12px; width: calc(100% - 24px); }
   .hero-slide { min-height: 180px; max-height: 220px; padding: 16px 14px; gap: 2px; }
@@ -3645,7 +3645,7 @@ tbody tr:hover {
   .hero-dots { bottom: 8px; }
   .hero-dot { width: 7px; height: 7px; }
 }
-/* ===== HERO COMPACT v2 â€” prioritÃ© maximale ===== */
+/* ===== HERO COMPACT v2 "€” priorité maximale ===== */
 .hero-slide {
   height: 320px !important;
   min-height: 0 !important;
@@ -3680,7 +3680,7 @@ tbody tr:hover {
   .hero-tag { padding: 3px 8px !important; font-size: .62rem !important; margin-bottom: 6px !important; }
   .hero-cta-primary, .hero-cta-secondary { padding: 8px 14px !important; font-size: .78rem !important; }
 }
-/* ===== COMPRESSION GLOBALE : tous Ã©crans ===== */
+/* ===== COMPRESSION GLOBALE : tous écrans ===== */
 
 /* Barre de recherche compacte */
 .site-header-search-row { padding: 4px 8px 8px; }
@@ -3688,13 +3688,13 @@ tbody tr:hover {
 .search-bar-standalone input { font-size: 0.85rem; }
 .search-bar-icon { font-size: 0.85rem; }
 
-/* Supprimer "Essentiels FasoShop / Explorez vos centres d'intÃ©rÃªt" */
+/* Supprimer "Essentiels FasoShop / Explorez vos centres d'intérêt" */
 .pill-bar-head { display: none; }
 .pill-bar { padding: 8px 0 4px; }
 .pill-bar-track { padding: 4px 12px 8px; gap: 8px; }
 .pill { padding: 6px 14px; font-size: 0.78rem; }
 
-/* Cartes de confiance : grille 2x2 sur mobile, ligne serrÃ©e sur desktop */
+/* Cartes de confiance : grille 2x2 sur mobile, ligne serrée sur desktop */
 .trust-card { padding: 8px 12px; }
 .trust-card .trust-icon { font-size: 1.1rem; }
 .trust-card-title { font-size: 0.78rem; margin: 0; }
@@ -3704,7 +3704,7 @@ tbody tr:hover {
   .trust-card { flex-direction: column; text-align: center; gap: 4px; }
 }
 
-/* Sections homepage : titres et espacements rÃ©duits */
+/* Sections homepage : titres et espacements réduits */
 .home-section { padding: 12px 14px; }
 .home-section h2 { font-size: 1rem; margin: 0 0 8px; }
 .home-hscroll-track { padding-bottom: 4px; gap: 10px; }
@@ -3713,12 +3713,12 @@ tbody tr:hover {
 /* Footer compact */
 footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 
-/* Bandes dÃ©coratives (woven-strip) : plus fines */
+/* Bandes décoratives (woven-strip) : plus fines */
 .woven-strip { height: 4px; margin: 0; }
 
-/* Marges globales rÃ©duites */
+/* Marges globales réduites */
 .shell > * { margin-top: 8px; margin-bottom: 8px; }
-/* ===== COMPRESSION v2 â€” PRIORITÃ‰ MAXIMALE (tous Ã©crans) ===== */
+/* ===== COMPRESSION v2 "€” PRIORITÉ MAXIMALE (tous écrans) ===== */
 
 /* Cartes de confiance : grille 2x2 mobile / 4 en ligne desktop */
 .trust-card {
@@ -3741,13 +3741,13 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 .search-bar-standalone { padding: 7px 12px !important; }
 .search-bar-standalone input { font-size: 0.85rem !important; }
 
-/* Pilules : titre masquÃ© + tout compact */
+/* Pilules : titre masqué + tout compact */
 .pill-bar-head { display: none !important; }
 .pill-bar { padding: 6px 0 2px !important; }
 .pill-bar-track { padding: 2px 12px 6px !important; gap: 8px !important; }
 .pill { padding: 6px 14px !important; font-size: 0.78rem !important; }
 
-/* Sections et bandes dÃ©coratives serrÃ©es */
+/* Sections et bandes décoratives serrées */
 .home-section { padding: 10px 12px !important; }
 .woven-strip { height: 4px !important; }
 /* ===== FICHE PRODUIT : conversion maximale ===== */
@@ -3790,7 +3790,7 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   font-weight: 600;
   color: var(--ink-700, #4a3f38);
 }
-/* Prix en gÃ©ant sur la fiche produit */
+/* Prix en géant sur la fiche produit */
 .content .price-display { font-size: 1.6rem !important; font-weight: 900 !important; }
 /* ===== FICHE PRODUIT PRO : 2 colonnes PC, galerie interactive ===== */
 .pdp-back { display: inline-block; font-size: 0.85rem; color: var(--gold-600); margin: 8px 0; }
@@ -3926,7 +3926,7 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   font-size: 0.9rem;
 }
 
-/* === Mobile : empilÃ© proprement === */
+/* === Mobile : empilé proprement === */
 @media (max-width: 767px) {
   .pdp-main {
     grid-template-columns: 1fr;
@@ -3992,7 +3992,7 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   opacity: 0.3;
 }
 
-/* Badge discount rouge qui tape Ã  l'Å“il */
+/* Badge discount rouge qui tape à l'Å“il */
 .pdp-discount-badge {
   position: absolute;
   top: 12px;
@@ -4035,7 +4035,7 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 }
 .pdp-thumb:hover { border-color: var(--millet-600); }
 
-/* === ENCADRÃ‰ ACHAT === */
+/* === ENCADRÉ ACHAT === */
 .pdp-buy-box {
   background: #fff;
   border: 1px solid var(--border, #e5ddd3);
@@ -4130,7 +4130,7 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   cursor: not-allowed;
 }
 
-/* RÃ©assurance compacte : 3 Ã©lÃ©ments sur 1 ligne */
+/* Réassurance compacte : 3 éléments sur 1 ligne */
 .pdp-trust {
   display: flex;
   justify-content: space-around;
@@ -4228,7 +4228,7 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 }
 /* ===== FICHE PRODUIT PRO : 3 corrections finales ===== */
 
-/* 1. Badge "Neuf" collÃ© au titre (plus de flottement Ã  droite) */
+/* 1. Badge "Neuf" collé au titre (plus de flottement à droite) */
 .pdp-title-row {
   display: flex !important;
   flex-wrap: wrap !important;
@@ -4267,7 +4267,7 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   white-space: nowrap !important;
 }
 
-/* 3. RÃ©duire l'espace en haut (avant "Retour au catalogue") */
+/* 3. Réduire l'espace en haut (avant "Retour au catalogue") */
 .content {
   padding: 12px 16px !important;
 }
@@ -4304,7 +4304,7 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   }
 }
 
-/* 5. Bonus : badge de rÃ©duction plus visible */
+/* 5. Bonus : badge de réduction plus visible */
 .pdp-discount-badge {
   position: absolute !important;
   top: 12px !important;
@@ -4321,7 +4321,7 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 /* ===== COMPTE VENDEUR PRO ===== */
 .vendor-account-wrap { max-width: 900px; margin: 0 auto; padding: 16px 14px 80px; }
 
-/* BanniÃ¨re statut */
+/* Bannière statut */
 .vendor-status-banner {
   display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
   background: #fff; border: 2px solid; border-radius: 16px;
@@ -4341,11 +4341,11 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   font-size: .78rem; font-weight: 700; color: var(--ink-700);
 }
 
-/* Grille paramÃ¨tres */
+/* Grille paramètres */
 .vendor-settings-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 @media (min-width: 640px) { .vendor-settings-grid { grid-template-columns: 1fr 1fr; } }
 
-/* Carte paramÃ¨tre */
+/* Carte paramètre */
 .vendor-setting-card {
   background: #fff; border: 1px solid var(--border);
   border-radius: 14px; padding: 16px;
@@ -4369,7 +4369,7 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 @media (max-width: 480px) {
   .vendor-form-row { grid-template-columns: 1fr; }
 }
-/* ===== FIX : champ Ville Ã©crasÃ© par le bouton ===== */
+/* ===== FIX : champ Ville écrasé par le bouton ===== */
 .vendor-setting-card form[style*="flex"] .btn {
   width: auto !important;
   flex-shrink: 0;
@@ -4448,7 +4448,7 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 .cart-item-remove:hover { background: var(--bissap-100); }
 .cart-item-subtotal { font-size: 1rem; font-weight: 700; color: var(--ink-900); text-align: right; min-width: 100px; }
 
-/* Stepper quantitÃ© */
+/* Stepper quantité */
 .qty-stepper { display: flex; align-items: center; gap: 4px; background: var(--sand-100); border-radius: 8px; padding: 2px; }
 .qty-stepper button {
   width: 28px; height: 28px; border: none; background: #fff; border-radius: 6px;
@@ -4486,7 +4486,7 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 }
 
 /* ============================================
-   Inscription vendeur â€” case de comprÃ©hension vÃ©rification identitÃ©
+   Inscription vendeur "€” case de compréhension vérification identité
    ============================================ */
 .checkbox-row {
   display: flex;
@@ -7410,3 +7410,9 @@ main {
 .site-header-icon-btn {
   transition: all 0.2s ease;
 }
+
+/* === Lot F : libellés corrects tableau produits admin (mobile) === */
+.admin-products-table td:nth-child(2)::before { content: "Boutique"; }
+.admin-products-table td:nth-child(3)::before { content: "Vendeur"; }
+.admin-products-table td:nth-child(4)::before { content: "Prix"; }
+.admin-products-table td:nth-child(5)::before { content: "Stock"; }
