@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { getCategoriesTree } from "@/lib/queries/categories";
 import { getCurrentUser } from "@/lib/session";
 import { getActiveFlashSales } from "@/lib/queries/flashSales";
@@ -36,6 +37,20 @@ export default async function HomePage() {
     user = null;
     flashSales = [];
     newArrivals = [];
+  }
+
+  // Redirection automatique selon le rôle (PWA, bookmark, lien direct)
+  if (user?.role === "admin") redirect("/admin/dashboard");
+  if (user?.role === "vendor" && user?.status !== "suspended") {
+    // Vérifier si la boutique est active
+    const { default: sql } = await import("@/lib/db");
+    try {
+      const [shop] = await sql`SELECT status FROM shops WHERE vendor_id = ${user.id}`;
+      if (shop?.status === "active") redirect("/vendor/dashboard");
+      // Sinon rester sur homepage (boutique en attente/refusée)
+    } catch (e) {
+      // En cas d'erreur DB, rester sur homepage
+    }
   }
 
   const featuredIds = new Set([
