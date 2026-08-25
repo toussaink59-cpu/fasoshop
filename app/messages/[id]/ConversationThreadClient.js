@@ -4,6 +4,9 @@ import { PaperclipIcon, SendIcon } from "@/app/components/Icons";
 import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import SiteHeader from "@/app/components/SiteHeader";
+import VendorBottomNav from "@/app/components/VendorBottomNav";
+import AdminBottomNav from "@/app/components/AdminBottomNav";
+import KimoxaLogo from "@/app/components/KimoxaLogo";
 import BottomNav from "@/app/components/BottomNav";
 
 const POLL_MS = 4000;
@@ -96,7 +99,33 @@ export default function ConversationThreadClient({ id, initialThread, initialUse
 
   return (
     <div className="shell chat-shell">
-      <SiteHeader initialUser={initialUser} categories={categories} />
+      {initialUser.role === "vendor" ? (
+        <>
+          <div className="topbar">
+            <div className="brand">
+              <KimoxaLogo light size={20} /> <span className="role-tag">Vendeur</span>
+            </div>
+            <div className="topbar-actions">
+              <Link href="/vendor/dashboard" className="topbar-textlink">Tableau de bord</Link>
+            </div>
+          </div>
+          <div className="woven-strip" />
+        </>
+      ) : initialUser.role === "admin" ? (
+        <>
+          <div className="topbar">
+            <div className="brand">
+              <KimoxaLogo light size={20} /> <span className="role-tag">Admin</span>
+            </div>
+            <div className="topbar-actions">
+              <Link href="/admin/dashboard" className="topbar-textlink">Tableau de bord</Link>
+            </div>
+          </div>
+          <div className="woven-strip" />
+        </>
+      ) : (
+        <SiteHeader initialUser={initialUser} categories={categories} />
+      )}
 
       <div className="chat-thread-wrap">
         {/* En-tête conversation */}
@@ -173,7 +202,7 @@ export default function ConversationThreadClient({ id, initialThread, initialUse
         </form>
       </div>
 
-      <BottomNav user={initialUser} />
+      {initialUser.role === "vendor" ? <VendorBottomNav /> : initialUser.role === "admin" ? <AdminBottomNav /> : <BottomNav user={initialUser} />}
     </div>
   );
 }
