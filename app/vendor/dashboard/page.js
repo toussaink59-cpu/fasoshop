@@ -42,6 +42,8 @@ export default function VendorDashboard() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [sponsorRequests, setSponsorRequests] = useState({});
   const [sponsorBusy, setSponsorBusy] = useState(null);
+  const [sponsorPickerFor, setSponsorPickerFor] = useState(null);
+  const [sponsorPickerDays, setSponsorPickerDays] = useState(180);
   const [activeFilter, setActiveFilter] = useState("all");
   const [expandedProduct, setExpandedProduct] = useState(null);
   const [earnings, setEarnings] = useState(null);
@@ -323,15 +325,20 @@ export default function VendorDashboard() {
     loadStock();
   }
 
-  async function handleRequestSponsor(productId) {
+  async function handleRequestSponsor(productId, durationDays) {
     setError("");
     setSponsorBusy(productId);
-    const res = await fetch(`/api/vendor/products/${productId}/sponsor`, { method: "POST" });
+    const res = await fetch(`/api/vendor/products/${productId}/sponsor`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ durationDays }),
+    });
     const data = await res.json();
     setSponsorBusy(null);
+    setSponsorPickerFor(null);
     if (!res.ok) { setError(data.error || "Erreur lors de la demande de sponsoring."); return; }
     setSponsorRequests((r) => ({ ...r, [productId]: "pending" }));
-    setSuccess("Demande envoyée ! Contactez-nous pour finaliser le paiement, puis nous validerons la mise en avant.");
+    setSuccess(`Demande envoyée (${durationDays} jours) ! Contactez-nous pour finaliser le paiement, puis nous validerons la mise en avant.`);
   }
 
   async function handleLogout() {
@@ -914,10 +921,32 @@ export default function VendorDashboard() {
                             <div className="vendor-action-row">
                               <span className="vendor-sponsored-pending">Demande envoyée</span>
                             </div>
+                          ) : sponsorPickerFor === p.id ? (
+                            <div className="vendor-action-row" style={{ display: "flex", flexDirection: "column", gap: 8, padding: 12, background: "#f9fafb", borderRadius: 8, border: "1px solid var(--border)" }}>
+                              <p style={{ margin: 0, fontSize: "0.82rem", fontWeight: 600 }}>Choisissez un pack de sponsoring :</p>
+                              {[
+                                { id: "1m", label: "1 mois", days: 30, price: 2000 },
+                                { id: "3m", label: "3 mois", days: 90, price: 5000 },
+                                { id: "6m", label: "6 mois ⭐", days: 180, price: 10000, popular: true },
+                                { id: "12m", label: "12 mois 💎", days: 365, price: 18000, best: true },
+                              ].map((pack) => (
+                                <label key={pack.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: 6, borderRadius: 6, background: sponsorPickerDays === pack.days ? "var(--gold-50, #fffbeb)" : "white", border: sponsorPickerDays === pack.days ? "2px solid var(--gold-500)" : "1px solid var(--border)" }}>
+                                  <input type="radio" name={`sponsor-${p.id}`} checked={sponsorPickerDays === pack.days} onChange={() => setSponsorPickerDays(pack.days)} />
+                                  <span style={{ flex: 1, fontSize: "0.85rem", fontWeight: pack.popular || pack.best ? 700 : 400 }}>{pack.label}</span>
+                                  <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--gold-600)" }}>{pack.price.toLocaleString("fr-FR")} FCFA</span>
+                                </label>
+                              ))}
+                              <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
+                                <button className="btn btn-primary" onClick={() => handleRequestSponsor(p.id, sponsorPickerDays)} disabled={sponsorBusy === p.id} style={{ flex: 1 }}>
+                                  {sponsorBusy === p.id ? "Envoi..." : `Confirmer — ${sponsorPickerDays}j`}
+                                </button>
+                                <button className="btn btn-ghost" onClick={() => setSponsorPickerFor(null)} disabled={sponsorBusy === p.id}>Annuler</button>
+                              </div>
+                            </div>
                           ) : (
                             <div className="vendor-action-row">
-                              <button className="btn btn-ghost" onClick={() => handleRequestSponsor(p.id)} disabled={sponsorBusy === p.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                {sponsorBusy === p.id ? "..." : <><BarChartIcon size={14} /> Demander le sponsoring</>}
+                              <button className="btn btn-ghost" onClick={() => { setSponsorPickerFor(p.id); setSponsorPickerDays(180); }} disabled={sponsorBusy === p.id} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                {sponsorBusy === p.id ? "..." : <><BarChartIcon size={14} /> Sponsoriser</>}
                               </button>
                             </div>
                           )}

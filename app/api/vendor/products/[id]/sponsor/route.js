@@ -1,16 +1,19 @@
-import sql from "@/lib/db";
-
-const SPONSOR_DURATION_DAYS = 30;
+﻿import sql from "@/lib/db";
+import { SPONSOR_PACKS, getSponsorPack } from "@/lib/sponsorship.js";
 
 // POST /api/vendor/products/[id]/sponsor
-// Le vendeur demande la mise en avant sponsorisée d'un de ses produits.
-// Crée une demande en attente de validation admin (paiement confirmé manuellement
-// tant que le paiement en ligne n'est pas automatisé).
+// body: { durationDays: 30 | 90 | 180 | 365 }
 export async function POST(request, { params }) {
   const userId = request.headers.get("x-user-id");
   const { id: productId } = await params;
 
   try {
+    const { durationDays } = await request.json().catch(() => ({}));
+    const pack = getSponsorPack(durationDays);
+    if (!pack) {
+      return Response.json({ error: "Pack de sponsoring invalide." }, { status: 400 });
+    }
+
     const [product] = await sql`
       SELECT p.id, p.name, p.is_sponsored, p.sponsored_until, s.id AS shop_id, s.vendor_id
       FROM products p
@@ -36,9 +39,9 @@ export async function POST(request, { params }) {
     }
 
     const [request_] = await sql`
-      INSERT INTO sponsorship_requests (product_id, shop_id, status)
-      VALUES (${productId}, ${product.shop_id}, 'pending')
-      RETURNING id, status, requested_at
+      INSERT INTO sponsorship_requests (product_id, shop_id, status, duration_days, price_fcfa)
+      VALUES (${productId}, ${product.shop_id}, 'pending', ${pack.durationDays}, ${pack.priceFcfa})
+      RETURNING id, status, duration_days, price_fcfa, requested_at
     `;
 
     return Response.json({ request: request_ }, { status: 201 });

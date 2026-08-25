@@ -1,10 +1,7 @@
-import sql from "@/lib/db";
+﻿import sql from "@/lib/db";
 import { adminGuard } from "@/lib/adminAuth";
 
-const SPONSOR_DURATION_DAYS = 30;
-
 // PATCH /api/admin/sponsorships/[id]
-// Approuve ou rejette une demande de sponsoring.
 // body: { status: 'approved' | 'rejected', adminNotes? }
 export async function PATCH(request, { params }) {
   const guardError = await adminGuard(request);
@@ -19,7 +16,8 @@ export async function PATCH(request, { params }) {
     }
 
     const [reqRow] = await sql`
-      SELECT id, product_id, status FROM sponsorship_requests WHERE id = ${id}
+      SELECT id, product_id, status, duration_days, price_fcfa
+      FROM sponsorship_requests WHERE id = ${id}
     `;
     if (!reqRow) {
       return Response.json({ error: "Demande introuvable." }, { status: 404 });
@@ -35,9 +33,10 @@ export async function PATCH(request, { params }) {
     `;
 
     if (status === "approved") {
+      const days = reqRow.duration_days || 30;
       await sql`
         UPDATE products
-        SET is_sponsored = true, sponsored_until = NOW() + (${SPONSOR_DURATION_DAYS} || ' days')::interval
+        SET is_sponsored = true, sponsored_until = NOW() + (${days} || ' days')::interval
         WHERE id = ${reqRow.product_id}
       `;
     }
