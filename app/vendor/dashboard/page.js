@@ -888,7 +888,7 @@ export default function VendorDashboard() {
                         </div>
 
                         <div className="vendor-action-group">
-                          <label>Sponsoring</label>
+                          <label>Sponsoring <a href="/sponsoring" style={{ fontSize: "0.72rem", fontWeight: 600, color: "var(--gold-600)" }}>(voir les tarifs)</a></label>
                           {p.is_sponsored && p.sponsored_until && new Date(p.sponsored_until) > new Date() ? (
                             <div className="vendor-action-row">
                               <span className="vendor-sponsored-active">Actif jusqu'au {new Date(p.sponsored_until).toLocaleDateString("fr-FR")}</span>
