@@ -44,6 +44,8 @@ export default function VendorDashboard() {
   const [sponsorBusy, setSponsorBusy] = useState(null);
   const [sponsorPickerFor, setSponsorPickerFor] = useState(null);
   const [sponsorPickerDays, setSponsorPickerDays] = useState(180);
+  const [sponsorPhone, setSponsorPhone] = useState("");
+  const [sponsorPaying, setSponsorPaying] = useState(false);
   const [activeFilter, setActiveFilter] = useState("all");
   const [expandedProduct, setExpandedProduct] = useState(null);
   const [earnings, setEarnings] = useState(null);
@@ -325,20 +327,52 @@ export default function VendorDashboard() {
     loadStock();
   }
 
-  async function handleRequestSponsor(productId, durationDays) {
+  async function handleRequestSponsor(productId, durationDays, mode) {
     setError("");
     setSponsorBusy(productId);
-    const res = await fetch(`/api/vendor/products/${productId}/sponsor`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ durationDays }),
-    });
-    const data = await res.json();
-    setSponsorBusy(null);
-    setSponsorPickerFor(null);
-    if (!res.ok) { setError(data.error || "Erreur lors de la demande de sponsoring."); return; }
-    setSponsorRequests((r) => ({ ...r, [productId]: "pending" }));
-    setSuccess(`Demande envoyée (${durationDays} jours) ! Contactez-nous pour finaliser le paiement, puis nous validerons la mise en avant.`);
+
+    if (mode === "later") {
+      // Mode "Payer plus tard" : flux manuel actuel
+      const res = await fetch(`/api/vendor/products/${productId}/sponsor`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ durationDays }),
+      });
+      const data = await res.json();
+      setSponsorBusy(null);
+      setSponsorPickerFor(null);
+      if (!res.ok) { setError(data.error || "Erreur lors de la demande."); return; }
+      setSponsorRequests((r) => ({ ...r, [productId]: "pending" }));
+      setSuccess(`Demande envoyée (${durationDays}j) ! Contactez-nous pour le paiement, nous validerons ensuite.`);
+      return;
+    }
+
+    // Mode "Payer maintenant" : Ligdicash direct
+    if (!sponsorPhone || sponsorPhone.length < 8) {
+      setError("Veuillez saisir un numéro Mobile Money valide (ex: 70123456).");
+      setSponsorBusy(null);
+      return;
+    }
+    setSponsorPaying(true);
+    try {
+      const res = await fetch(`/api/vendor/products/${productId}/sponsor/pay`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ durationDays, phone: sponsorPhone }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erreur de paiement");
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl;
+        return;
+      }
+      throw new Error("Aucune URL de paiement retournée");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSponsorPaying(false);
+      setSponsorBusy(null);
+    }
   }
 
   async function handleLogout() {
@@ -912,11 +946,25 @@ export default function VendorDashboard() {
                                   <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--gold-600)" }}>{pack.price.toLocaleString("fr-FR")} FCFA</span>
                                 </label>
                               ))}
-                              <div style={{ display: "flex", gap: 6, marginTop: 4 }}>
-                                <button className="btn btn-primary" onClick={() => handleRequestSponsor(p.id, sponsorPickerDays)} disabled={sponsorBusy === p.id} style={{ flex: 1 }}>
-                                  {sponsorBusy === p.id ? "Envoi..." : `Confirmer — ${sponsorPickerDays}j`}
+                              <div style={{ marginTop: 10, padding: 10, background: "#fff", borderRadius: 8, border: "1px solid var(--border)" }}>
+                                <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 600, marginBottom: 4 }}>Numéro Mobile Money (Orange/Moov)</label>
+                                <input
+                                  type="tel"
+                                  placeholder="70123456"
+                                  value={sponsorPhone}
+                                  onChange={(e) => setSponsorPhone(e.target.value)}
+                                  disabled={sponsorBusy === p.id}
+                                  style={{ width: "100%", padding: "8px 10px", border: "1px solid var(--border)", borderRadius: 6, fontSize: "0.9rem" }}
+                                />
+                              </div>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 8 }}>
+                                <button className="btn btn-primary" onClick={() => handleRequestSponsor(p.id, sponsorPickerDays, "now")} disabled={sponsorBusy === p.id} style={{ flex: "none", width: "100%" }}>
+                                  {sponsorPaying ? "Redirection Mobile Money..." : `💳 Payer maintenant — ${sponsorPickerDays}j`}
                                 </button>
-                                <button className="btn btn-ghost" onClick={() => setSponsorPickerFor(null)} disabled={sponsorBusy === p.id}>Annuler</button>
+                                <button className="btn btn-ghost" onClick={() => handleRequestSponsor(p.id, sponsorPickerDays, "later")} disabled={sponsorBusy === p.id} style={{ flex: "none", width: "100%" }}>
+                                  Payer plus tard (espèces/virement)
+                                </button>
+                                <button className="btn btn-ghost" onClick={() => setSponsorPickerFor(null)} disabled={sponsorBusy === p.id} style={{ fontSize: "0.8rem" }}>Annuler</button>
                               </div>
                             </div>
                           ) : (
