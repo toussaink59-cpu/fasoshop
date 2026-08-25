@@ -20,7 +20,8 @@ export default function RoleRedirect() {
           const s = await fetch("/api/vendor/shop");
           if (!s.ok) return;
           const sd = await s.json();
-          if (!cancelled && sd?.shop?.status === "active") router.replace("/vendor/dashboard");
+          const st = sd?.shop?.status || sd?.status;
+          if (!cancelled && st === "active") router.replace("/vendor/dashboard");
         }
       } catch {}
     })();

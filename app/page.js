@@ -40,19 +40,19 @@ export default async function HomePage() {
     newArrivals = [];
   }
 
-  // Redirection automatique selon le rôle (PWA, bookmark, lien direct)
-  if (user?.role === "admin") redirect("/admin/dashboard");
-  if (user?.role === "vendor" && user?.status !== "suspended") {
-    // Vérifier si la boutique est active
-    const { default: sql } = await import("@/lib/db");
+  // Redirection automatique selon le role (PWA, bookmark, lien direct)
+  // IMPORTANT : redirect() lance une exception NEXT_REDIRECT -> jamais dans un try/catch
+  let shopStatus = null;
+  if (user?.role === "vendor") {
     try {
+      const { default: sql } = await import("@/lib/db");
       const [shop] = await sql`SELECT status FROM shops WHERE vendor_id = ${user.id}`;
-      if (shop?.status === "active") redirect("/vendor/dashboard");
-      // Sinon rester sur homepage (boutique en attente/refusée)
-    } catch (e) {
-      // En cas d'erreur DB, rester sur homepage
-    }
+      shopStatus = shop?.status || null;
+    } catch (e) { /* reste sur homepage */ }
   }
+  if (user?.role === "admin") redirect("/admin/dashboard");
+  if (user?.role === "vendor" && shopStatus === "active") redirect("/vendor/dashboard");
+
 
   const featuredIds = new Set([
     ...flashSales.map((p) => p.id),
