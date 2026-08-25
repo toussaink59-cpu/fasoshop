@@ -128,49 +128,29 @@ export default function AdminDashboard() {
 
         {cockpitData && (
           <div style={{ display: "grid", gap: 16, marginBottom: 24 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
               <div className="vendor-stat-card">
                 <div className="vendor-stat-icon" style={{ color: "var(--gold-600)" }}><WalletIcon size={28} /></div>
-                <div className="vendor-stat-value" style={{ fontSize: "1.4rem" }}>
-                  {cockpitData.revenue.today.toLocaleString("fr-FR")} FCFA
-                </div>
-                <div className="vendor-stat-label">CA aujourd'hui</div>
-              </div>
-              <div className="vendor-stat-card">
-                <div className="vendor-stat-icon" style={{ color: "var(--gold-600)" }}><BarChartIcon size={28} /></div>
-                <div className="vendor-stat-value" style={{ fontSize: "1.2rem" }}>
-                  {cockpitData.revenue.week.toLocaleString("fr-FR")} FCFA
-                </div>
-                <div className="vendor-stat-label">
-                  CA semaine{" "}
-                  <span style={{ color: cockpitData.revenue.week_delta >= 0 ? "#2e7d32" : "#c62828", fontSize: "0.9rem" }}>
-                    {cockpitData.revenue.week_delta >= 0 ? "+" : ""}{cockpitData.revenue.week_delta}%
-                  </span>
-                </div>
-              </div>
-              <div className="vendor-stat-card">
-                <div className="vendor-stat-icon" style={{ color: "var(--gold-600)" }}><ClockIcon size={28} /></div>
-                <div className="vendor-stat-value" style={{ fontSize: "1.2rem" }}>
+                <div className="vendor-stat-value" style={{ fontSize: "1.3rem" }}>
                   {cockpitData.revenue.month.toLocaleString("fr-FR")} FCFA
                 </div>
-                <div className="vendor-stat-label">
-                  CA mois{" "}
-                  <span style={{ color: cockpitData.revenue.month_delta >= 0 ? "#2e7d32" : "#c62828", fontSize: "0.9rem" }}>
-                    {cockpitData.revenue.month_delta >= 0 ? "+" : ""}{cockpitData.revenue.month_delta}%
+                <div className="vendor-stat-label">CA — 30 jours</div>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 10, fontSize: "0.78rem", color: "#666", flexWrap: "wrap" }}>
+                  <span>Auj. : <strong>{cockpitData.revenue.today.toLocaleString("fr-FR")}</strong></span>
+                  <span>7 j : <strong>{cockpitData.revenue.week.toLocaleString("fr-FR")}</strong>{" "}
+                    <em style={{ color: cockpitData.revenue.week_delta >= 0 ? "#2e7d32" : "#c62828", fontStyle: "normal" }}>
+                      {cockpitData.revenue.week_delta >= 0 ? "+" : ""}{cockpitData.revenue.week_delta}%
+                    </em>
                   </span>
                 </div>
-              </div>
-              <div className="vendor-stat-card">
-                <div className="vendor-stat-icon" style={{ color: "var(--gold-600)" }}><ShoppingCartIcon size={28} /></div>
-                <div className="vendor-stat-value" style={{ fontSize: "1.2rem" }}>
-                  {cockpitData.avgBasket.toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
-                </div>
-                <div className="vendor-stat-label">Panier moyen (30j)</div>
               </div>
               <div className="vendor-stat-card">
                 <div className="vendor-stat-icon" style={{ color: "var(--gold-600)" }}><UserPlusIcon size={28} /></div>
                 <div className="vendor-stat-value">{cockpitData.customers.week}</div>
-                <div className="vendor-stat-label">Nouveaux clients (7j)</div>
+                <div className="vendor-stat-label">Nouveaux clients (7 j)</div>
+                <div style={{ marginTop: 10, fontSize: "0.78rem", color: "#666" }}>
+                  Panier moyen : <strong>{cockpitData.avgBasket.toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA</strong>
+                </div>
               </div>
             </div>
 
@@ -202,7 +182,7 @@ export default function AdminDashboard() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {cockpitData.payouts.released_count > 0 && (
                     <Link href="/admin/payouts" className="btn btn-primary" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-                      <CreditCardIcon size={16} /> Valider {cockpitData.payouts.released_count} payout(s) ({cockpitData.payouts.released_amount.toLocaleString("fr-FR")} FCFA)
+                      <CreditCardIcon size={16} /> Valider {cockpitData.payouts.released_count} payout{cockpitData.payouts.released_count > 1 ? "s" : ""} — {Number(cockpitData.payouts.released_amount).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
                     </Link>
                   )}
                   {pendingShopsCount > 0 && (
@@ -227,19 +207,19 @@ export default function AdminDashboard() {
                 ) : (
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                     {cockpitData.topVendors.map((v, i) => (
-                      <div key={v.shop_name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <div style={{ display: "flex", alignItems: "center" }}>
+                      <div key={v.shop_name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", minWidth: 0, flex: 1 }}>
                           <MedalBadge rank={i + 1} />
-                          <div>
-                            <strong>{v.shop_name}</strong>
+                          <div style={{ minWidth: 0 }}>
+                            <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.shop_name}</strong>
                             <div style={{ fontSize: "0.85rem", color: "#666" }}>
                               {v.order_count} commande(s)
                             </div>
                           </div>
                         </div>
-                        <div style={{ textAlign: "right" }}>
-                          <div style={{ fontWeight: "bold", color: "#d4af37" }}>
-                            {v.revenue.toLocaleString("fr-FR")} FCFA
+                        <div style={{ textAlign: "right", flex: "none" }}>
+                          <div style={{ fontWeight: "bold", color: "#d4af37", whiteSpace: "nowrap" }}>
+                            {Number(v.revenue).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
                           </div>
                         </div>
                       </div>
@@ -271,30 +251,14 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        <div className="vendor-stats-grid">
-          <div className="vendor-stat-card">
-            <div className="vendor-stat-icon" style={{ color: "var(--gold-600)" }}><ShoppingCartIcon size={28} /></div>
-            <div className="vendor-stat-value">{orderStats ? orderStats.orders_today : "—"}</div>
-            <div className="vendor-stat-label">Commandes aujourd'hui</div>
-          </div>
-          <div className="vendor-stat-card">
-            <div className="vendor-stat-icon" style={{ color: "var(--gold-600)" }}><WalletIcon size={28} /></div>
-            <div className="vendor-stat-value" style={{ fontSize: "1.2rem" }}>
-              {orderStats ? `${Number(orderStats.revenue_today).toLocaleString("fr-FR")}` : "—"}
-            </div>
-            <div className="vendor-stat-label">FCFA aujourd'hui</div>
-          </div>
-          <div className="vendor-stat-card">
-            <div className="vendor-stat-icon" style={{ color: "var(--gold-600)" }}><PackageIcon size={28} /></div>
-            <div className="vendor-stat-value">{orderStats ? orderStats.orders_total : "—"}</div>
-            <div className="vendor-stat-label">Commandes totales</div>
-          </div>
-          <div className="vendor-stat-card">
-            <div className="vendor-stat-icon" style={{ color: orderStats?.orders_awaiting > 0 ? "var(--gold-600)" : "var(--gold-600)" }}><ClockIcon size={28} /></div>
-            <div className="vendor-stat-value" style={{ color: orderStats?.orders_awaiting > 0 ? "var(--gold-600)" : "inherit" }}>
-              {orderStats ? orderStats.orders_awaiting : "—"}
-            </div>
-            <div className="vendor-stat-label">À préparer</div>
+        <div className="va-card" style={{ marginTop: 12 }}>
+          <h3 style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 12px 0", fontSize: "1.1rem" }}>
+            <ShoppingCartIcon size={18} /> Commandes
+          </h3>
+          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: "0.9rem", color: "#666" }}>
+            <span>Aujourd'hui : <strong style={{ color: "#222" }}>{orderStats ? orderStats.orders_today : "—"}</strong></span>
+            <span>À préparer : <strong style={{ color: orderStats?.orders_awaiting > 0 ? "var(--gold-600)" : "#222" }}>{orderStats ? orderStats.orders_awaiting : "—"}</strong></span>
+            <span>Total : <strong style={{ color: "#222" }}>{orderStats ? orderStats.orders_total : "—"}</strong></span>
           </div>
         </div>
 

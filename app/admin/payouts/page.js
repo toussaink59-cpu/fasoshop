@@ -258,14 +258,16 @@ export default function AdminPayoutsPage() {
       <div className="vendor-dashboard-wrap">
         <div className="vendor-dashboard-header">
           <h1 style={{ display: "flex", alignItems: "center", gap: 10 }}><WalletIcon size={28} /> Gestion des payouts</h1>
-          <p>
-            <strong>Vendeurs</strong> — À payer : <strong>{sum(toPay).toLocaleString("fr-FR")} FCFA</strong> ({toPay.length}) ·
-            Séquestrés : <strong>{sum(held).toLocaleString("fr-FR")} FCFA</strong> ({held.length}) ·
-            Déjà payés : <strong>{sum(paid).toLocaleString("fr-FR")} FCFA</strong> ({paid.length})
+          <p style={{ margin: 0, fontSize: "0.85rem", lineHeight: 1.7 }}>
+            <strong style={{ display: "block", fontSize: "0.9rem" }}>Vendeurs</strong>
+            <span style={{ display: "block" }}>À payer : <strong>{sum(toPay).toLocaleString("fr-FR")} FCFA</strong> ({toPay.length})</span>
+            <span style={{ display: "block" }}>Séquestrés : <strong>{sum(held).toLocaleString("fr-FR")} FCFA</strong> ({held.length})</span>
+            <span style={{ display: "block" }}>Déjà payés : <strong>{sum(paid).toLocaleString("fr-FR")} FCFA</strong> ({paid.length})</span>
           </p>
-          <p style={{ marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
-            <TruckIcon size={14} /> <strong>Livreurs</strong> — À payer : <strong>{sumCourier(couriersDue).toLocaleString("fr-FR")} FCFA</strong> ({couriersDue.length}) ·
-            Déjà payés : <strong>{sumCourier(couriersPaid).toLocaleString("fr-FR")} FCFA</strong> ({couriersPaid.length})
+          <p style={{ marginTop: 8, fontSize: "0.85rem", lineHeight: 1.7 }}>
+            <strong style={{ display: "flex", alignItems: "center", gap: 6, fontSize: "0.9rem" }}><TruckIcon size={14} /> Livreurs</strong>
+            <span style={{ display: "block" }}>À payer : <strong>{sumCourier(couriersDue).toLocaleString("fr-FR")} FCFA</strong> ({couriersDue.length})</span>
+            <span style={{ display: "block" }}>Déjà payés : <strong>{sumCourier(couriersPaid).toLocaleString("fr-FR")} FCFA</strong> ({couriersPaid.length})</span>
           </p>
           {serverMode === "auto" && (
             <p style={{ fontSize: "0.8rem", color: "var(--millet-600)", marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>

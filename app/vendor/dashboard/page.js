@@ -931,7 +931,7 @@ export default function VendorDashboard() {
                                 { id: "12m", label: "12 mois 💎", days: 365, price: 18000, best: true },
                               ].map((pack) => (
                                 <label key={pack.id} style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", padding: 6, borderRadius: 6, background: sponsorPickerDays === pack.days ? "var(--gold-50, #fffbeb)" : "white", border: sponsorPickerDays === pack.days ? "2px solid var(--gold-500)" : "1px solid var(--border)" }}>
-                                  <input type="radio" name={`sponsor-${p.id}`} checked={sponsorPickerDays === pack.days} onChange={() => setSponsorPickerDays(pack.days)} />
+                                  <input type="radio" name={`sponsor-${p.id}`} checked={sponsorPickerDays === pack.days} onChange={() => setSponsorPickerDays(pack.days)} style={{ width: 16, height: 16, flex: "none", accentColor: "var(--gold-600)" }} />
                                   <span style={{ flex: 1, fontSize: "0.85rem", fontWeight: pack.popular || pack.best ? 700 : 400 }}>{pack.label}</span>
                                   <span style={{ fontSize: "0.85rem", fontWeight: 700, color: "var(--gold-600)" }}>{pack.price.toLocaleString("fr-FR")} FCFA</span>
                                 </label>
