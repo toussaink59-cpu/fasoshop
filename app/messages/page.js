@@ -1,4 +1,4 @@
-import { MessageCircleIcon } from "@/app/components/Icons";
+﻿import { MessageCircleIcon } from "@/app/components/Icons";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/session";
@@ -6,6 +6,9 @@ import { getCategoriesTree } from "@/lib/queries/categories";
 import { getUserConversations } from "@/lib/queries/conversations";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
+import VendorBottomNav from "@/app/components/VendorBottomNav";
+import AdminBottomNav from "@/app/components/AdminBottomNav";
+import KimoxaLogo from "@/app/components/KimoxaLogo";
 
 export const metadata = { title: "Messages" };
 
@@ -15,32 +18,64 @@ function initials(name) {
 }
 
 function timeAgo(date) {
-  const diff = (Date.now() - new Date(date).getTime()) / 1000;
+  if (!date) return "";
+  const t = new Date(date).getTime();
+  if (isNaN(t)) return "";
+  const diff = (Date.now() - t) / 1000;
   if (diff < 60) return "maintenant";
-  if (diff < 3600) return `${Math.floor(diff / 60)} min`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)} h`;
-  return new Date(date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
+  if (diff < 3600) return Math.floor(diff / 60) + " min";
+  if (diff < 86400) return Math.floor(diff / 3600) + " h";
+  return new Date(t).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" });
 }
 
 export default async function MessagesListPage() {
   const user = await getCurrentUser();
   if (!user) redirect("/login");
+  if (user.role === "admin") redirect("/admin/conversations");
 
   const [categories, conversations] = await Promise.all([
     getCategoriesTree(),
     getUserConversations(user.id, user.role),
   ]);
 
-  // OPTION B : l'acheteur voit "Support Kimoxa", le vendeur voit le nom du client
   const isBuyer = user.role === "buyer";
+  const isVendor = user.role === "vendor";
+  const isAdmin = user.role === "admin";
+  const backHref = isVendor ? "/vendor/dashboard" : isAdmin ? "/admin/dashboard" : "/";
 
   return (
     <div className="shell">
-      <SiteHeader initialUser={user} categories={categories} />
+      {isVendor ? (
+        <>
+          <div className="topbar">
+            <div className="brand">
+              <KimoxaLogo light size={20} /> <span className="role-tag">Vendeur</span>
+            </div>
+            <div className="topbar-actions">
+              <Link href="/vendor/dashboard" className="topbar-textlink">Tableau de bord</Link>
+            </div>
+          </div>
+          <div className="woven-strip" />
+        </>
+      ) : isAdmin ? (
+        <>
+          <div className="topbar">
+            <div className="brand">
+              <KimoxaLogo light size={20} /> <span className="role-tag">Admin</span>
+            </div>
+            <div className="topbar-actions">
+              <Link href="/admin/dashboard" className="topbar-textlink">Tableau de bord</Link>
+            </div>
+          </div>
+          <div className="woven-strip" />
+        </>
+      ) : (
+        <SiteHeader initialUser={user} categories={categories} />
+      )}
 
       <div className="chat-list-wrap">
         <div className="chat-list-header">
-          <Link href="/" className="chat-back-btn" aria-label="Retour">←</Link>
+          <Link href={backHref} className="chat-back-btn" aria-label="Retour">←</Link>
           <h1>Messages</h1>
           <span className="chat-list-count">{conversations.length}</span>
         </div>
@@ -84,7 +119,7 @@ export default async function MessagesListPage() {
         )}
       </div>
 
-      <BottomNav user={user} />
+      {isVendor ? <VendorBottomNav /> : isAdmin ? <AdminBottomNav /> : <BottomNav user={user} />}
     </div>
   );
 }
