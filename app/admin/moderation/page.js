@@ -93,7 +93,7 @@ export default function AdminModerationPage() {
     router.push("/login");
   }
 
-  const pendingModerationCount = sponsorships.filter((s) => s.status === "pending").length;
+  const pendingModerationCount = sponsorships.filter((s) => s.status === "pending" || s.status === "paid").length;
 
   return (
     <div className="shell">
@@ -158,7 +158,7 @@ export default function AdminModerationPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sponsorships.filter((s) => s.status === "pending").map((s) => (
+                    {sponsorships.filter((s) => s.status === "pending" || s.status === "paid").map((s) => (
                       <tr key={s.id}>
                         <td>{s.product_name}</td>
                         <td>{s.shop_name}</td>

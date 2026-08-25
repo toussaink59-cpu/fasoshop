@@ -927,6 +927,18 @@ export default function VendorDashboard() {
                             <div className="vendor-action-row">
                               <span className="vendor-sponsored-active">Actif jusqu'au {new Date(p.sponsored_until).toLocaleDateString("fr-FR")}</span>
                             </div>
+                          ) : sponsorRequests[p.id] === "paid" ? (
+                            <div className="vendor-action-row">
+                              <span className="vendor-sponsored-pending" style={{ color: "var(--gold-600)", fontWeight: 700 }}>💳 Paiement reçu — activation en cours</span>
+                            </div>
+                          ) : sponsorRequests[p.id] === "paid" ? (
+                            <div className="vendor-action-row">
+                              <span className="vendor-sponsored-pending" style={{ color: "var(--gold-600)", fontWeight: 700 }}>💳 Paiement reçu — activation en cours</span>
+                            </div>
+                          ) : sponsorRequests[p.id] === "paid" ? (
+                            <div className="vendor-action-row">
+                              <span className="vendor-sponsored-pending" style={{ color: "var(--gold-600)", fontWeight: 700 }}>💳 Paiement reçu — activation en cours</span>
+                            </div>
                           ) : sponsorRequests[p.id] === "pending" ? (
                             <div className="vendor-action-row">
                               <span className="vendor-sponsored-pending">Demande envoyée</span>
