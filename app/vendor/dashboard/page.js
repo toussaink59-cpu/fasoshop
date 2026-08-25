@@ -418,7 +418,7 @@ export default function VendorDashboard() {
             {newOrdersCount > 0 && <span className="topbar-badge">{newOrdersCount > 9 ? "9+" : newOrdersCount}</span>}
           </Link>
           {lowStockCount > 0 && (
-            <button className="topbar-icon" onClick={() => { setActiveFilter("low"); setLowStockAlertDismissed(true); window.scrollTo({ top: 0, behavior: "smooth" }); }} aria-label="Stock faible" title="Stock faible" style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", position: "relative", color: "#fff" }}>
+            <button className="topbar-icon" onClick={() => { setActiveFilter("low"); setLowStockAlertDismissed(true); document.getElementById("vendor-products-section")?.scrollIntoView({ behavior: "smooth", block: "start" }); }} aria-label="Stock faible" title="Stock faible" style={{ display: "inline-flex", alignItems: "center", gap: 4, background: "none", border: "none", cursor: "pointer", position: "relative", color: "#fff" }}>
               <AlertTriangleIcon size={18} />
               <span className="topbar-badge">{lowStockCount > 9 ? "9+" : lowStockCount}</span>
             </button>
@@ -799,7 +799,7 @@ export default function VendorDashboard() {
         )}
 
         <div className="vendor-products-section">
-          <h2>Mes produits ({filteredProducts.length})</h2>
+          <h2 id="vendor-products-section">Mes produits ({filteredProducts.length})</h2>
 
           {loading ? (
             <p>Chargement...</p>
