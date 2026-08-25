@@ -7416,3 +7416,9 @@ main {
 .admin-products-table td:nth-child(3)::before { content: "Vendeur"; }
 .admin-products-table td:nth-child(4)::before { content: "Prix"; }
 .admin-products-table td:nth-child(5)::before { content: "Stock"; }
+
+/* === Page /sponsoring : grilles alignees desktop === */
+.sponsor-benefits { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 36px; }
+.sponsor-packs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+@media (max-width: 980px) { .sponsor-packs { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 720px) { .sponsor-benefits, .sponsor-packs { grid-template-columns: 1fr; } }

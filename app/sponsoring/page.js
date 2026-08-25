@@ -49,7 +49,7 @@ export default async function SponsoringPage() {
           </p>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginBottom: 36 }}>
+        <div className="sponsor-benefits">
           {BENEFITS.map(({ Icon, title, text }) => (
             <div key={title} className="va-card" style={{ textAlign: "center" }}>
               <div style={{ display: "inline-flex", color: "var(--gold-600)", marginBottom: 8 }}><Icon size={28} /></div>
@@ -60,7 +60,7 @@ export default async function SponsoringPage() {
         </div>
 
         <h2 style={{ textAlign: "center", fontSize: "1.3rem", marginBottom: 20 }}>Tarifs simples et dégressifs</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12, marginBottom: 12 }}>
+        <div className="sponsor-packs">
           {SPONSOR_PACKS.map((pack) => (
             <div key={pack.id} className="va-card" style={{ position: "relative", textAlign: "center", border: pack.popular || pack.bestValue ? "2px solid var(--gold-500)" : undefined }}>
               {(pack.popular || pack.bestValue) && (
@@ -79,7 +79,7 @@ export default async function SponsoringPage() {
         </p>
 
         <h2 style={{ textAlign: "center", fontSize: "1.3rem", marginBottom: 16 }}>Comment ça marche ?</h2>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12, marginBottom: 36 }}>
+        <div className="sponsor-benefits">
           {STEPS.map(({ Icon, title, text }) => (
             <div key={title} className="va-card">
               <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--gold-600)", marginBottom: 6 }}>
