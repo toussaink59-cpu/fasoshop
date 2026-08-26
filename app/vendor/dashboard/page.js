@@ -46,6 +46,10 @@ export default function VendorDashboard() {
   const [sponsorPickerDays, setSponsorPickerDays] = useState(180);
   const [sponsorPhone, setSponsorPhone] = useState("");
   const [sponsorPaying, setSponsorPaying] = useState(false);
+  const [promos, setPromos] = useState([]);
+  const [promoForm, setPromoForm] = useState({ code: "", discount_type: "percent", discount_value: 10, min_amount: 0, max_uses: "", expires_at: "" });
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState("");
   const [activeFilter, setActiveFilter] = useState("all");
   const [expandedProduct, setExpandedProduct] = useState(null);
   const [earnings, setEarnings] = useState(null);
@@ -325,6 +329,50 @@ export default function VendorDashboard() {
     if (!res.ok) { setError(data.error || "Erreur lors de la suppression du produit."); return; }
     setSuccess(`Produit "${data.name}" supprimé.`);
     loadStock();
+  }
+
+  
+
+  async function loadPromos() {
+    try {
+      const r = await fetch("/api/vendor/promos");
+      const d = await r.json();
+      setPromos(d.promos || []);
+    } catch {}
+  }
+
+  async function createPromo(e) {
+    e.preventDefault();
+    setPromoError("");
+    setPromoLoading(true);
+    try {
+      const r = await fetch("/api/vendor/promos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...promoForm,
+          discount_value: Number(promoForm.discount_value),
+          min_amount: Number(promoForm.min_amount) || 0,
+          max_uses: promoForm.max_uses ? Number(promoForm.max_uses) : null,
+          expires_at: promoForm.expires_at || null,
+        }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || "Erreur");
+      setPromoForm({ code: "", discount_type: "percent", discount_value: 10, min_amount: 0, max_uses: "", expires_at: "" });
+      await loadPromos();
+      setSuccess(`Code ${d.promo.code} créé !`);
+    } catch (err) {
+      setPromoError(err.message);
+    } finally {
+      setPromoLoading(false);
+    }
+  }
+
+  async function deletePromo(id) {
+    if (!confirm("Supprimer ce code promo ?")) return;
+    await fetch(`/api/vendor/promos?id=${id}`, { method: "DELETE" });
+    await loadPromos();
   }
 
   async function handleRequestSponsor(productId, durationDays, mode) {

@@ -18,7 +18,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Corps de requête invalide" }, { status: 400 });
   }
 
-  const { items, shippingAddress, phone, paymentMethod, deliveryMethod } = body;
+  const { items, shippingAddress, phone, paymentMethod, deliveryMethod, promo_code } = body;
 
   // === Validation des entrées ===
   if (!Array.isArray(items) || items.length === 0) {
@@ -136,6 +136,26 @@ export async function POST(request) {
   );
   const grandTotal = Math.max(0, subtotalProducts + deliveryFee);
 
+    // === PROMO CODE (validation serveur) ===
+    let promoDiscount = 0;
+    let validPromoCode = null;
+    if (promo_code && String(promo_code).trim()) {
+      const [promo] = await sql`SELECT * FROM promo_codes WHERE code = ${String(promo_code).toUpperCase()} AND active = true`;
+      if (promo && (!promo.expires_at || new Date(promo.expires_at) >= new Date()) && (!promo.max_uses || promo.used_count < promo.max_uses)) {
+        const shopSubtotal = items.reduce((sum, it) => {
+          const pp = productsMap[Number(it.productId)];
+          return pp && Number(pp.shop_id) === Number(promo.shop_id) ? sum + Number(pp.price) * it.quantity : sum;
+        }, 0);
+        if (shopSubtotal >= (promo.min_amount || 0) && shopSubtotal > 0) {
+          promoDiscount = promo.discount_type === "percent" ? Math.round(shopSubtotal * promo.discount_value / 100) : Math.min(promo.discount_value, shopSubtotal);
+          validPromoCode = promo.code;
+          await sql`UPDATE promo_codes SET used_count = used_count + 1 WHERE id = ${promo.id}`;
+        }
+      }
+    }
+    const finalTotal = Math.max(0, grandTotal - promoDiscount);
+
+
   // === Transaction atomique : commande + stock + ledger ===
   try {
     const stockChanges = [];
@@ -143,9 +163,9 @@ export async function POST(request) {
       // 1. Création commande
       const [newOrder] = await tx`
         INSERT INTO orders (buyer_id, shipping_address, phone, payment_method,
-                            total, subtotal, delivery_fee, status, delivery_method)
+                            total, subtotal, delivery_fee, status, delivery_method, promo_code, promo_discount)
         VALUES (${user.id}, ${shippingAddress || ""}, ${phone}, ${paymentMethod},
-                ${grandTotal}, ${subtotalProducts}, ${deliveryFee}, 'pending', ${deliveryMethod})
+                ${finalTotal}, ${subtotalProducts}, ${deliveryFee}, 'pending', ${deliveryMethod}, ${validPromoCode}, ${promoDiscount})
         RETURNING id, total, subtotal, delivery_fee, status
       `;
 

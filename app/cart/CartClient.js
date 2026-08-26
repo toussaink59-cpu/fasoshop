@@ -28,7 +28,34 @@ export default function CartClient({ initialUser, categories }) {
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [locating, setLocating] = useState(false);
+  const [promoCode, setPromoCode] = useState("");
+  const [promoData, setPromoData] = useState(null);
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState("");
   const [locError, setLocError] = useState("");
+
+  
+  async function applyPromo() {
+    if (!promoCode.trim()) return;
+    setPromoLoading(true);
+    setPromoError("");
+    try {
+      const items = cart.map(i => ({ product_id: i.productId, shop_id: i.shopId, quantity: i.quantity, unit_price: i.price }));
+      const r = await fetch("/api/promos/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: promoCode, items }),
+      });
+      const d = await r.json();
+      if (!r.ok || !d.valid) throw new Error(d.error || "Code invalide");
+      setPromoData(d);
+    } catch (err) {
+      setPromoError(err.message);
+      setPromoData(null);
+    } finally {
+      setPromoLoading(false);
+    }
+  }
 
   useEffect(() => {
     setCart(getCart());
@@ -206,7 +233,8 @@ export default function CartClient({ initialUser, categories }) {
     };
   }, [cart, deliveryMethod, liveShops]);
 
-  const grandTotal = Math.max(0, subtotal + deliveryFee);
+  const totalDiscount = promoData ? Object.values(promoData.per_shop || {}).reduce((s, v) => s + Number(v || 0), 0) : 0;
+  const grandTotal = Math.max(0, subtotal + deliveryFee - totalDiscount);
 
   async function handleCheckout(e) {
     e.preventDefault();
@@ -475,7 +503,14 @@ export default function CartClient({ initialUser, categories }) {
                     </strong>
                   </div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", paddingTop: 8, borderTop: "1px solid var(--border)" }}>
-                    <span style={{ fontWeight: 700, color: "var(--ink-900)" }}>Total à payer</span>
+                    
+            {totalDiscount > 0 && (
+              <div className="cart-summary-line" style={{ color: "#166534" }}>
+                <span>Réduction</span>
+                <strong>-{totalDiscount.toLocaleString("fr-FR")} FCFA</strong>
+              </div>
+            )}
+            <span style={{ fontWeight: 700, color: "var(--ink-900)" }}>Total à payer</span>
                     <strong style={{ fontSize: "1.1rem", color: "var(--ink-900)" }}>
                       {grandTotal.toLocaleString("fr-FR")} FCFA
                     </strong>
