@@ -24,7 +24,7 @@ const isPromosRoute = pathname.startsWith("/api/promos"); // 🔒 corrige V-04 :
 
   if (
     !isVendorRoute && !isAdminRoute && !isOrdersRoute && !isProductsRoute &&
-    !isAddressesRoute && !isConversationsRoute && !isFavoritesRoute && !isCartRoute
+    !isAddressesRoute && !isConversationsRoute && !isFavoritesRoute && !isCartRoute && !isPromosRoute
   ) {
     return NextResponse.next();
   }
@@ -87,7 +87,7 @@ const isPromosRoute = pathname.startsWith("/api/promos"); // 🔒 corrige V-04 :
   }
   
  // Routes acheteur réservées
-  const isBuyerOnly = isOrdersRoute || isAddressesRoute || isFavoritesRoute || isCartRoute;
+  const isBuyerOnly = isOrdersRoute || isAddressesRoute || isFavoritesRoute || isCartRoute || isPromosRoute;
   if (isBuyerOnly && payload.role !== "buyer" && payload.role !== "admin") {
     return NextResponse.json(AUTH_ERROR, { status: 403 });
   }
