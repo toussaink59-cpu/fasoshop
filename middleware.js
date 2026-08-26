@@ -19,7 +19,8 @@ export async function middleware(request) {
   const isAddressesRoute = pathname.startsWith("/api/addresses");
   const isConversationsRoute = pathname.startsWith("/api/conversations");
   const isFavoritesRoute = pathname.startsWith("/api/favorites");
-  const isCartRoute = pathname.startsWith("/api/cart"); // 🔒 corrige V-01 : cette route lisait x-user-id sans passer par le middleware
+  const isCartRoute = pathname.startsWith("/api/cart"); // 🔒 corrige V-01 : cette route lisait x-user-id sans passer par le middlew
+const isPromosRoute = pathname.startsWith("/api/promos"); // 🔒 corrige V-04 : protection anti-énumération codes promoare
 
   if (
     !isVendorRoute && !isAdminRoute && !isOrdersRoute && !isProductsRoute &&
@@ -107,5 +108,6 @@ export const config = {
     "/api/conversations/:path*",
     "/api/favorites/:path*",
     "/api/cart/:path*", // 🔒 corrige V-01
+    "/api/promos/:path*", // 🔒 corrige V-04
   ],
 };
