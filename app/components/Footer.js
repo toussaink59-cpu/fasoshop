@@ -1,6 +1,7 @@
 ﻿import Link from "next/link";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
 import PaymentMethods from "@/app/components/PaymentMethods";
+import ShareKimoxaFooter from "@/app/components/ShareKimoxaFooter";
 import {
   SmartphoneIcon, FacebookIcon, InstagramIcon, WhatsAppIcon, TikTokIcon, MapPinIcon,
 } from "@/app/components/Icons";
@@ -61,6 +62,7 @@ export default function Footer() {
             <Link href="/a-propos">À propos</Link>
             <Link href="/cgu">Conditions d'utilisation</Link>
             <Link href="/cgv">Conditions de vente</Link>
+                <ShareKimoxaFooter />
           </div>
         </div>
 

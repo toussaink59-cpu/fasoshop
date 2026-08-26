@@ -6,6 +6,7 @@ import Image from "next/image";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
+import ShareBar from "@/app/components/ShareBar";
 
 export default function ShopClient({ shop, products, initialUser, categories }) {
   const since = shop.created_at

@@ -7,6 +7,7 @@ import VendorBottomNav from "@/app/components/VendorBottomNav";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
 import VendorAnalytics from "@/app/components/VendorAnalytics";
 import VendorInsights from "@/app/components/VendorInsights";
+import ShareBar from "@/app/components/ShareBar";
 import {
   CreditCardIcon, LockIcon, MessageIcon, PackageIcon, ClockIcon, XCircleIcon,
   TruckIcon, AlertTriangleIcon, ShoppingCartIcon, WalletIcon, BarChartIcon,
@@ -517,6 +518,15 @@ export default function VendorDashboard() {
         <div className="vendor-dashboard-header">
           <h1>Tableau de bord</h1>
           <p>{user ? `Bienvenue, ${user.full_name}` : ""}</p>
+          {shop && (
+            <div style={{ marginTop: 12 }}>
+              <ShareBar
+                title={shop.name + " — Ma boutique Kimoxa"}
+                price={0}
+                url={typeof window !== "undefined" ? window.location.origin + "/boutique/" + shop.id : ""}
+              />
+            </div>
+          )}
         </div>
 
         {shop && shop.status === "pending" && !shop.id_document_type && (
@@ -1037,7 +1047,8 @@ export default function VendorDashboard() {
                         </div>
 
                         <div className="vendor-action-group">
-                          <button className="btn btn-danger" onClick={() => handleDeleteProduct(p.id, p.name)} style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <button className="btn btn-ghost" onClick={() => { navigator.share ? navigator.share({ title: p.name, text: p.name + " — " + Number(p.price).toLocaleString("fr-FR") + " FCFA sur Kimoxa", url: window.location.origin + "/shop/" + p.id }) : navigator.clipboard.writeText(window.location.origin + "/shop/" + p.id).then(() => alert("Lien copié !")); }} style={{ display: "flex", alignItems: "center", gap: 4 }}>📲 Partager</button>
+              <button className="btn btn-danger" onClick={() => handleDeleteProduct(p.id, p.name)} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <TrashIcon size={14} /> Supprimer le produit
                           </button>
                         </div>

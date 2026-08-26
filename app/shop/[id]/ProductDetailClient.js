@@ -7,6 +7,7 @@ import { addToCart } from "@/lib/cart";
 import PriceDisplay, { hasDiscount, discountPercent } from "@/app/components/PriceDisplay";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
+import ShareBar from "@/app/components/ShareBar";
 import {
   PackageIcon, StoreIcon, BadgeCheckIcon, StarIcon, MessageIcon,
   ShoppingCartIcon, CheckCircleIcon, TruckIcon, SmartphoneIcon,
