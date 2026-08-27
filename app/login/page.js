@@ -69,8 +69,8 @@ export default function LoginPage() {
         padding: "40px 36px",
         boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)",
       }}>
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
-          <KimoxaLogo size={42} withTagline />
+        <div style={{ textAlign: "center", marginBottom: 32, color: "#ffffff" }}>
+          <KimoxaLogo size={42} withTagline light />
         </div>
 
         <h1 style={{
@@ -203,13 +203,6 @@ export default function LoginPage() {
               }}>
                 Mot de passe
               </label>
-              <Link href="/forgot-password" style={{
-                fontSize: "0.8rem",
-                color: "#c9a961",
-                textDecoration: "none",
-              }}>
-                Oublié ?
-              </Link>
             </div>
             <div style={{ position: "relative" }}>
               <span style={{
@@ -278,6 +271,12 @@ export default function LoginPage() {
             {loading ? "Connexion en cours..." : "Se connecter"}
           </button>
         </form>
+
+        <div style={{ textAlign: "center", marginTop: 16 }}>
+          <Link href="/forgot-password" style={{ color: "#a1a1aa", fontSize: "0.85rem", textDecoration: "none" }}>
+            Mot de passe oublié ?
+          </Link>
+        </div>
 
         <p style={{
           textAlign: "center",

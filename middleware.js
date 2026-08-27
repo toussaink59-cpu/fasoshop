@@ -20,11 +20,12 @@ export async function middleware(request) {
   const isConversationsRoute = pathname.startsWith("/api/conversations");
   const isFavoritesRoute = pathname.startsWith("/api/favorites");
   const isCartRoute = pathname.startsWith("/api/cart"); // 🔒 corrige V-01 : cette route lisait x-user-id sans passer par le middlew
-const isPromosRoute = pathname.startsWith("/api/promos"); // 🔒 corrige V-04 : protection anti-énumération codes promoare
+const isPromosRoute = pathname.startsWith("/api/promos");
+const isAccountRoute = pathname.startsWith("/api/account"); // 🔒 corrige V-04 : protection anti-énumération codes promoare
 
   if (
     !isVendorRoute && !isAdminRoute && !isOrdersRoute && !isProductsRoute &&
-    !isAddressesRoute && !isConversationsRoute && !isFavoritesRoute && !isCartRoute && !isPromosRoute
+    !isAddressesRoute && !isConversationsRoute && !isFavoritesRoute && !isCartRoute && !isPromosRoute && !isAccountRoute
   ) {
     return NextResponse.next();
   }
@@ -87,7 +88,7 @@ const isPromosRoute = pathname.startsWith("/api/promos"); // 🔒 corrige V-04 :
   }
   
  // Routes acheteur réservées
-  const isBuyerOnly = isOrdersRoute || isAddressesRoute || isFavoritesRoute || isCartRoute || isPromosRoute;
+  const isBuyerOnly = isOrdersRoute || isAddressesRoute || isFavoritesRoute || isCartRoute || isPromosRoute || isAccountRoute;
   if (isBuyerOnly && payload.role !== "buyer" && payload.role !== "admin") {
     return NextResponse.json(AUTH_ERROR, { status: 403 });
   }
@@ -109,5 +110,6 @@ export const config = {
     "/api/favorites/:path*",
     "/api/cart/:path*", // 🔒 corrige V-01
     "/api/promos/:path*", // 🔒 corrige V-04
+    "/api/account/:path*", // 🔒 protège édition profil
   ],
 };
