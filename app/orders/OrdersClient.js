@@ -5,10 +5,8 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
-import {
-  PackageIcon, TruckIcon, CheckCircleIcon, MessageIcon, CreditCardIcon,
-  MapPinIcon, SmartphoneIcon, StoreIcon, BadgeCheckIcon, SearchIcon,
-} from "@/app/components/Icons";
+import { PackageIcon, TruckIcon, CheckCircleIcon, MessageIcon, CreditCardIcon,
+  MapPinIcon, SmartphoneIcon, StoreIcon, BadgeCheckIcon, SearchIcon } from "@/app/components/Icons";
 
 const STATUS_LABELS = {
   preparation: "En préparation",
@@ -283,31 +281,40 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
                           ))}
                         </div>
 
-                        <div className="order-actions" style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                          <button
-                            className="btn btn-ghost"
-                            onClick={() => handleContact(order.id, sub.shopId)}
-                            disabled={contactingKey === key}
-                            style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
-                          >
-                            <MessageIcon size={14} /> {contactingKey === key ? "Ouverture..." : "Contacter"}
-                          </button>
-                          <Link
-                            href={`/orders/${order.id}/invoice`}
-                            className="btn btn-ghost"
-                          >
-                            Facture
-                          </Link>
-                          {sub.deliveryStatus === "shipped" && (
-                            <button
-                              className="btn btn-success"
-                              onClick={() => handleConfirmReceipt(order.id, sub.shopId)}
-                              disabled={confirmingKey === key}
-                              style={{ display: "inline-flex", alignItems: "center", gap: 6 }}
+                        <div className="order-actions" style={{ marginTop: 12 }}>
+                          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                            <Link
+                              href={`/orders/${order.id}/invoice`}
+                              className="btn btn-primary"
+                              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
                             >
-                              <CheckCircleIcon size={14} /> {confirmingKey === key ? "..." : "J'ai reçu"}
+                               Facture
+                            </Link>
+                            {sub.deliveryStatus === "shipped" && (
+                              <button
+                                className="btn btn-success"
+                                onClick={() => handleConfirmReceipt(order.id, sub.shopId)}
+                                disabled={confirmingKey === key}
+                                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}
+                              >
+                                <CheckCircleIcon size={16} /> {confirmingKey === key ? "..." : "J'ai reçu"}
+                              </button>
+                            )}
+                          </div>
+                          <div style={{ display: "flex", gap: 12, fontSize: "0.85rem" }}>
+                            <button
+                              onClick={() => handleContact(order.id, sub.shopId)}
+                              disabled={contactingKey === key}
+                              style={{
+                                background: "none", border: "none", padding: 0,
+                                color: "var(--gold-700)", cursor: "pointer",
+                                display: "inline-flex", alignItems: "center", gap: 4,
+                                textDecoration: "underline",
+                              }}
+                            >
+                              <MessageIcon size={14} /> {contactingKey === key ? "Ouverture..." : "Contacter le vendeur"}
                             </button>
-                          )}
+                          </div>
                         </div>
                       </div>
                     );
