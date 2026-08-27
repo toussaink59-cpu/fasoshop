@@ -26,12 +26,15 @@ export default function VendorRevenuePage() {
   const [unreadMessages, setUnreadMessages] = useState(0);
   const [requesting, setRequesting] = useState(false);
   const [requestMsg, setRequestMsg] = useState({ type: "", text: "" });
+  const [loadError, setLoadError] = useState(false);
 
   const loadRevenue = useCallback(async () => {
     const res = await fetch("/api/vendor/revenue");
     if (res.ok) {
       const data = await res.json();
       setRevenue(data.revenue || null);
+    } else {
+      setLoadError(true);
     }
   }, []);
 
@@ -97,7 +100,7 @@ export default function VendorRevenuePage() {
       <div className="shell">
         <div className="topbar"><div className="brand"><KimoxaLogo light size={20} /> <span className="role-tag">Vendeur</span></div></div>
         <div className="woven-strip" />
-        <div className="content"><p>Chargement...</p></div>
+        <div className="content"><p style={{ padding: 24, textAlign: "center", color: "var(--ink-500)" }}>{loadError ? "Erreur de chargement. Rechargez la page ou contactez le support." : "Chargement..."}</p></div>
       </div>
     );
   }
