@@ -12,7 +12,7 @@ export default function Footer() {
       <div className="site-footer-inner">
 
         <div className="temu-footer-brand">
-          <KimoxaLogo light size={34} withTagline />
+          <KimoxaLogo light size={34} />
           <p className="site-footer-tagline">
             La marketplace multi-vendeurs qui connecte l'Afrique qui vend à l'Afrique qui achète.
           </p>

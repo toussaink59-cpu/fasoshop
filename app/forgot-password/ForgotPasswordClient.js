@@ -45,7 +45,7 @@ export default function ForgotPasswordClient() {
       <div className="register-layout">
         <div className="register-form-col">
           <div style={{ marginBottom: 24 }}>
-            <KimoxaLogo size={42} withTagline />
+            <KimoxaLogo size={42} />
           </div>
           <h1 style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <LockIcon size={24} style={{ color: "var(--gold-600)" }} />

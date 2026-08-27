@@ -70,7 +70,7 @@ export default function LoginPage() {
         boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)",
       }}>
         <div style={{ textAlign: "center", marginBottom: 32, color: "#ffffff" }}>
-          <KimoxaLogo size={42} withTagline light />
+          <KimoxaLogo size={42} light />
         </div>
 
         <h1 style={{

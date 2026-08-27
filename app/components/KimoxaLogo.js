@@ -17,15 +17,12 @@ export function KimoxaSymbol({ size = 26, light = false }) {
   );
 }
 
-export default function KimoxaLogo({ light = false, size = 26, withTagline = false }) {
+export default function KimoxaLogo({ light = false, size = 26 }) {
   return (
     <span className="kimoxa-logo">
       <KimoxaSymbol size={size} light={light} />
       <span className="kimoxa-logo-text">
         <span className={`kimoxa-wordmark ${light ? "is-light" : ""}`}>KIMOXA</span>
-        {withTagline && (
-          <span className="kimoxa-tagline">Connecter · Innover · Prospérer</span>
-        )}
       </span>
     </span>
   );

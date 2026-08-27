@@ -117,14 +117,14 @@ function RegisterForm() {
         boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)",
       }}>
         <div style={{ textAlign: "center", marginBottom: 24, ["--ink-900"]: "#ffffff", ["--ink-800"]: "#ffffff" }}>
-          <KimoxaLogo size={42} withTagline />
+          <KimoxaLogo size={42} light />
         </div>
 
         <h1 style={{ margin: "0 0 8px", fontSize: "1.75rem", fontWeight: 700, color: "#fff", textAlign: "center", letterSpacing: "-0.02em" }}>
           Créer un compte
         </h1>
         <p style={{ margin: "0 0 24px", textAlign: "center", color: "#a1a1aa", fontSize: "0.95rem" }}>
-          Rejoignez la marketplace de confiance de l'Afrique
+          Rejoignez Kimoxa
         </p>
 
         <a href="/api/auth/google" style={{
