@@ -81,7 +81,22 @@ export async function POST(request) {
   try {
     const body = await request.json();
 
- // 3) Validation stricte des champs
+       // === PLAFOND vendeur non vérifié ===
+      const [shopInfo] = await sql`SELECT s.id, s.status FROM shops s WHERE s.vendor_id = ${userId}`;
+      if (shopInfo && shopInfo.status !== 'active') {
+        const [countRow] = await sql`SELECT COUNT(*)::int AS count FROM products WHERE shop_id = ${shopInfo.id}`;
+        if ((countRow?.count || 0) >= PRODUCT_LIMIT_UNVERIFIED) {
+          return Response.json(
+            {
+              error: `Limite atteinte : ${PRODUCT_LIMIT_UNVERIFIED} produits maximum tant que votre boutique n'est pas vérifiée. Vérifiez votre identité pour publier sans limite.`,
+              code: 'UNVERIFIED_LIMIT',
+            },
+            { status: 403 }
+          );
+        }
+      }
+
+// 3) Validation stricte des champs
     const name = sanitize(body.name, MAX_NAME_LENGTH);
     const description = sanitize(body.description, MAX_DESCRIPTION_LENGTH);
     const brand = sanitize(body.brand, MAX_BRAND_LENGTH);

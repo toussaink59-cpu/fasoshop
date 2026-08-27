@@ -20,7 +20,7 @@ export async function POST(request) {
         JOIN shop_commission_ledger scl
           ON scl.order_id = h.order_id AND scl.shop_id = h.shop_id
         WHERE h.to_status = 'shipped'
-          AND h.created_at <= NOW() - INTERVAL '7 days'
+          AND h.created_at <= NOW() - INTERVAL '3 days'
           AND scl.delivery_status = 'shipped'
       `;
 
@@ -38,7 +38,7 @@ export async function POST(request) {
         await tx`
           INSERT INTO order_status_history
             (order_id, shop_id, from_status, to_status, actor_id, actor_role, reason)
-          VALUES (${r.order_id}, ${r.shop_id}, 'shipped', 'delivered', ${r.buyer_id}, 'system_auto', 'auto_confirm_7_days')
+          VALUES (${r.order_id}, ${r.shop_id}, 'shipped', 'delivered', ${r.buyer_id}, 'system_auto', 'auto_confirm_3_days')
         `;
 
         const subs = await tx`
