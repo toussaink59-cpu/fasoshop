@@ -45,18 +45,64 @@ export async function GET(request) {
 // 2 modes supportés :
 //   A) Pré-vente   : body = { productId, message? }
 //   B) Post-vente  : body = { orderId, shopId } → conversation liée à une commande
-
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
   if (!userId) return Response.json({ error: "Non authentifie." }, { status: 401 });
 
   let body;
   try { body = await request.json(); } catch { return Response.json({ error: "Corps invalide." }, { status: 400 }); }
-  const productId = Number(body?.productId);
-  const initialMessage = String(body?.message || "").trim().slice(0, 1000);
-  if (!productId) return Response.json({ error: "Produit requis." }, { status: 400 });
 
-  // Resolution serveur : le shop vient du produit, jamais du client
+  const productId = body?.productId ? Number(body.productId) : null;
+  const orderId = body?.orderId ? Number(body.orderId) : null;
+  const shopId = body?.shopId ? Number(body.shopId) : null;
+  const initialMessage = String(body?.message || "").trim().slice(0, 1000);
+
+  // ============ MODE B : Post-vente (depuis une commande) ============
+  if (orderId && shopId) {
+    const [order] = await sql`SELECT id, buyer_id FROM orders WHERE id = ${orderId}`;
+    if (!order) return Response.json({ error: "Commande introuvable." }, { status: 404 });
+    if (String(order.buyer_id) !== String(userId)) {
+      return Response.json({ error: "Accès refusé." }, { status: 403 });
+    }
+
+    const [shopCheck] = await sql`
+      SELECT 1 FROM order_items oi
+      JOIN products p ON p.id = oi.product_id
+      WHERE oi.order_id = ${orderId} AND p.shop_id = ${shopId}
+      LIMIT 1`;
+    if (!shopCheck) {
+      return Response.json({ error: "Ce vendeur n'appartient pas à cette commande." }, { status: 400 });
+    }
+
+    const [firstItem] = await sql`
+      SELECT oi.product_id FROM order_items oi
+      JOIN products p ON p.id = oi.product_id
+      WHERE oi.order_id = ${orderId} AND p.shop_id = ${shopId}
+      LIMIT 1`;
+    const refProductId = firstItem ? firstItem.product_id : null;
+
+    const [existing] = await sql`
+      SELECT id FROM conversations
+      WHERE buyer_id = ${userId} AND shop_id = ${shopId} AND order_id = ${orderId}`;
+    const conv = existing || (await sql`
+      INSERT INTO conversations (order_id, shop_id, buyer_id, product_id)
+      VALUES (${orderId}, ${shopId}, ${userId}, ${refProductId})
+      RETURNING id`)[0];
+
+    if (initialMessage) {
+      await sql`INSERT INTO messages (conversation_id, sender_id, sender_role, body)
+                VALUES (${conv.id}, ${userId}, 'buyer', ${initialMessage})`;
+      await sql`UPDATE conversations SET last_message_at = now() WHERE id = ${conv.id}`;
+    }
+
+    return Response.json({ conversationId: conv.id });
+  }
+
+  // ============ MODE A : Pré-vente (depuis une fiche produit) ============
+  if (!productId) {
+    return Response.json({ error: "Produit ou commande requis." }, { status: 400 });
+  }
+
   const [product] = await sql`
     SELECT p.id, p.name, s.id AS shop_id, s.vendor_id
     FROM products p JOIN shops s ON s.id = p.shop_id
@@ -65,7 +111,6 @@ export async function POST(request) {
   if (String(product.vendor_id) === String(userId))
     return Response.json({ error: "Reprenez une conversation existante avec ce client." }, { status: 400 });
 
-  // Anti-doublon : conversation pre-vente existante ?
   const [existing] = await sql`
     SELECT id FROM conversations
     WHERE buyer_id = ${userId} AND shop_id = ${product.shop_id} AND product_id = ${product.id} AND order_id IS NULL`;
