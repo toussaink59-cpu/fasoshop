@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import SiteHeader from "@/app/components/SiteHeader";
@@ -11,6 +11,17 @@ import {
   MailIcon, SmartphoneIcon, CalendarIcon, ShieldIcon, EyeIcon, EyeOffIcon,
 } from "@/app/components/Icons";
 import { COUNTRIES } from "@/lib/countries";
+
+
+function GlobeIcon({ size = 18, style }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>;
+}
+function BellIcon({ size = 18, style }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>;
+}
+function TrashIcon({ size = 18, style }) {
+  return <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={style}><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>;
+}
 
 function GoogleIcon({ size = 18 }) {
   return (
@@ -33,6 +44,15 @@ const TABS = [
 export default function AccountClient({ initialUser, categories }) {
   const router = useRouter();
   const [tab, setTab] = useState("profile");
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    setIsMobile(mq.matches);
+    const handler = (e) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
   const [user, setUser] = useState(initialUser);
   const [loading, setLoading] = useState(false);
   const [msg, setMsg] = useState({ type: "", text: "" });
@@ -183,12 +203,16 @@ export default function AccountClient({ initialUser, categories }) {
           </div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "220px 1fr", gap: 24, alignItems: "start" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "220px 1fr", gap: 24, alignItems: "start" }}>
           {/* Tabs latéraux (desktop) */}
           <nav style={{
             background: "#fff", borderRadius: 12, padding: 8,
             border: "1px solid var(--border)",
-            position: "sticky", top: 80,
+            position: isMobile ? "static" : "sticky", top: 80,
+            display: isMobile ? "flex" : "block",
+            gap: isMobile ? 4 : 0,
+            overflowX: isMobile ? "auto" : "visible",
+            marginBottom: isMobile ? 16 : 0,
           }}>
             {TABS.map((t) => {
               const Icon = t.Icon;
@@ -199,7 +223,7 @@ export default function AccountClient({ initialUser, categories }) {
                   onClick={() => setTab(t.id)}
                   style={{
                     display: "flex", alignItems: "center", gap: 10,
-                    width: "100%", padding: "10px 14px",
+                    width: isMobile ? "auto" : "100%", padding: "10px 14px", whiteSpace: isMobile ? "nowrap" : "normal",
                     background: active ? "var(--gold-50)" : "transparent",
                     border: "none", borderRadius: 8,
                     color: active ? "var(--gold-700)" : "var(--ink-700)",
@@ -213,20 +237,22 @@ export default function AccountClient({ initialUser, categories }) {
                 </button>
               );
             })}
-            <div style={{ height: 1, background: "var(--border)", margin: "8px 4px" }} />
-            <button
-              onClick={logout}
-              style={{
-                display: "flex", alignItems: "center", gap: 10,
-                width: "100%", padding: "10px 14px",
-                background: "transparent", border: "none", borderRadius: 8,
-                color: "#dc2626", fontWeight: 500, fontSize: "0.9rem",
-                cursor: "pointer", textAlign: "left",
-              }}
-            >
-              <LogOutIcon size={16} />
-              Déconnexion
-            </button>
+            {!isMobile && <div style={{ height: 1, background: "var(--border)", margin: "8px 4px" }} />}
+            {!isMobile && (
+              <button
+                onClick={logout}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  width: "100%", padding: "10px 14px",
+                  background: "transparent", border: "none", borderRadius: 8,
+                  color: "#dc2626", fontWeight: 500, fontSize: "0.9rem",
+                  cursor: "pointer", textAlign: "left",
+                }}
+              >
+                <LogOutIcon size={16} />
+                Déconnexion
+              </button>
+            )}
           </nav>
 
           {/* Contenu */}
@@ -530,7 +556,7 @@ export default function AccountClient({ initialUser, categories }) {
                       width: 38, height: 38, borderRadius: 8,
                       background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center",
                     }}>
-                      🇫🇷
+                      <GlobeIcon size={18} style={{ color: "var(--ink-600)" }} />
                     </span>
                     <div style={{ flex: 1 }}>
                       <strong style={{ display: "block", color: "var(--ink-900)", fontSize: "0.92rem" }}>Langue</strong>
@@ -544,9 +570,9 @@ export default function AccountClient({ initialUser, categories }) {
                     <span style={{
                       width: 38, height: 38, borderRadius: 8,
                       background: "#f3f4f6", display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: "1.2rem",
+                      
                     }}>
-                      🔔
+                      <BellIcon size={18} style={{ color: "var(--ink-600)" }} />
                     </span>
                     <div style={{ flex: 1 }}>
                       <strong style={{ display: "block", color: "var(--ink-900)", fontSize: "0.92rem" }}>Notifications</strong>
@@ -559,7 +585,7 @@ export default function AccountClient({ initialUser, categories }) {
                       background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center",
                       color: "#dc2626",
                     }}>
-                      🗑️
+                      <TrashIcon size={18} style={{ color: "#dc2626" }} />
                     </span>
                     <div style={{ flex: 1 }}>
                       <strong style={{ display: "block", color: "var(--ink-900)", fontSize: "0.92rem" }}>Supprimer mon compte</strong>
@@ -567,6 +593,23 @@ export default function AccountClient({ initialUser, categories }) {
                     </div>
                   </div>
                 </div>
+
+                {isMobile && (
+                  <button
+                    onClick={logout}
+                    style={{
+                      width: "100%", marginTop: 24, padding: "12px 16px",
+                      background: "transparent",
+                      border: "1px solid #fecaca",
+                      color: "#dc2626", fontWeight: 600, fontSize: "0.9rem",
+                      borderRadius: 10, cursor: "pointer",
+                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    }}
+                  >
+                    <LogOutIcon size={16} />
+                    Déconnexion
+                  </button>
+                )}
 
                 <div style={{ marginTop: 32, padding: "16px 18px", background: "#f9fafb", borderRadius: 10, fontSize: "0.82rem", color: "var(--ink-600)", lineHeight: 1.6 }}>
                   <strong>Besoin d'aide ?</strong> Contactez-nous via{" "}

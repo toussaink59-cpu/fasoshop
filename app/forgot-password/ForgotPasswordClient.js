@@ -1,11 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
 import Link from "next/link";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
-import {
-  LockIcon, UserIcon, ShieldCheckIcon, ChevronLeftIcon, CheckCircleIcon, MailIcon, ClockIcon, ShieldXIcon, ChevronRightIcon
-} from "@/app/components/Icons";
+import { LockIcon, ChevronLeftIcon, MailIcon, CheckCircleIcon } from "@/app/components/Icons";
 
 export default function ForgotPasswordClient() {
   const [email, setEmail] = useState("");
@@ -26,10 +24,7 @@ export default function ForgotPasswordClient() {
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        setMessage(
-          data.message ||
-            "Si cet email est associé à un compte, un lien de réinitialisation a été envoyé."
-        );
+        setMessage(data.message || "Si cet email est associé à un compte, un lien de réinitialisation a été envoyé.");
       } else {
         setError(data.error || "Une erreur est survenue. Réessayez.");
       }
@@ -40,108 +35,141 @@ export default function ForgotPasswordClient() {
     }
   }
 
+  const inputStyle = {
+    width: "100%", padding: "12px 14px",
+    background: "#09090b", border: "1px solid #27272a",
+    borderRadius: 10, color: "#fff", fontSize: "0.95rem",
+    outline: "none", boxSizing: "border-box",
+  };
+  const labelStyle = { display: "block", marginBottom: 6, fontSize: "0.82rem", fontWeight: 600, color: "#a1a1aa" };
+
   return (
-    <div className="shell">
-      <div className="register-layout">
-        <div className="register-form-col">
-          <div style={{ marginBottom: 24 }}>
-            <KimoxaLogo size={42} />
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(135deg, #0a0a0a 0%, #1a1410 100%)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: "24px 16px",
+    }}>
+      <div style={{
+        width: "100%", maxWidth: 420,
+        background: "#18181b", borderRadius: 16,
+        padding: "40px 36px",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)",
+      }}>
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <KimoxaLogo size={42} light />
+        </div>
+
+        <div style={{
+          width: 56, height: 56, borderRadius: "50%",
+          background: "rgba(201,169,97,0.15)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          margin: "0 auto 20px",
+        }}>
+          <LockIcon size={26} style={{ color: "#c9a961" }} />
+        </div>
+
+        <h1 style={{
+          margin: "0 0 8px", fontSize: "1.6rem", fontWeight: 700,
+          color: "#fff", textAlign: "center", letterSpacing: "-0.02em",
+        }}>
+          Mot de passe oublié ?
+        </h1>
+        <p style={{
+          margin: "0 0 28px", textAlign: "center",
+          color: "#a1a1aa", fontSize: "0.9rem", lineHeight: 1.5,
+        }}>
+          Entrez votre email, nous vous enverrons un lien pour créer un nouveau mot de passe.
+        </p>
+
+        {message && (
+          <div style={{
+            padding: "12px 14px", borderRadius: 10, marginBottom: 20,
+            background: "rgba(22,163,74,0.1)",
+            border: "1px solid rgba(22,163,74,0.3)",
+            color: "#86efac", fontSize: "0.87rem",
+            display: "flex", alignItems: "flex-start", gap: 10,
+          }}>
+            <CheckCircleIcon size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+            <span>{message}</span>
           </div>
-          <h1 style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <LockIcon size={24} style={{ color: "var(--gold-600)" }} />
-            Mot de passe oublié ?
-          </h1>
-          <p className="register-subtitle">
-            Entrez votre adresse email : nous vous enverrons un lien pour créer un nouveau mot de passe.
-          </p>
+        )}
 
-          {message && (
-            <div style={{ background: "#eaf7ec", border: "1px solid #bfe3c6", color: "#1d6b2c", borderRadius: 8, padding: 12, fontSize: 14, marginBottom: 16, display: "flex", alignItems: "flex-start", gap: 8 }}>
-              <CheckCircleIcon size={18} style={{ flexShrink: 0, marginTop: 1 }} />
-              <span>{message}</span>
-            </div>
-          )}
-          {error && (
-            <div style={{ background: "#fdecea", border: "1px solid #f5c6c0", color: "#a1261c", borderRadius: 8, padding: 12, fontSize: 14, marginBottom: 16, display: "flex", alignItems: "flex-start", gap: 8 }}>
-              <ShieldXIcon size={18} style={{ flexShrink: 0, marginTop: 1 }} />
-              <span>{error}</span>
-            </div>
-          )}
+        {error && (
+          <div style={{
+            padding: "12px 14px", borderRadius: 10, marginBottom: 20,
+            background: "rgba(239,68,68,0.1)",
+            border: "1px solid rgba(239,68,68,0.3)",
+            color: "#fca5a5", fontSize: "0.87rem",
+          }}>
+            {error}
+          </div>
+        )}
 
+        {!message ? (
           <form onSubmit={handleSubmit}>
-            <div className="register-section">
-              <div style={{ marginBottom: 16 }}>
-                <label htmlFor="fp-email" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <MailIcon size={14} /> Adresse email
-                </label>
+            <div style={{ marginBottom: 20 }}>
+              <label htmlFor="fp-email" style={labelStyle}>Adresse email</label>
+              <div style={{ position: "relative" }}>
+                <span style={{
+                  position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)",
+                  color: "#52525b", display: "flex",
+                }}>
+                  <MailIcon size={16} />
+                </span>
                 <input
-                  id="fp-email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="vous@exemple.com"
+                  id="fp-email" type="email" required
+                  value={email} onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
-                  disabled={!!message}
+                  style={{ ...inputStyle, paddingLeft: 40 }}
                 />
               </div>
             </div>
 
-            {!message && (
-              <button
-                type="submit"
-                disabled={submitting}
-                className="btn btn-primary register-submit"
-                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-              >
-                {submitting ? "Envoi en cours..." : (
-                  <>Recevoir le lien <ChevronRightIcon size={16} /></>
-                )}
-              </button>
-            )}
+            <button
+              type="submit" disabled={submitting}
+              style={{
+                width: "100%", padding: "13px 16px",
+                background: "linear-gradient(135deg, #c9a961 0%, #a88941 100%)",
+                color: "#0a0a0a", border: "none", borderRadius: 10,
+                fontSize: "0.95rem", fontWeight: 700,
+                cursor: submitting ? "not-allowed" : "pointer",
+                letterSpacing: "0.01em",
+                boxShadow: "0 4px 14px rgba(201,169,97,0.3)",
+              }}
+            >
+              {submitting ? "Envoi en cours..." : "Recevoir le lien"}
+            </button>
           </form>
-
-          <p style={{ textAlign: "center", marginTop: 20, fontSize: "0.95rem" }}>
-            <Link href="/login" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--gold-700)" }}>
-              <ChevronLeftIcon size={14} /> Retour à la connexion
-            </Link>
-          </p>
-        </div>
-
-        <aside className="register-trust-col">
-          <div className="trust-card">
-            <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <ShieldCheckIcon size={20} style={{ color: "var(--gold-600)" }} /> Sécurité du lien
-            </h2>
-            <ul className="trust-list">
-              <li>
-                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><ClockIcon size={20} /></span>
-                <div>
-                  <strong>Expire en 1 heure</strong>
-                  <span>Le lien devient inutilisable après 60 minutes</span>
-                </div>
-              </li>
-              <li>
-                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><LockIcon size={20} /></span>
-                <div>
-                  <strong>Usage unique</strong>
-                  <span>Le lien est invalidé après utilisation</span>
-                </div>
-              </li>
-              <li>
-                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><ShieldCheckIcon size={20} /></span>
-                <div>
-                  <strong>Anti-énumération</strong>
-                  <span>Impossible de deviner les emails existants</span>
-                </div>
-              </li>
-            </ul>
-            <div className="trust-security" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <LockIcon size={14} />
-              <span>Processus sécurisé par token 256 bits</span>
-            </div>
+        ) : (
+          <div style={{
+            padding: "16px 18px", borderRadius: 10,
+            background: "#09090b", border: "1px solid #27272a",
+            fontSize: "0.82rem", color: "#a1a1aa", lineHeight: 1.6,
+          }}>
+            <strong style={{ color: "#fff", display: "block", marginBottom: 6 }}>À vérifier :</strong>
+            • Dossier <strong style={{ color: "#fff" }}>Spam / Courrier indésirable</strong><br/>
+            • Le lien expire après <strong style={{ color: "#fff" }}>60 minutes</strong><br/>
+            • Usage <strong style={{ color: "#fff" }}>unique</strong> (invalidé après utilisation)
           </div>
-        </aside>
+        )}
+
+        <p style={{ textAlign: "center", marginTop: 24, fontSize: "0.9rem" }}>
+          <Link href="/login" style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            color: "#a1a1aa", textDecoration: "none",
+          }}>
+            <ChevronLeftIcon size={14} /> Retour à la connexion
+          </Link>
+        </p>
+
+        <p style={{
+          textAlign: "center", marginTop: 20,
+          fontSize: "0.75rem", color: "#52525b",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+        }}>
+          <LockIcon size={11} /> Lien sécurisé par token 256 bits
+        </p>
       </div>
     </div>
   );

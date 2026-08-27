@@ -1,13 +1,9 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
-import {
-  LockIcon, ShieldCheckIcon, CheckCircleIcon, XCircleIcon,
-  EyeIcon, EyeOffIcon, ChevronRightIcon, ChevronLeftIcon,
-  ClockIcon, ShieldXIcon,
-} from "@/app/components/Icons";
+import { LockIcon, CheckCircleIcon, XCircleIcon, EyeIcon, EyeOffIcon, ChevronRightIcon, ChevronLeftIcon, ClockIcon, ShieldXIcon } from "@/app/components/Icons";
 
 function getPasswordStrength(pwd) {
   if (!pwd) return 0;
@@ -43,11 +39,7 @@ export default function ResetPasswordClient() {
     const params = new URLSearchParams(window.location.search);
     const t = params.get("token");
     setToken(t);
-    if (!t) {
-      setValid(false);
-      setChecking(false);
-      return;
-    }
+    if (!t) { setValid(false); setChecking(false); return; }
     fetch("/api/auth/reset-password?token=" + encodeURIComponent(t))
       .then((r) => r.json())
       .then((d) => setValid(!!d.valid))
@@ -66,11 +58,8 @@ export default function ResetPasswordClient() {
         body: JSON.stringify({ token, password, confirmPassword }),
       });
       const data = await res.json().catch(() => ({}));
-      if (res.ok) {
-        setSuccess(true);
-      } else {
-        setError(data.error || "Une erreur est survenue.");
-      }
+      if (res.ok) setSuccess(true);
+      else setError(data.error || "Une erreur est survenue.");
     } catch {
       setError("Erreur réseau. Réessayez.");
     } finally {
@@ -78,172 +67,222 @@ export default function ResetPasswordClient() {
     }
   }
 
+  const inputStyle = {
+    width: "100%", padding: "12px 14px",
+    background: "#09090b", border: "1px solid #27272a",
+    borderRadius: 10, color: "#fff", fontSize: "0.95rem",
+    outline: "none", boxSizing: "border-box",
+  };
+  const labelStyle = { display: "block", marginBottom: 6, fontSize: "0.82rem", fontWeight: 600, color: "#a1a1aa" };
+
   return (
-    <div className="shell">
-      <div className="register-layout">
-        <div className="register-form-col">
-          <div style={{ marginBottom: 24 }}>
-            <KimoxaLogo size={42} />
-          </div>
-          <h1 style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <LockIcon size={24} style={{ color: "var(--gold-600)" }} />
-            Nouveau mot de passe
-          </h1>
-
-          {checking ? (
-            <p style={{ color: "var(--ink-500)", fontSize: 14, display: "flex", alignItems: "center", gap: 8 }}>
-              <ClockIcon size={16} /> Vérification du lien...
-            </p>
-          ) : success ? (
-            <>
-              <div style={{ background: "#eaf7ec", border: "1px solid #bfe3c6", color: "#1d6b2c", borderRadius: 8, padding: 12, fontSize: 14, margin: "16px 0", display: "flex", alignItems: "flex-start", gap: 8 }}>
-                <CheckCircleIcon size={18} style={{ flexShrink: 0, marginTop: 1 }} />
-                <span>Mot de passe réinitialisé avec succès !</span>
-              </div>
-              <Link
-                href="/login"
-                className="btn btn-primary"
-                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%" }}
-              >
-                Se connecter <ChevronRightIcon size={16} />
-              </Link>
-            </>
-          ) : !valid ? (
-            <>
-              <div style={{ background: "#fdecea", border: "1px solid #f5c6c0", color: "#a1261c", borderRadius: 8, padding: 12, fontSize: 14, margin: "16px 0", display: "flex", alignItems: "flex-start", gap: 8 }}>
-                <ShieldXIcon size={18} style={{ flexShrink: 0, marginTop: 1 }} />
-                <span>Ce lien est invalide ou a expiré.</span>
-              </div>
-              <Link href="/forgot-password" style={{ color: "var(--gold-700)", fontSize: 14, textDecoration: "underline" }}>
-                Demander un nouveau lien
-              </Link>
-            </>
-          ) : (
-            <>
-              <p className="register-subtitle">
-                Choisissez un nouveau mot de passe (8 caractères min., au moins une lettre et un chiffre).
-              </p>
-
-              {error && (
-                <div style={{ background: "#fdecea", border: "1px solid #f5c6c0", color: "#a1261c", borderRadius: 8, padding: 12, fontSize: 14, marginBottom: 16, display: "flex", alignItems: "flex-start", gap: 8 }}>
-                  <XCircleIcon size={18} style={{ flexShrink: 0, marginTop: 1 }} />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit}>
-                <div className="register-section">
-                  <div className="form-row">
-                    <div>
-                      <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                        <LockIcon size={14} /> Nouveau mot de passe
-                      </label>
-                      <div style={{ position: "relative" }}>
-                        <input
-                          type={showPwd ? "text" : "password"}
-                          required
-                          minLength={8}
-                          value={password}
-                          onChange={(e) => setPassword(e.target.value)}
-                          style={{ paddingRight: 44 }}
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowPwd(!showPwd)}
-                          aria-label={showPwd ? "Masquer" : "Afficher"}
-                          style={{
-                            position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
-                            background: "transparent", border: "none", cursor: "pointer",
-                            color: "var(--ink-400)", padding: 4, display: "inline-flex",
-                          }}
-                        >
-                          {showPwd ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
-                        </button>
-                      </div>
-                      {password && (
-                        <div className="pwd-strength" style={{ marginTop: 8 }}>
-                          <div className="pwd-strength-bars">
-                            {[1, 2, 3, 4].map((i) => (
-                              <div key={i} className="pwd-strength-bar" style={{ background: i <= pwdStrength ? STRENGTH_COLORS[pwdStrength] : "#e5e7eb" }} />
-                            ))}
-                          </div>
-                          <span className="pwd-strength-label" style={{ color: STRENGTH_COLORS[pwdStrength] }}>
-                            {STRENGTH_LABELS[pwdStrength]}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <div>
-                      <label>Confirmer le mot de passe</label>
-                      <input
-                        type={showPwd ? "text" : "password"}
-                        required
-                        minLength={8}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        style={{ borderColor: pwdMismatch ? "#dc2626" : pwdMatch ? "#16a34a" : undefined }}
-                      />
-                      {pwdMatch && <small style={{ color: "#16a34a", fontSize: "0.75rem", display: "inline-flex", alignItems: "center", gap: 4 }}><CheckCircleIcon size={12} /> Identiques</small>}
-                      {pwdMismatch && <small style={{ color: "#dc2626", fontSize: "0.75rem", display: "inline-flex", alignItems: "center", gap: 4 }}><XCircleIcon size={12} /> Différents</small>}
-                    </div>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submitting || !pwdMatch}
-                  className="btn btn-primary register-submit"
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
-                >
-                  {submitting ? "Enregistrement..." : (
-                    <>Réinitialiser le mot de passe <ChevronRightIcon size={16} /></>
-                  )}
-                </button>
-              </form>
-            </>
-          )}
-
-          <p style={{ textAlign: "center", marginTop: 20, fontSize: "0.95rem" }}>
-            <Link href="/login" style={{ display: "inline-flex", alignItems: "center", gap: 4, color: "var(--gold-700)" }}>
-              <ChevronLeftIcon size={14} /> Retour à la connexion
-            </Link>
-          </p>
+    <div style={{
+      minHeight: "100vh",
+      background: "linear-gradient(135deg, #0a0a0a 0%, #1a1410 100%)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: "24px 16px",
+    }}>
+      <div style={{
+        width: "100%", maxWidth: 440,
+        background: "#18181b", borderRadius: 16,
+        padding: "40px 36px",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)",
+      }}>
+        <div style={{ textAlign: "center", marginBottom: 28 }}>
+          <KimoxaLogo size={42} light />
         </div>
 
-        <aside className="register-trust-col">
-          <div className="trust-card">
-            <h2 style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <ShieldCheckIcon size={20} style={{ color: "var(--gold-600)" }} /> Nouveau mot de passe
-            </h2>
-            <ul className="trust-list">
-              <li>
-                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><LockIcon size={20} /></span>
-                <div>
-                  <strong>Chiffrement bcrypt</strong>
-                  <span>Votre mot de passe est hashé avant stockage</span>
-                </div>
-              </li>
-              <li>
-                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><ShieldCheckIcon size={20} /></span>
-                <div>
-                  <strong>Politique stricte</strong>
-                  <span>8+ caractères, lettres + chiffres + symboles</span>
-                </div>
-              </li>
-              <li>
-                <span className="trust-icon" style={{ color: "var(--gold-600)" }}><ClockIcon size={20} /></span>
-                <div>
-                  <strong>Session sécurisée</strong>
-                  <span>Connexion automatique après réinitialisation</span>
-                </div>
-              </li>
-            </ul>
-            <div className="trust-security" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              <LockIcon size={14} />
-              <span>Vos données sont protégées</span>
-            </div>
+        {checking ? (
+          <div style={{ textAlign: "center", padding: "32px 0" }}>
+            <div style={{
+              width: 48, height: 48, margin: "0 auto 16px",
+              border: "3px solid #27272a", borderTopColor: "#c9a961",
+              borderRadius: "50%",
+              animation: "spin 1s linear infinite",
+            }} />
+            <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+            <p style={{ color: "#a1a1aa", fontSize: "0.9rem", margin: 0, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <ClockIcon size={16} /> Vérification du lien...
+            </p>
           </div>
-        </aside>
+        ) : success ? (
+          <>
+            <div style={{
+              width: 64, height: 64, borderRadius: "50%",
+              background: "rgba(22,163,74,0.15)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto 20px",
+            }}>
+              <CheckCircleIcon size={32} style={{ color: "#16a34a" }} />
+            </div>
+            <h1 style={{ margin: "0 0 8px", fontSize: "1.5rem", fontWeight: 700, color: "#fff", textAlign: "center" }}>
+              Mot de passe réinitialisé
+            </h1>
+            <p style={{ margin: "0 0 24px", textAlign: "center", color: "#a1a1aa", fontSize: "0.9rem" }}>
+              Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.
+            </p>
+            <Link
+              href="/login"
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                width: "100%", padding: "13px 16px",
+                background: "linear-gradient(135deg, #c9a961 0%, #a88941 100%)",
+                color: "#0a0a0a", borderRadius: 10,
+                fontSize: "0.95rem", fontWeight: 700, textDecoration: "none",
+                boxShadow: "0 4px 14px rgba(201,169,97,0.3)",
+              }}
+            >
+              Se connecter <ChevronRightIcon size={16} />
+            </Link>
+          </>
+        ) : !valid ? (
+          <>
+            <div style={{
+              width: 64, height: 64, borderRadius: "50%",
+              background: "rgba(239,68,68,0.15)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto 20px",
+            }}>
+              <ShieldXIcon size={32} style={{ color: "#dc2626" }} />
+            </div>
+            <h1 style={{ margin: "0 0 8px", fontSize: "1.5rem", fontWeight: 700, color: "#fff", textAlign: "center" }}>
+              Lien invalide ou expiré
+            </h1>
+            <p style={{ margin: "0 0 24px", textAlign: "center", color: "#a1a1aa", fontSize: "0.9rem", lineHeight: 1.5 }}>
+              Ce lien n'est plus valide. Demandez-en un nouveau pour réinitialiser votre mot de passe.
+            </p>
+            <Link
+              href="/forgot-password"
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                width: "100%", padding: "13px 16px",
+                background: "linear-gradient(135deg, #c9a961 0%, #a88941 100%)",
+                color: "#0a0a0a", borderRadius: 10,
+                fontSize: "0.95rem", fontWeight: 700, textDecoration: "none",
+                boxShadow: "0 4px 14px rgba(201,169,97,0.3)",
+              }}
+            >
+              Demander un nouveau lien <ChevronRightIcon size={16} />
+            </Link>
+          </>
+        ) : (
+          <>
+            <div style={{
+              width: 56, height: 56, borderRadius: "50%",
+              background: "rgba(201,169,97,0.15)",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "0 auto 20px",
+            }}>
+              <LockIcon size={26} style={{ color: "#c9a961" }} />
+            </div>
+            <h1 style={{ margin: "0 0 8px", fontSize: "1.5rem", fontWeight: 700, color: "#fff", textAlign: "center" }}>
+              Nouveau mot de passe
+            </h1>
+            <p style={{ margin: "0 0 24px", textAlign: "center", color: "#a1a1aa", fontSize: "0.9rem", lineHeight: 1.5 }}>
+              Choisissez un mot de passe fort d'au moins 8 caractères.
+            </p>
+
+            {error && (
+              <div style={{
+                padding: "10px 14px", borderRadius: 8, marginBottom: 20,
+                background: "rgba(239,68,68,0.1)",
+                border: "1px solid rgba(239,68,68,0.3)",
+                color: "#fca5a5", fontSize: "0.87rem",
+                display: "flex", alignItems: "flex-start", gap: 10,
+              }}>
+                <XCircleIcon size={18} style={{ flexShrink: 0, marginTop: 1 }} />
+                <span>{error}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom: 16 }}>
+                <label style={labelStyle}>Nouveau mot de passe</label>
+                <div style={{ position: "relative" }}>
+                  <input
+                    type={showPwd ? "text" : "password"}
+                    required minLength={8}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    style={{ ...inputStyle, paddingRight: 44 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPwd(!showPwd)}
+                    style={{
+                      position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)",
+                      background: "none", border: "none", cursor: "pointer",
+                      color: "#71717a", padding: 4, display: "inline-flex",
+                    }}
+                  >
+                    {showPwd ? <EyeOffIcon size={18} /> : <EyeIcon size={18} />}
+                  </button>
+                </div>
+                {password && (
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} style={{
+                          flex: 1, height: 4, borderRadius: 2,
+                          background: i <= pwdStrength ? STRENGTH_COLORS[pwdStrength] : "#27272a",
+                        }} />
+                      ))}
+                    </div>
+                    <small style={{ color: STRENGTH_COLORS[pwdStrength], fontSize: "0.75rem", fontWeight: 600 }}>
+                      Force : {STRENGTH_LABELS[pwdStrength]}
+                    </small>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ marginBottom: 20 }}>
+                <label style={labelStyle}>Confirmer le mot de passe</label>
+                <input
+                  type="password" required minLength={8}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  style={{ ...inputStyle, borderColor: pwdMismatch ? "#dc2626" : pwdMatch ? "#16a34a" : "#27272a" }}
+                />
+                {pwdMatch && <small style={{ color: "#16a34a", fontSize: "0.75rem", marginTop: 4, display: "block" }}>✓ Les mots de passe correspondent</small>}
+                {pwdMismatch && <small style={{ color: "#dc2626", fontSize: "0.75rem", marginTop: 4, display: "block" }}>✗ Les mots de passe ne correspondent pas</small>}
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting || !pwdMatch}
+                style={{
+                  width: "100%", padding: "13px 16px",
+                  background: "linear-gradient(135deg, #c9a961 0%, #a88941 100%)",
+                  color: "#0a0a0a", border: "none", borderRadius: 10,
+                  fontSize: "0.95rem", fontWeight: 700,
+                  cursor: (submitting || !pwdMatch) ? "not-allowed" : "pointer",
+                  opacity: !pwdMatch ? 0.5 : 1,
+                  boxShadow: "0 4px 14px rgba(201,169,97,0.3)",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                }}
+              >
+                {submitting ? "Enregistrement..." : (<>Réinitialiser <ChevronRightIcon size={16} /></>)}
+              </button>
+            </form>
+          </>
+        )}
+
+        <p style={{ textAlign: "center", marginTop: 24, fontSize: "0.9rem" }}>
+          <Link href="/login" style={{
+            display: "inline-flex", alignItems: "center", gap: 6,
+            color: "#a1a1aa", textDecoration: "none",
+          }}>
+            <ChevronLeftIcon size={14} /> Retour à la connexion
+          </Link>
+        </p>
+
+        <p style={{
+          textAlign: "center", marginTop: 20,
+          fontSize: "0.75rem", color: "#52525b",
+          display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+        }}>
+          <LockIcon size={11} /> Mot de passe chiffré bcrypt
+        </p>
       </div>
     </div>
   );
