@@ -7,7 +7,7 @@ import KimoxaLogo from "@/app/components/KimoxaLogo";
 import { COUNTRIES } from "@/lib/countries";
 import {
   ShoppingCartIcon, StoreIcon, LockIcon,
-  ChevronRightIcon, UserIcon, SmartphoneIcon, CalendarIcon, MailIcon,
+  ChevronRightIcon, UserIcon, MailIcon,
 } from "@/app/components/Icons";
 
 function getPasswordStrength(pwd) {
@@ -184,27 +184,26 @@ function RegisterForm() {
 
         <form onSubmit={handleSubmit}>
           <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "#c9a961", margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8, letterSpacing: "0.02em" }}>
-            <UserIcon size={16} /> 1 · MON PROFIL
+            <UserIcon size={16} /> Mon profil
           </h2>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 12 }}>
-            <div><label htmlFor="r-firstname" style={labelStyle}>Prénom *</label><input id="r-firstname" required value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="Ex : Aïcha" style={inputStyle} /></div>
-            <div><label htmlFor="r-lastname" style={labelStyle}>Nom *</label><input id="r-lastname" required value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Ex : Ouédraogo" style={inputStyle} /></div>
+            <div><label htmlFor="r-firstname" style={labelStyle}>Prénom *</label><input id="r-firstname" required value={firstName} onChange={(e) => setFirstName(e.target.value)} style={inputStyle} /></div>
+            <div><label htmlFor="r-lastname" style={labelStyle}>Nom *</label><input id="r-lastname" required value={lastName} onChange={(e) => setLastName(e.target.value)} style={inputStyle} /></div>
           </div>
 
           <div style={{ marginBottom: 12 }}>
             <label htmlFor="r-email" style={labelStyle}>Email *</label>
             <div style={{ position: "relative" }}>
               <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#52525b", display: "flex" }}><MailIcon size={16} /></span>
-              <input id="r-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="vous@exemple.com" style={{ ...inputStyle, paddingLeft: 40 }} />
+              <input id="r-email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} style={{ ...inputStyle, paddingLeft: 40 }} />
             </div>
           </div>
 
           <div style={{ marginBottom: 12 }}>
             <label htmlFor="r-phone" style={labelStyle}>Téléphone *</label>
             <div style={{ position: "relative" }}>
-              <span style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", color: "#52525b", display: "flex" }}><SmartphoneIcon size={16} /></span>
-              <input id="r-phone" required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+226 70 00 00 00" style={{ ...inputStyle, paddingLeft: 40 }} />
+                            <input id="r-phone" required value={phone} onChange={(e) => setPhone(e.target.value)} style={inputStyle} />
             </div>
           </div>
 
@@ -215,7 +214,7 @@ function RegisterForm() {
           </div>
 
           <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "#c9a961", margin: "0 0 16px", display: "flex", alignItems: "center", gap: 8, letterSpacing: "0.02em" }}>
-            <LockIcon size={16} /> 2 · SÉCURITÉ
+            <LockIcon size={16} /> Sécurité
           </h2>
 
           <div style={{ marginBottom: 12 }}>
@@ -237,7 +236,7 @@ function RegisterForm() {
 
           <div style={{ marginBottom: 24 }}>
             <label htmlFor="r-password-confirm" style={labelStyle}>Confirmer *</label>
-            <input id="r-password-confirm" type="password" required minLength={8} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} placeholder="Retapez" style={{ ...inputStyle, borderColor: pwdMismatch ? "#dc2626" : pwdMatch ? "#16a34a" : "#27272a" }} />
+            <input id="r-password-confirm" type="password" required minLength={8} value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} style={{ ...inputStyle, borderColor: pwdMismatch ? "#dc2626" : pwdMatch ? "#16a34a" : "#27272a" }} />
             {pwdMatch && <small style={{ color: "#16a34a", fontSize: "0.75rem", marginTop: 4, display: "block" }}>✓ Les mots de passe correspondent</small>}
             {pwdMismatch && <small style={{ color: "#dc2626", fontSize: "0.75rem", marginTop: 4, display: "block" }}>✗ Les mots de passe ne correspondent pas</small>}
           </div>
@@ -245,7 +244,7 @@ function RegisterForm() {
           {role === "vendor" && (
             <>
               <h2 style={{ fontSize: "0.9rem", fontWeight: 700, color: "#c9a961", margin: "0 0 8px", display: "flex", alignItems: "center", gap: 8, letterSpacing: "0.02em" }}>
-                <StoreIcon size={16} /> 3 · MA BOUTIQUE
+                <StoreIcon size={16} /> Ma boutique
               </h2>
               <p style={{ fontSize: "0.82rem", color: "#a1a1aa", margin: "0 0 16px", lineHeight: 1.6, padding: "10px 12px", background: "#09090b", borderRadius: 8, border: "1px solid #27272a" }}>
                 Votre boutique est créée immédiatement. Une fois connecté, votre tableau de bord
@@ -254,22 +253,21 @@ function RegisterForm() {
               </p>
               <div style={{ marginBottom: 12 }}>
                 <label htmlFor="r-shop-name" style={labelStyle}>Nom de la boutique *</label>
-                <input id="r-shop-name" required value={shopName} onChange={(e) => setShopName(e.target.value)} placeholder="Ex : Boutique Élégance" style={inputStyle} />
+                <input id="r-shop-name" required value={shopName} onChange={(e) => setShopName(e.target.value)} style={inputStyle} />
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 24 }}>
-                <div><label htmlFor="r-shop-city" style={labelStyle}>Ville</label><input id="r-shop-city" value={city} onChange={(e) => setCity(e.target.value)} placeholder="Ex : Ouagadougou" style={inputStyle} /></div>
+                <div><label htmlFor="r-shop-city" style={labelStyle}>Ville</label><input id="r-shop-city" value={city} onChange={(e) => setCity(e.target.value)} style={inputStyle} /></div>
                 <div><label htmlFor="r-shop-category" style={labelStyle}>Catégorie principale</label><select id="r-shop-category" value={mainCategoryId} onChange={(e) => setMainCategoryId(e.target.value)} style={inputStyle}><option value="">Sélectionner...</option>{categories.map((c) => <option key={c.id} value={c.id}>{c.emoji} {c.name}</option>)}</select></div>
               </div>
             </>
           )}
 
-          <label style={{
-            display: "flex", alignItems: "flex-start", gap: 10,
+          <label className="checkbox-row" style={{
             padding: "12px 14px", background: "#09090b",
             border: "1px solid #27272a", borderRadius: 10,
-            marginBottom: 20, cursor: "pointer", fontSize: "0.85rem", color: "#a1a1aa", lineHeight: 1.5,
+            marginBottom: 20, fontSize: "0.85rem", color: "#a1a1aa", lineHeight: 1.5,
           }}>
-            <input type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} required style={{ marginTop: 2, accentColor: "#c9a961" }} />
+            <input type="checkbox" checked={agreeTerms} onChange={(e) => setAgreeTerms(e.target.checked)} required style={{ accentColor: "#c9a961" }} />
             <span>J'accepte les <Link href="/cgu" target="_blank" style={{ color: "#c9a961" }}>CGU</Link> et les <Link href="/cgv" target="_blank" style={{ color: "#c9a961" }}>CGV</Link> de Kimoxa *</span>
           </label>
 
