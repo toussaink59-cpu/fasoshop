@@ -19,6 +19,35 @@ const STATUS_CONFIG = {
   rejected: { label: "Demande non validée", color: "var(--bissap-600, #b91c3c)", Icon: XCircleIcon },
 };
 
+function Skeleton() {
+  const pulse = {
+    background: "linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)",
+    backgroundSize: "200% 100%",
+    animation: "pulse 1.5s ease-in-out infinite",
+    borderRadius: 8,
+  };
+  return (
+    <>
+      <style>{`@keyframes pulse { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }`}</style>
+      <div className="shell">
+        <div className="topbar">
+          <div className="brand">Kimoxa <span className="role-tag">Vendeur</span></div>
+        </div>
+        <div className="woven-strip" />
+        <div className="vendor-account-wrap">
+          <div style={{ ...pulse, height: 80, marginBottom: 20 }} />
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 16 }}>
+            <div style={{ ...pulse, height: 200 }} />
+            <div style={{ ...pulse, height: 200 }} />
+            <div style={{ ...pulse, height: 200 }} />
+            <div style={{ ...pulse, height: 200 }} />
+          </div>
+        </div>
+      </div>
+    </>
+  );
+}
+
 export default function VendorAccountPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
@@ -42,6 +71,7 @@ export default function VendorAccountPage() {
   const [resubmitting, setResubmitting] = useState(false);
   const [newOrdersCount, setNewOrdersCount] = useState(0);
   const [unreadMessages, setUnreadMessages] = useState(0);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetch("/api/auth/me")
@@ -56,6 +86,7 @@ export default function VendorAccountPage() {
         fetch("/api/vendor/shop")
           .then((r) => r.json())
           .then((d) => {
+            if (!d.shop) { setLoading(false); return; }
             if (d.shop) {
               setShop(d.shop);
               setMmNumber(d.shop.mobile_money_number || "");
@@ -67,7 +98,8 @@ export default function VendorAccountPage() {
               setOffersDelivery(d.shop.offers_delivery ?? true);
               setOffersPickup(d.shop.offers_pickup ?? true);
             }
-          });
+            setLoading(false);
+          }).catch(() => setLoading(false));
       });
   }, [router]);
 
@@ -196,6 +228,8 @@ export default function VendorAccountPage() {
   const StatusIcon = statusConfig.Icon;
   const needsVerification = status === "pending" && !shop?.id_document_type;
   const isRejected = status === "rejected";
+
+  if (loading || !shop) return <Skeleton />;
 
   return (
     <div className="shell">
