@@ -41,7 +41,11 @@ export async function GET(request) {
   return Response.json({ conversations: rows });
 }
 
-// POST /api/conversations — cree (ou reprend) une conversation pre-vente sur un produit
+// POST /api/conversations — crée (ou reprend) une conversation
+// 2 modes supportés :
+//   A) Pré-vente   : body = { productId, message? }
+//   B) Post-vente  : body = { orderId, shopId } → conversation liée à une commande
+
 export async function POST(request) {
   const userId = request.headers.get("x-user-id");
   if (!userId) return Response.json({ error: "Non authentifie." }, { status: 401 });
