@@ -6,7 +6,18 @@ export async function GET() {
   try {
     const user = await getCurrentUser();
     if (!user || (user.role !== "vendor" && user.role !== "admin")) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+          // Demandes de reversement
+    const [pendingReq] = await sql`
+      SELECT COALESCE(SUM(amount), 0)::int AS amount, COUNT(*)::int AS count
+      FROM payout_requests WHERE shop_id = ${shopId} AND status = 'pending'
+    `;
+    const recentRequests = await sql`
+      SELECT id, amount, status, created_at, admin_notes
+      FROM payout_requests WHERE shop_id = ${shopId}
+      ORDER BY created_at DESC LIMIT 5
+    `;
+
+return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const rows = await sql`SELECT id, status FROM shops WHERE vendor_id = ${user.id}`;
@@ -131,6 +142,17 @@ export async function GET() {
         netAmountSettled: Number(global?.settled || 0),
         netAmountDue: Number(global?.due || 0),
         productsCount: Number(prodCount?.count || 0),
+        pendingRequest: {
+          amount: Number(pendingReq?.amount || 0),
+          count: Number(pendingReq?.count || 0),
+        },
+        recentRequests: (recentRequests || []).map(r => ({
+          id: r.id,
+          amount: Number(r.amount),
+          status: r.status,
+          createdAt: r.created_at,
+          adminNotes: r.admin_notes,
+        })),
         dailySeries: (dailySeries || []).map((d) => ({
           day: d.day,
           gross: Number(d.gross),
