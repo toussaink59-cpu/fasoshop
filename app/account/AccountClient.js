@@ -158,7 +158,7 @@ export default function AccountClient({ initialUser, categories }) {
             {initials}
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <h1 style={{ margin: 0, fontSize: "1.3rem", fontWeight: 700, letterSpacing: "-0.01em" }}>
+            <h1 style={{ margin: 0, fontSize: "1.3rem", fontWeight: 700, letterSpacing: "-0.01em", color: "#ffffff" }}>
               Bonjour, {fullName}
             </h1>
             <p style={{ margin: "4px 0 0", color: "#a1a1aa", fontSize: "0.88rem", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
