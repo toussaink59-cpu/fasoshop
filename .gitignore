@@ -25,3 +25,5 @@ blob-report/
 
 # Artifacts locaux
 kimoxa-lot*-securite*.zip
+.vercel
+.env*
