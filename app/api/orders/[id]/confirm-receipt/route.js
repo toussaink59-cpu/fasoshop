@@ -1,3 +1,4 @@
+import { createNotification } from "@/lib/notifications";
 import sql from "@/lib/db";
 import { requireBuyer } from "@/lib/authHelpers";
 import { sendOrderDeliveredEmail } from "@/lib/email/orders";
@@ -132,7 +133,23 @@ export async function POST(request, { params }) {
       } catch (emailErr) {
         console.error("[confirm-receipt] email error:", emailErr.message);
       }
-return { ok: true, ledger: updated, payoutReleased: shouldReleasePayout };
+
+      // NOTIF: client_confirmed - notifier le vendeur
+      try {
+        const [vendorUser] = await tx`SELECT u.id FROM users u JOIN shops s ON s.vendor_id = u.id WHERE s.id = ${shopId} LIMIT 1`;
+        if (vendorUser) {
+          await createNotification({
+            userId: vendorUser.id,
+            type: 'order_delivered',
+            title: 'Livraison confirmée #' + orderId,
+            body: 'Le client a confirmé la réception — reversement en cours',
+            link: '/vendor/orders',
+            data: { orderId: Number(orderId), shopId: Number(shopId) },
+          });
+        }
+      } catch (notifErr) { console.error('[notif] confirm_receipt error:', notifErr.message); }
+
+      return { ok: true, ledger: updated, payoutReleased: shouldReleasePayout };
     });
 
     if (result.error) {

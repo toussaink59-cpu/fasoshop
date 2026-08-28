@@ -1,3 +1,4 @@
+import { createNotification } from "@/lib/notifications";
 import sql from "@/lib/db";
 import { isValidCronAuth } from "@/lib/cronAuth";
 import { sendOrderDeliveredEmail } from "@/lib/email/orders";
@@ -70,6 +71,29 @@ export async function POST(request) {
         }
       } catch (emailErr) {
         console.error("[cron/auto-confirm] email error:", emailErr.message);
+      }
+
+      // NOTIF: auto_confirm_released - vendeur voit son reversement libéré
+      try {
+        const release = r.payment_method === "mobile_money" ? "released" : "cod_pending";
+        const [vendorUser] = await sql`SELECT u.id FROM users u JOIN shops s ON s.vendor_id = u.id WHERE s.id = ${r.shop_id} LIMIT 1`;
+        const [ledger] = await sql`SELECT payout_amount FROM shop_commission_ledger WHERE order_id = ${r.order_id} AND shop_id = ${r.shop_id} LIMIT 1`;
+        if (vendorUser) {
+          await createNotification({
+            userId: vendorUser.id,
+            type: release === "released" ? 'payout_released' : 'order_delivered',
+            title: release === "released"
+              ? 'Reversement libéré — ' + Number(ledger?.payout_amount || 0).toLocaleString('fr-FR') + ' FCFA'
+              : 'Livraison confirmée (espèces)',
+            body: release === "released"
+              ? "Vos gains sont disponibles dans l'onglet Revenus"
+              : "Paiement à collecter à la livraison (COD)",
+            link: '/vendor/revenue',
+            data: { orderId: r.order_id, shopId: r.shop_id },
+          });
+        }
+      } catch (notifErr) {
+        console.error("[cron/auto-confirm] notif error:", notifErr.message);
       }
     }
 return Response.json({ ok: true, autoConfirmed: processed.length });

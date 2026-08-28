@@ -1,3 +1,4 @@
+import { createNotification } from "@/lib/notifications";
 import sql from "@/lib/db";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
 import { adminGuard } from "@/lib/adminAuth";
@@ -241,6 +242,26 @@ export async function POST(request, { params }) {
         WHERE shop_id = ${ledger.shop_id} AND status IN ('pending', 'approved')
       `;
     });
+
+    
+    // NOTIF: payout_paid - vendeur voit son reversement versé
+    try {
+      if (ledger && ledger.shop_id) {
+        const [vendorUser] = await sql`SELECT u.id FROM users u JOIN shops s ON s.vendor_id = u.id WHERE s.id = ${ledger.shop_id} LIMIT 1`;
+        if (vendorUser) {
+          await createNotification({
+            userId: vendorUser.id,
+            type: 'payout_paid',
+            title: 'Reversement envoyé',
+            body: Number(amount || ledger.payout_amount || 0).toLocaleString('fr-FR') + ' FCFA versés sur votre Mobile Money',
+            link: '/vendor/revenue',
+            data: { ledgerId: ledger.id },
+          });
+        }
+      }
+    } catch (notifErr) {
+      console.error('[notif] payout_paid error:', notifErr.message);
+    }
 
     return Response.json({ ok: true, payout: { reference: transactionReference } });
   } catch (err) {

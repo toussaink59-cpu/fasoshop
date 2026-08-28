@@ -1,3 +1,4 @@
+import { createNotification } from "@/lib/notifications";
 import sql from "@/lib/db";
 import { requireVendor } from "@/lib/authHelpers";
 import { sendOrderShippedEmail } from "@/lib/email/orders";
@@ -165,7 +166,30 @@ export async function PATCH(request, { params }) {
           console.error("[vendor/orders] email error:", emailErr.message);
         }
       }
-return { ok: true, subOrder: updated, restocked: status === "cancelled" && current.delivery_status === "preparation" };
+
+        // NOTIF: shipped_or_delivered - notifier le client
+        if (status === "shipped" || status === "delivered") {
+          try {
+            const [buyer] = await tx`SELECT id FROM users u JOIN orders o ON o.buyer_id = u.id WHERE o.id = ${orderId} LIMIT 1`;
+            if (buyer) {
+              const [shopName] = await tx`SELECT name FROM shops WHERE id = ${shop.id} LIMIT 1`;
+              await createNotification({
+                userId: buyer.id,
+                type: status === "shipped" ? 'order_shipped' : 'order_delivered',
+                title: status === "shipped" ? 'Commande #' + orderId + ' expédiée' : 'Commande #' + orderId + ' livrée',
+                body: status === "shipped"
+                  ? 'Votre commande de ' + (shopName?.name || 'la boutique') + ' est en route'
+                  : 'Votre commande a été livrée — confirmez la réception pour libérer le paiement',
+                link: '/orders',
+                data: { orderId: Number(orderId), status },
+              });
+            }
+          } catch (notifErr) {
+            console.error('[notif] shipped/delivered error:', notifErr.message);
+          }
+        }
+
+        return { ok: true, subOrder: updated, restocked: status === "cancelled" && current.delivery_status === "preparation" };
     });
 
     if (result.error) {

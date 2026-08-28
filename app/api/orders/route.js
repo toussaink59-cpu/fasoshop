@@ -1,3 +1,4 @@
+import { createNotification } from "@/lib/notifications";
 import { sendMail, emailTemplates, sendLowStockAlert, sendNewOrderToVendor } from "@/lib/email";
 ﻿import { NextResponse } from "next/server";
 import sql from "@/lib/db";

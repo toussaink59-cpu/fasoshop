@@ -1,3 +1,4 @@
+import { createNotification } from "@/lib/notifications";
 import sql from "@/lib/db";
 import { sendMail, emailTemplates } from "@/lib/email";
 import { adminGuard } from "@/lib/adminAuth";
@@ -78,6 +79,27 @@ export async function PATCH(request, { params }) {
           console.error("[admin/shops] Email non envoyé:", emailErr.message);
         }
       }
+    }
+
+    
+    // NOTIF: shop_verified/rejected - vendeur voit la décision dans sa cloche
+    try {
+      await createNotification({
+        userId: shop.vendor_id,
+        type: status === "active" ? 'shop_verified' : (status === "rejected" ? 'shop_rejected' : 'shop_verified'),
+        title: status === "active"
+          ? 'Boutique approuvée ✅'
+          : (status === "rejected" ? 'Boutique refusée' : 'Boutique mise à jour'),
+        body: status === "active"
+          ? 'Votre boutique ' + shop.name + ' est vérifiée — vente sans limite activée'
+          : (status === "rejected"
+              ? 'Motif : ' + (shop.rejection_reason || 'non précisé') + ' — corrigez et resoumettez'
+              : 'Statut mis à jour : ' + status),
+        link: '/vendor/settings',
+        data: { shopId: shop.id, status },
+      });
+    } catch (notifErr) {
+      console.error('[notif] shop status error:', notifErr.message);
     }
 
     return Response.json({ shop });
