@@ -56,7 +56,7 @@ export default function PwaInstallPrompt() {
 
   if (deferredPrompt) {
     return (
-      <div className="pwa-install-banner" style={{ position:"fixed", top:"56px", bottom:"auto", left:"50%", transform:"translateX(-50%)", zIndex:9998, width:"calc(100% - 32px)", maxWidth:"600px", margin:"8px auto 0", boxShadow:"0 4px 14px rgba(0,0,0,0.15)", borderRadius:"12px" }}>
+      <div className="pwa-install-banner">
         <span className="pwa-install-icon" style={{ display: "inline-flex" }}>
           <SmartphoneIcon size={24} />
         </span>
