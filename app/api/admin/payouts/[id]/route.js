@@ -20,7 +20,7 @@ function sanitize(str, maxLength = 200) {
 async function finalizeLedgerPaid(ledgerId, userId, ip, { amount, method, reference, notes }) {
   return sql.begin(async (tx) => {
     const [ledger] = await tx`
-      SELECT id, payout_status FROM shop_commission_ledger
+      SELECT id, payout_status, shop_id FROM shop_commission_ledger
       WHERE id = ${ledgerId}
       FOR UPDATE
     `;
@@ -37,6 +37,20 @@ async function finalizeLedgerPaid(ledgerId, userId, ip, { amount, method, refere
       INSERT INTO admin_payout_transactions
         (ledger_id, admin_id, amount_paid, payment_method, transaction_reference, notes, ip_address)
       VALUES (${ledgerId}, ${userId}, ${amount}, ${method}, ${reference}, ${notes || null}, ${ip})
+    `;
+
+    // Clôture les demandes de reversement de la boutique (cohérence escrow)
+    await tx`
+      UPDATE payout_requests
+      SET status = 'paid', processed_at = NOW(), processed_by = ${userId}
+      WHERE shop_id = ${ledger.shop_id} AND status IN ('pending', 'approved')
+    `;
+
+    // Clôture les demandes de reversement de la boutique (cohérence escrow)
+    await tx`
+      UPDATE payout_requests
+      SET status = 'paid', processed_at = NOW(), processed_by = ${userId}
+      WHERE shop_id = ${ledger.shop_id} AND status IN ('pending', 'approved')
     `;
     await tx`
       INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
@@ -212,6 +226,20 @@ export async function POST(request, { params }) {
         INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
         VALUES (${userId}, 'payout_paid_manual', 'payout', ${ledgerId}, ${ip})
       `.catch(() => {});
+
+      // Clôture les demandes de reversement de la boutique
+      await tx`
+        UPDATE payout_requests
+        SET status = 'paid', processed_at = NOW(), processed_by = ${userId}
+        WHERE shop_id = ${ledger.shop_id} AND status IN ('pending', 'approved')
+      `;
+
+      // Clôture les demandes de reversement de la boutique
+      await tx`
+        UPDATE payout_requests
+        SET status = 'paid', processed_at = NOW(), processed_by = ${userId}
+        WHERE shop_id = ${ledger.shop_id} AND status IN ('pending', 'approved')
+      `;
     });
 
     return Response.json({ ok: true, payout: { reference: transactionReference } });
