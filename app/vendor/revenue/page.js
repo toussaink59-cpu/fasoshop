@@ -210,6 +210,22 @@ export default function VendorRevenuePage() {
           </div>
         </div>
 
+        {Number(revenue.codPending?.amount || 0) > 0 && (
+          <div style={{
+            padding: "12px 16px", marginBottom: 20,
+            background: "#fef9ee", border: "1px solid #fcd34d",
+            borderRadius: 10, fontSize: "0.85rem", color: "#92400e",
+            display: "flex", alignItems: "flex-start", gap: 10,
+          }}>
+            <BanknoteIcon size={16} style={{ flexShrink: 0, marginTop: 2 }} />
+            <div>
+              <strong>Ventes à la livraison :</strong> {Number(revenue.codPending.amount).toLocaleString("fr-FR")} FCFA collectés en espèces auprès de vos clients.
+              Cette somme vous appartient déjà — la commission 8% est à reverser à Kimoxa.
+              Elle n'est donc pas incluse dans le reversement Mobile Money.
+            </div>
+          </div>
+        )}
+
         {isVerified && revenue.disponible?.amount >= 1000 && (
           <div style={{ padding: "16px 18px", marginBottom: 20, background: "linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)", border: "1px solid #86efac", borderRadius: 12, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
             <div style={{ flex: 1, minWidth: 200 }}>

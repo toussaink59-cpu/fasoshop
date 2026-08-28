@@ -28,7 +28,6 @@ export async function GET() {
       FROM shop_commission_ledger scl
       WHERE scl.shop_id = ${shopId}
         AND scl.payout_status = 'held'
-        AND scl.delivery_status = 'shipped'
     `;
 
     // ✅ Disponibles (libérés, prêts à reverser)
@@ -37,7 +36,7 @@ export async function GET() {
              COUNT(DISTINCT scl.order_id)::int AS orders
       FROM shop_commission_ledger scl
       WHERE scl.shop_id = ${shopId}
-        AND scl.payout_status IN ('released', 'cod_pending')
+        AND scl.payout_status = 'released'
     `;
 
     // 💸 Déjà reversés
@@ -47,6 +46,15 @@ export async function GET() {
       FROM shop_commission_ledger scl
       WHERE scl.shop_id = ${shopId}
         AND scl.payout_status = 'paid'
+    `;
+
+    // 💵 Ventes espèces (COD) : déjà collectées par le vendeur
+    const [codPending] = await sql`
+      SELECT COALESCE(SUM(scl.payout_amount), 0)::int AS amount,
+             COUNT(DISTINCT scl.order_id)::int AS orders
+      FROM shop_commission_ledger scl
+      WHERE scl.shop_id = ${shopId}
+        AND scl.payout_status = 'cod_pending'
     `;
 
     const [todayStats] = await sql`
@@ -111,6 +119,10 @@ export async function GET() {
         disponible: {
           amount: Number(disponible?.amount || 0),
           orders: Number(disponible?.orders || 0),
+        },
+        codPending: {
+          amount: Number(codPending?.amount || 0),
+          orders: Number(codPending?.orders || 0),
         },
         reverse: {
           amount: Number(reverse?.amount || 0),
