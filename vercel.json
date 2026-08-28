@@ -15,6 +15,10 @@
     {
       "path": "/api/cron/cleanup-reset-tokens",
       "schedule": "0 4 * * 1"
+    },
+    {
+      "path": "/api/cron/auto-payout",
+      "schedule": "0 * * * *"
     }
   ]
 }
