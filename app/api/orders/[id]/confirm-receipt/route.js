@@ -136,7 +136,7 @@ export async function POST(request, { params }) {
 
       // NOTIF: client_confirmed - notifier le vendeur
       try {
-        const [vendorUser] = await tx`SELECT u.id FROM users u JOIN shops s ON s.vendor_id = u.id WHERE s.id = ${shopId} LIMIT 1`;
+        const [vendorUser] = await sql`SELECT u.id FROM users u JOIN shops s ON s.vendor_id = u.id WHERE s.id = ${shopId} LIMIT 1`;
         if (vendorUser) {
           await createNotification({
             userId: vendorUser.id,

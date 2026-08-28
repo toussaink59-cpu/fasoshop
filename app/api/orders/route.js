@@ -236,19 +236,23 @@ export async function POST(request) {
 
     // NOTIF: new_order - notifier chaque vendeur concerné par cette commande
     try {
-      const vendorIds = Object.keys(subtotalsByShop).map(id => Number(id));
-      for (const vid of vendorIds) {
-        const [vendorUser] = await sql`SELECT id FROM users u JOIN shops s ON s.vendor_id = u.id WHERE s.id = ${vid} LIMIT 1`;
-        if (vendorUser) {
-          const shopSub = subtotalsByShop[vid] || 0;
-          const [shopRow] = await sql`SELECT name FROM shops WHERE id = ${vid} LIMIT 1`;
+      const shopRows = await sql`
+        SELECT p.shop_id, COALESCE(SUM(oi.quantity * oi.price_at_purchase), 0)::float AS shop_sub
+        FROM order_items oi
+        JOIN products p ON p.id = oi.product_id
+        WHERE oi.order_id = ${result.id}
+        GROUP BY p.shop_id
+      `;
+      for (const row of shopRows) {
+        const [shopRow] = await sql`SELECT vendor_id, name FROM shops WHERE id = ${row.shop_id} LIMIT 1`;
+        if (shopRow) {
           await createNotification({
-            userId: vendorUser.id,
+            userId: shopRow.vendor_id,
             type: 'order_new',
             title: 'Nouvelle commande #' + result.id,
-            body: Number(shopSub).toLocaleString('fr-FR') + ' FCFA à préparer',
+            body: Number(row.shop_sub).toLocaleString('fr-FR') + ' FCFA a preparer (' + shopRow.name + ')',
             link: '/vendor/orders',
-            data: { orderId: result.id, shopId: vid },
+            data: { orderId: result.id, shopId: row.shop_id },
           });
         }
       }

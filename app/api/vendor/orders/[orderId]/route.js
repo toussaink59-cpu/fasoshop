@@ -170,9 +170,9 @@ export async function PATCH(request, { params }) {
         // NOTIF: shipped_or_delivered - notifier le client
         if (status === "shipped" || status === "delivered") {
           try {
-            const [buyer] = await tx`SELECT id FROM users u JOIN orders o ON o.buyer_id = u.id WHERE o.id = ${orderId} LIMIT 1`;
+            const [buyer] = await sql`SELECT id FROM users u JOIN orders o ON o.buyer_id = u.id WHERE o.id = ${orderId} LIMIT 1`;
             if (buyer) {
-              const [shopName] = await tx`SELECT name FROM shops WHERE id = ${shop.id} LIMIT 1`;
+              const [shopName] = await sql`SELECT name FROM shops WHERE id = ${shop.id} LIMIT 1`;
               await createNotification({
                 userId: buyer.id,
                 type: status === "shipped" ? 'order_shipped' : 'order_delivered',
