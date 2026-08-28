@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 
 // ⚠️ Mets ton vrai numéro ici (format international sans +) ou variable NEXT_PUBLIC_WHATSAPP_NUMBER
-const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "01567316";
+const WHATSAPP_NUMBER = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "22601567316";
 
 export default function WhatsAppFloat() {
   const pathname = usePathname();
@@ -14,7 +14,7 @@ export default function WhatsAppFloat() {
     pathname.startsWith("/register")
   ) return null;
 
-  const msg = encodeURIComponent("Bonjour Kimoxa 👋, j'ai besoin d'aide.");
+  const msg = encodeURIComponent("Bonjour Kimoxa, j'ai besoin d'aide.");
 
   return (
     <>
