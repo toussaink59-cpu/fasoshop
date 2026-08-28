@@ -6,7 +6,6 @@ import Link from "next/link";
 import AdminBottomNav from "@/app/components/AdminBottomNav";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
 import AdminAnalytics from "@/app/components/AdminAnalytics";
-import AdminInsights from "@/app/components/AdminInsights";
 import {
   WalletIcon, BarChartIcon, ClockIcon, ShoppingCartIcon, UserPlusIcon,
   AlertTriangleIcon, PackageIcon, CreditCardIcon, StoreIcon, ShieldCheckIcon,
@@ -372,7 +371,6 @@ export default function AdminDashboard() {
         <section>
           <SectionLabel>Analytique</SectionLabel>
           <AdminAnalytics />
-          <AdminInsights />
         </section>
       </div>
       <AdminBottomNav pendingShopsCount={pendingShopsCount} pendingModerationCount={pendingModerationCount} />

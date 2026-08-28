@@ -44,6 +44,7 @@ const WHITELIST = {
   "/cron/abandoned-carts": "Protégé par CRON_SECRET (timing-safe)",
   "/cron/auto-confirm": "Protégé par CRON_SECRET (timing-safe)",
   "/cron/expire-orders": "Protégé par CRON_SECRET (timing-safe)",
+  "/push/vapid-public-key": "Public par design : la clé VAPID publique est requise par le frontend pour s'abonner aux notifications push",
   "/sandbox/simulate": "Auto-verrouillé : renvoie 404 si le provider n'est pas sandbox",
   "/test-helpers": "Verrouillé par NODE_ENV + ALLOW_TEST_HELPERS (voir 04-test-helpers-guard.mjs)",
   "/test-helpers/create-shop-product": "Verrouillé par NODE_ENV + ALLOW_TEST_HELPERS",
