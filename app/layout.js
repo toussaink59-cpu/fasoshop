@@ -3,6 +3,7 @@ import { Fraunces, Work_Sans, IBM_Plex_Mono } from "next/font/google";
 import Script from "next/script";
 import ServiceWorker from "@/app/components/ServiceWorker";
 import PwaInstallPrompt from "@/app/components/PwaInstallPrompt";
+import WhatsAppFloat from "@/app/components/WhatsAppFloat";
 
 // Perf : polices auto-hébergées par next/font au build. Plus de requête
 // vers fonts.googleapis.com au chargement de la page, et aucun FOUT.
@@ -63,7 +64,8 @@ export default function RootLayout({ children }) {
           />
         )}
         {children}
-      </body>
+            <WhatsAppFloat />
+    </body>
     </html>
   );
 }
