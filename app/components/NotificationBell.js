@@ -42,6 +42,40 @@ function formatAgo(d) {
   return d.toLocaleDateString("fr-FR");
 }
 
+function urlBase64ToUint8Array(base64String) {
+  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
+  return outputArray;
+}
+
+async function ensurePushSubscribed() {
+  try {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) return false;
+    const reg = await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      const keyRes = await fetch("/api/push/vapid-public-key");
+      if (!keyRes.ok) return false;
+      const keyData = await keyRes.json();
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(keyData.publicKey),
+      });
+    }
+    await fetch("/api/push/subscribe", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(sub.toJSON()),
+    });
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 export default function NotificationBell() {
   const pathname = usePathname() || "/";
   const router = useRouter();
@@ -49,6 +83,8 @@ export default function NotificationBell() {
   const [items, setItems] = useState([]);
   const [unread, setUnread] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [pushPerm, setPushPerm] = useState("unknown");
+  const [pushBusy, setPushBusy] = useState(false);
   const panelRef = useRef(null);
 
   async function load() {
@@ -64,11 +100,20 @@ export default function NotificationBell() {
     setLoading(false);
   }
 
-  // Hooks TOUJOURS appelés (avant tout return)
   useEffect(() => {
     load();
     const t = setInterval(load, 30000);
     return () => clearInterval(t);
+  }, []);
+
+  // État push + auto-abonnement si déjà autorisé
+  useEffect(() => {
+    if (!("Notification" in window)) {
+      setPushPerm("unsupported");
+      return;
+    }
+    setPushPerm(Notification.permission);
+    if (Notification.permission === "granted") ensurePushSubscribed();
   }, []);
 
   useEffect(() => {
@@ -80,13 +125,23 @@ export default function NotificationBell() {
     return () => document.removeEventListener("mousedown", onClick);
   }, [open]);
 
-  // Return APRÈS les hooks
   const hiddenRoutes = ["/login", "/register", "/cgu", "/cgv", "/confidentialite", "/mentions-legales", "/comment-ca-marche"];
   if (hiddenRoutes.some((r) => pathname === r || pathname.startsWith(r + "/"))) return null;
 
   async function toggle() {
     if (!open) await load();
     setOpen((v) => !v);
+  }
+
+  async function enablePush() {
+    if (!("Notification" in window)) return;
+    setPushBusy(true);
+    try {
+      const perm = await Notification.requestPermission();
+      setPushPerm(perm);
+      if (perm === "granted") await ensurePushSubscribed();
+    } catch (e) {}
+    setPushBusy(false);
   }
 
   async function markAllRead() {
@@ -187,6 +242,31 @@ export default function NotificationBell() {
               </button>
             )}
           </div>
+
+          {pushPerm === "default" && (
+            <div style={{ padding: "10px 14px", background: "#fffbeb", borderBottom: "1px solid var(--border, #e5e2d9)" }}>
+              <button onClick={enablePush} disabled={pushBusy} style={{
+                width: "100%", padding: "10px 12px", borderRadius: 10, border: "none",
+                background: "var(--gold-600, #d4af37)", color: "#fff", fontWeight: 700,
+                fontSize: "0.82rem", cursor: "pointer",
+              }}>
+                {pushBusy ? "Activation..." : "Activer les notifications push"}
+              </button>
+              <div style={{ fontSize: "0.72rem", color: "#92400e", marginTop: 6 }}>
+                Recevez les alertes (commandes, paiements) même quand le site est fermé.
+              </div>
+            </div>
+          )}
+          {pushPerm === "granted" && (
+            <div style={{ padding: "6px 14px", background: "#f0fdf4", borderBottom: "1px solid var(--border, #e5e2d9)", fontSize: "0.72rem", color: "#166534", fontWeight: 600 }}>
+              Notifications push actives sur cet appareil
+            </div>
+          )}
+          {pushPerm === "denied" && (
+            <div style={{ padding: "6px 14px", background: "#fef2f2", borderBottom: "1px solid var(--border, #e5e2d9)", fontSize: "0.72rem", color: "#991b1b" }}>
+              Notifications bloquées dans les paramètres du navigateur.
+            </div>
+          )}
 
           <div style={{ maxHeight: 420, overflowY: "auto" }}>
             {loading && items.length === 0 && (

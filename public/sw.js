@@ -7,8 +7,8 @@
    ─ Tout le reste        : réseau normal, non intercepté
 ===================================================== */
 
-const ASSETS_CACHE = "kimoxa-v4-assets";
-const PAGES_CACHE = "kimoxa-v4-pages";
+const ASSETS_CACHE = "kimoxa-v5-assets";
+const PAGES_CACHE = "kimoxa-v5-pages";
 const ASSET_LIMIT = 80;
 const PAGE_LIMIT = 20;
 
@@ -174,4 +174,37 @@ self.addEventListener("fetch", (e) => {
   }
 
   // 4) Tout le reste (pages hors liste blanche, requêtes non-HTML) : réseau normal
+});
+/* ===== PUSH WEB (v5) : notifications même site fermé ===== */
+self.addEventListener("push", function (event) {
+  var data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) {}
+  var title = data.title || "Kimoxa";
+  var options = {
+    body: data.body || "",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    tag: "kimoxa-" + (data.type || "notif"),
+    renotify: true,
+    data: { link: data.link || "/" }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", function (event) {
+  event.notification.close();
+  var link = (event.notification.data && event.notification.data.link) || "/";
+  event.waitUntil(
+    clients.matchAll({ type: "window", includeUncontrolled: true }).then(function (wins) {
+      for (var i = 0; i < wins.length; i++) {
+        var w = wins[i];
+        if ("focus" in w) {
+          w.focus();
+          if ("navigate" in w) { w.navigate(link); }
+          return;
+        }
+      }
+      return clients.openWindow(link);
+    })
+  );
 });
