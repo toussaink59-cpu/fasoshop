@@ -62,6 +62,8 @@ export default function Footer() {
             <Link href="/a-propos">À propos</Link>
             <Link href="/cgu">Conditions d'utilisation</Link>
             <Link href="/cgv">Conditions de vente</Link>
+            <Link href="/confidentialite">Confidentialité</Link>
+            <Link href="/mentions-legales">Mentions légales</Link>
                 <ShareKimoxaFooter />
           </div>
         </div>

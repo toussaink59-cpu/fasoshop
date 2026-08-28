@@ -40,7 +40,7 @@ export default function WhatsAppFloat() {
         }
         .wa-float:hover { transform: scale(1.08); }
         @media (min-width: 768px) {
-          .wa-float { bottom: 24px; right: 24px; }
+          .wa-float { bottom: 100px; right: 24px; }
         }
       `}</style>
       <a
