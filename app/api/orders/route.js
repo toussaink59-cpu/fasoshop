@@ -234,6 +234,28 @@ export async function POST(request) {
       console.error("[orderConfirmation] preparation echouee:", e);
     }
 
+    // NOTIF: new_order - notifier chaque vendeur concerné par cette commande
+    try {
+      const vendorIds = Object.keys(subtotalsByShop).map(id => Number(id));
+      for (const vid of vendorIds) {
+        const [vendorUser] = await sql`SELECT id FROM users u JOIN shops s ON s.vendor_id = u.id WHERE s.id = ${vid} LIMIT 1`;
+        if (vendorUser) {
+          const shopSub = subtotalsByShop[vid] || 0;
+          const [shopRow] = await sql`SELECT name FROM shops WHERE id = ${vid} LIMIT 1`;
+          await createNotification({
+            userId: vendorUser.id,
+            type: 'order_new',
+            title: 'Nouvelle commande #' + result.id,
+            body: Number(shopSub).toLocaleString('fr-FR') + ' FCFA à préparer',
+            link: '/vendor/orders',
+            data: { orderId: result.id, shopId: vid },
+          });
+        }
+      }
+    } catch (notifErr) {
+      console.error('[notif] new_order error:', notifErr.message);
+    }
+
     // Notifications vendeurs : 1 email par boutique avec tous ses produits (non bloquant)
     try {
       const itemsByShop = {};
