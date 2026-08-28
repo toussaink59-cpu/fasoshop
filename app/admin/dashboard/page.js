@@ -10,14 +10,13 @@ import AdminInsights from "@/app/components/AdminInsights";
 import {
   WalletIcon, BarChartIcon, ClockIcon, ShoppingCartIcon, UserPlusIcon,
   AlertTriangleIcon, PackageIcon, CreditCardIcon, StoreIcon, ShieldCheckIcon,
-  BadgeCheckIcon, UploadIcon, MessageIcon, UserIcon,
+  BadgeCheckIcon, UploadIcon, MessageIcon, UserIcon, CheckCircleIcon,
 } from "@/app/components/Icons";
 
-const ZapIcon = ({ size = 20, ...props }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" {...props}>
-    <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-  </svg>
+const SectionLabel = ({ children }) => (
+  <div style={{ fontSize: "0.72rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--ink-400, #8a7f6d)", fontWeight: 700, marginBottom: 8 }}>
+    {children}
+  </div>
 );
 
 const MedalBadge = ({ rank }) => {
@@ -51,7 +50,6 @@ export default function AdminDashboard() {
   const [pendingShopsCount, setPendingShopsCount] = useState(0);
   const [pendingModerationCount, setPendingModerationCount] = useState(0);
   const [orderFilter, setOrderFilter] = useState("all");
-  const [earnings, setEarnings] = useState(null);
   const [cockpitData, setCockpitData] = useState(null);
 
   const loadOrders = useCallback(async () => {
@@ -94,7 +92,6 @@ export default function AdminDashboard() {
         setUser(data.user);
         loadOrders();
         loadBadgeCounts();
-        fetch("/api/admin/earnings").then((r) => r.json()).then((d) => setEarnings(d.earnings || null));
         fetch("/api/admin/dashboard").then((r) => r.json()).then((d) => setCockpitData(d));
       });
   }, [loadOrders, loadBadgeCounts, router]);
@@ -106,6 +103,37 @@ export default function AdminDashboard() {
 
   const filteredOrders = orderFilter === "all" ? orders : orders.filter((o) => o.status === orderFilter);
   const countBy = (s) => orders.filter((o) => o.status === s).length;
+
+  const payoutCount = cockpitData?.payouts?.released_count || 0;
+  const payoutAmount = Number(cockpitData?.payouts?.released_amount || 0);
+
+  // ===== FILE DE TRAVAIL (priorisée) =====
+  const workQueue = [];
+  if (payoutCount > 0) workQueue.push({
+    href: "/admin/payouts", Icon: CreditCardIcon, color: "#c62828", bg: "#fdecea",
+    label: `Valider ${payoutCount} payout${payoutCount > 1 ? "s" : ""}`,
+    detail: `${payoutAmount.toLocaleString("fr-FR")} FCFA à libérer aux vendeurs`,
+  });
+  if (pendingShopsCount > 0) workQueue.push({
+    href: "/admin/shops", Icon: StoreIcon, color: "#92400e", bg: "#fef9ee",
+    label: `Vérifier ${pendingShopsCount} boutique${pendingShopsCount > 1 ? "s" : ""}`,
+    detail: "Identités en attente de validation",
+  });
+  if (pendingModerationCount > 0) workQueue.push({
+    href: "/admin/moderation", Icon: ShieldCheckIcon, color: "#6d28d9", bg: "#f5f3ff",
+    label: `Traiter ${pendingModerationCount} modération${pendingModerationCount > 1 ? "s" : ""}`,
+    detail: "Avis clients et sponsoring",
+  });
+  if (cockpitData?.alerts?.stagnantOrders > 0) workQueue.push({
+    href: "/admin/orders?filter=stagnant", Icon: ClockIcon, color: "#856404", bg: "#fff3cd",
+    label: `${cockpitData.alerts.stagnantOrders} commande(s) stagnante(s)`,
+    detail: "Sans mouvement depuis plus de 3 jours",
+  });
+  if (cockpitData?.alerts?.lowStock > 0) workQueue.push({
+    href: "/admin/products", Icon: PackageIcon, color: "#856404", bg: "#fff3cd",
+    label: `${cockpitData.alerts.lowStock} produit(s) bientôt en rupture`,
+    detail: "Stock à réapprovisionner",
+  });
 
   return (
     <div className="shell">
@@ -122,205 +150,187 @@ export default function AdminDashboard() {
 
       <div className="vendor-dashboard-wrap">
         <div className="vendor-dashboard-header">
-          <h1>Tableau de bord admin</h1>
+          <h1>Tableau de bord</h1>
           <p>{user ? `Connecté en tant que ${user.full_name}` : ""}</p>
         </div>
 
+        {/* ============ 1. PILOTAGE (KPIs) ============ */}
         {cockpitData && (
-          <div style={{ display: "grid", gap: 16, marginBottom: 24 }}>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
+          <section style={{ marginBottom: 24 }}>
+            <SectionLabel>Pilotage</SectionLabel>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 12 }}>
               <div className="vendor-stat-card">
-                <div className="vendor-stat-icon" style={{ color: "var(--gold-600)" }}><WalletIcon size={28} /></div>
-                <div className="vendor-stat-value" style={{ fontSize: "1.3rem" }}>
-                  {cockpitData.revenue.month.toLocaleString("fr-FR")} FCFA
+                <div className="vendor-stat-icon" style={{ color: "var(--gold-600)" }}><WalletIcon size={24} /></div>
+                <div className="vendor-stat-value" style={{ fontSize: "1.2rem" }}>
+                  {cockpitData.revenue.month.toLocaleString("fr-FR")}
                 </div>
-                <div className="vendor-stat-label">CA — 30 jours</div>
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 10, fontSize: "0.78rem", color: "#666", flexWrap: "wrap" }}>
-                  <span>Auj. : <strong>{cockpitData.revenue.today.toLocaleString("fr-FR")}</strong></span>
-                  <span>7 j : <strong>{cockpitData.revenue.week.toLocaleString("fr-FR")}</strong>{" "}
+                <div className="vendor-stat-label">CA 30 j (FCFA)</div>
+                <div style={{ marginTop: 8, fontSize: "0.75rem", color: "#666", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
+                  <span>Auj. <strong>{cockpitData.revenue.today.toLocaleString("fr-FR")}</strong></span>
+                  <span>7 j <strong>{cockpitData.revenue.week.toLocaleString("fr-FR")}</strong>{" "}
                     <em style={{ color: cockpitData.revenue.week_delta >= 0 ? "#2e7d32" : "#c62828", fontStyle: "normal" }}>
                       {cockpitData.revenue.week_delta >= 0 ? "+" : ""}{cockpitData.revenue.week_delta}%
                     </em>
                   </span>
                 </div>
               </div>
+
               <div className="vendor-stat-card">
-                <div className="vendor-stat-icon" style={{ color: "var(--gold-600)" }}><UserPlusIcon size={28} /></div>
+                <div className="vendor-stat-icon" style={{ color: "var(--gold-600)" }}><UserPlusIcon size={24} /></div>
                 <div className="vendor-stat-value">{cockpitData.customers.week}</div>
                 <div className="vendor-stat-label">Nouveaux clients (7 j)</div>
-                <div style={{ marginTop: 10, fontSize: "0.78rem", color: "#666" }}>
-                  Panier moyen : <strong>{cockpitData.avgBasket.toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA</strong>
+                <div style={{ marginTop: 8, fontSize: "0.75rem", color: "#666" }}>
+                  Panier moyen : <strong>{cockpitData.avgBasket.toLocaleString("fr-FR", { maximumFractionDigits: 0 })} F</strong>
                 </div>
               </div>
+
+              <div className="vendor-stat-card">
+                <div className="vendor-stat-icon" style={{ color: "var(--gold-600)" }}><ShoppingCartIcon size={24} /></div>
+                <div className="vendor-stat-value">{orderStats ? orderStats.orders_today : "—"}</div>
+                <div className="vendor-stat-label">Commandes aujourd'hui</div>
+                <div style={{ marginTop: 8, fontSize: "0.75rem", color: "#666", display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: 6 }}>
+                  <span>À préparer : <strong style={{ color: orderStats?.orders_awaiting > 0 ? "var(--gold-600)" : "#222" }}>{orderStats ? orderStats.orders_awaiting : "—"}</strong></span>
+                  <span>Total : <strong>{orderStats ? orderStats.orders_total : "—"}</strong></span>
+                </div>
+              </div>
+
+              <Link href="/admin/payouts" className="vendor-stat-card" style={{ textDecoration: "none", cursor: "pointer" }}>
+                <div className="vendor-stat-icon" style={{ color: payoutCount > 0 ? "#c62828" : "var(--gold-600)" }}><CreditCardIcon size={24} /></div>
+                <div className="vendor-stat-value" style={{ color: payoutCount > 0 ? "#c62828" : undefined }}>{payoutCount}</div>
+                <div className="vendor-stat-label">Payouts à libérer</div>
+                <div style={{ marginTop: 8, fontSize: "0.75rem", color: "#666" }}>
+                  {payoutAmount.toLocaleString("fr-FR")} FCFA en attente
+                </div>
+              </Link>
             </div>
-
-            {(cockpitData.alerts.lowStock > 0 || cockpitData.alerts.stagnantOrders > 0) && (
-              <div className="va-card" style={{ background: "#fff3cd", borderLeft: "4px solid #ffc107" }}>
-                <h3 style={{ margin: "0 0 12px 0", fontSize: "1.1rem", display: "flex", alignItems: "center", gap: 8 }}>
-                  <AlertTriangleIcon size={18} /> Alertes
-                </h3>
-                <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                  {cockpitData.alerts.lowStock > 0 && (
-                    <Link href="/admin/products" style={{ color: "#856404", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
-                      <PackageIcon size={16} /> <strong>{cockpitData.alerts.lowStock} produit(s)</strong> bientôt en rupture
-                    </Link>
-                  )}
-                  {cockpitData.alerts.stagnantOrders > 0 && (
-                    <Link href="/admin/orders?filter=stagnant" style={{ color: "#856404", textDecoration: "none", display: "flex", alignItems: "center", gap: 6 }}>
-                      <ClockIcon size={16} /> <strong>{cockpitData.alerts.stagnantOrders} commande(s)</strong> stagnent depuis &gt; 3 jours
-                    </Link>
-                  )}
-                </div>
-              </div>
-            )}
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 16 }}>
-              <div className="va-card">
-                <h3 style={{ margin: "0 0 12px 0", fontSize: "1.1rem", display: "flex", alignItems: "center", gap: 8 }}>
-                  <ZapIcon size={18} /> Actions rapides
-                </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {cockpitData.payouts.released_count > 0 && (
-                    <Link href="/admin/payouts" className="btn btn-primary" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-                      <CreditCardIcon size={16} /> Valider {cockpitData.payouts.released_count} payout{cockpitData.payouts.released_count > 1 ? "s" : ""} — {Number(cockpitData.payouts.released_amount).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
-                    </Link>
-                  )}
-                  {pendingShopsCount > 0 && (
-                    <Link href="/admin/shops" className="btn btn-ghost" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-                      <StoreIcon size={16} /> Vérifier {pendingShopsCount} boutique(s) en attente
-                    </Link>
-                  )}
-                  {pendingModerationCount > 0 && (
-                    <Link href="/admin/moderation" className="btn btn-ghost" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
-                      <ShieldCheckIcon size={16} /> Traiter {pendingModerationCount} demande(s) de modération
-                    </Link>
-                  )}
-                </div>
-              </div>
-
-              <div className="va-card">
-                <h3 style={{ margin: "0 0 12px 0", fontSize: "1.1rem", display: "flex", alignItems: "center", gap: 8 }}>
-                  <BadgeCheckIcon size={18} /> Top 3 vendeurs (mois)
-                </h3>
-                {cockpitData.topVendors.length === 0 ? (
-                  <p style={{ color: "#666", fontSize: "0.9rem" }}>Aucune vente ce mois</p>
-                ) : (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {cockpitData.topVendors.map((v, i) => (
-                      <div key={v.shop_name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", minWidth: 0, flex: 1 }}>
-                          <MedalBadge rank={i + 1} />
-                          <div style={{ minWidth: 0 }}>
-                            <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.shop_name}</strong>
-                            <div style={{ fontSize: "0.85rem", color: "#666" }}>
-                              {v.order_count} commande(s)
-                            </div>
-                          </div>
-                        </div>
-                        <div style={{ textAlign: "right", flex: "none" }}>
-                          <div style={{ fontWeight: "bold", color: "#d4af37", whiteSpace: "nowrap" }}>
-                            {Number(v.revenue).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          </section>
         )}
 
-        <AdminAnalytics />
-        <AdminInsights />
+        {/* ============ 2. FILE DE TRAVAIL ============ */}
+        <section style={{ marginBottom: 24 }}>
+          <SectionLabel>À traiter</SectionLabel>
+          {!cockpitData ? (
+            <p style={{ color: "#666", fontSize: "0.9rem" }}>Chargement…</p>
+          ) : workQueue.length === 0 ? (
+            <div className="va-card" style={{ background: "#f0fdf4", border: "1px solid #86efac", display: "flex", alignItems: "center", gap: 10, padding: "14px 16px" }}>
+              <CheckCircleIcon size={20} style={{ color: "#16a34a", flexShrink: 0 }} />
+              <div style={{ fontSize: "0.9rem", color: "#166534" }}>
+                <strong>Tout est à jour.</strong> Aucune action en attente : boutiques, modération, payouts et commandes sont traités.
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {workQueue.map((item) => {
+                const Icon = item.Icon;
+                return (
+                  <Link key={item.href + item.label} href={item.href} className="va-card"
+                    style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderLeft: `4px solid ${item.color}` }}>
+                    <span style={{ width: 38, height: 38, borderRadius: 10, background: item.bg, display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Icon size={18} style={{ color: item.color }} />
+                    </span>
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <strong style={{ display: "block", color: "#222", fontSize: "0.92rem" }}>{item.label}</strong>
+                      <span style={{ display: "block", color: "#666", fontSize: "0.78rem", marginTop: 2 }}>{item.detail}</span>
+                    </span>
+                    <span style={{ color: item.color, fontWeight: 700, fontSize: "1.1rem", flexShrink: 0 }}>→</span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </section>
 
-        <div className="va-card" style={{ marginTop: 12 }}>
-          <h3 style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <UploadIcon size={18} /> Exports CSV (Excel)
-          </h3>
-          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <a className="btn btn-ghost" href="/api/admin/export?kind=orders" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <ShoppingCartIcon size={14} /> Commandes
-            </a>
-            <a className="btn btn-ghost" href="/api/admin/export?kind=shops" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <StoreIcon size={14} /> Boutiques
-            </a>
-            <a className="btn btn-ghost" href="/api/admin/export?kind=payouts" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-              <CreditCardIcon size={14} /> Payouts
-            </a>
+        {/* ============ 3. SURVEILLANCE & OUTILS ============ */}
+        <section style={{ marginBottom: 24 }}>
+          <SectionLabel>Surveillance & outils</SectionLabel>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 12 }}>
+            <Link href="/admin/conversations" className="va-card" style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 12, padding: "14px 16px" }}>
+              <span style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(212,175,55,0.12)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <MessageIcon size={20} style={{ color: "var(--gold-600)" }} />
+              </span>
+              <span style={{ flex: 1 }}>
+                <strong style={{ display: "block", color: "#222" }}>Conversations</strong>
+                <span style={{ display: "block", color: "#666", fontSize: "0.8rem", marginTop: 2 }}>Surveillance vendeur ↔ client</span>
+              </span>
+              <span style={{ color: "var(--gold-600)", fontWeight: 700 }}>→</span>
+            </Link>
+
+            <div className="va-card" style={{ padding: "14px 16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                <span style={{ width: 40, height: 40, borderRadius: 10, background: "rgba(212,175,55,0.12)", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <UploadIcon size={20} style={{ color: "var(--gold-600)" }} />
+                </span>
+                <strong style={{ color: "#222" }}>Exports CSV (Excel)</strong>
+              </div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                <a className="btn btn-ghost" href="/api/admin/export?kind=orders" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <ShoppingCartIcon size={14} /> Commandes
+                </a>
+                <a className="btn btn-ghost" href="/api/admin/export?kind=shops" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <StoreIcon size={14} /> Boutiques
+                </a>
+                <a className="btn btn-ghost" href="/api/admin/export?kind=payouts" style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                  <CreditCardIcon size={14} /> Payouts
+                </a>
+              </div>
+            </div>
           </div>
-        </div>
+        </section>
 
-        <div className="va-card" style={{ marginTop: 12 }}>
-          <h3 style={{ display: "flex", alignItems: "center", gap: 8, margin: "0 0 12px 0", fontSize: "1.1rem" }}>
-            <ShoppingCartIcon size={18} /> Commandes
-          </h3>
-          <div style={{ display: "flex", gap: 16, flexWrap: "wrap", fontSize: "0.9rem", color: "#666" }}>
-            <span>Aujourd'hui : <strong style={{ color: "#222" }}>{orderStats ? orderStats.orders_today : "—"}</strong></span>
-            <span>À préparer : <strong style={{ color: orderStats?.orders_awaiting > 0 ? "var(--gold-600)" : "#222" }}>{orderStats ? orderStats.orders_awaiting : "—"}</strong></span>
-            <span>Total : <strong style={{ color: "#222" }}>{orderStats ? orderStats.orders_total : "—"}</strong></span>
+        {/* ============ 4. PERFORMANCE ============ */}
+        {cockpitData && (
+          <section style={{ marginBottom: 24 }}>
+            <SectionLabel>Performance</SectionLabel>
+            <div className="va-card">
+              <h3 style={{ margin: "0 0 12px 0", fontSize: "1.05rem", display: "flex", alignItems: "center", gap: 8 }}>
+                <BadgeCheckIcon size={18} /> Top 3 vendeurs (mois)
+              </h3>
+              {cockpitData.topVendors.length === 0 ? (
+                <p style={{ color: "#666", fontSize: "0.9rem" }}>Aucune vente ce mois</p>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {cockpitData.topVendors.map((v, i) => (
+                    <div key={v.shop_name} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", minWidth: 0, flex: 1 }}>
+                        <MedalBadge rank={i + 1} />
+                        <div style={{ minWidth: 0 }}>
+                          <strong style={{ display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{v.shop_name}</strong>
+                          <div style={{ fontSize: "0.85rem", color: "#666" }}>{v.order_count} commande(s)</div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right", flex: "none" }}>
+                        <div style={{ fontWeight: "bold", color: "#d4af37", whiteSpace: "nowrap" }}>
+                          {Number(v.revenue).toLocaleString("fr-FR", { maximumFractionDigits: 0 })} FCFA
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* ============ 5. VENTES RÉCENTES ============ */}
+        <section style={{ marginBottom: 24 }}>
+          <SectionLabel>Ventes récentes</SectionLabel>
+          <div className="vendor-filters" style={{ marginBottom: 12 }}>
+            <button className={`vendor-filter-btn ${orderFilter === "all" ? "active" : ""}`} onClick={() => setOrderFilter("all")}>
+              Toutes ({orders.length})
+            </button>
+            <button className={`vendor-filter-btn ${orderFilter === "pending" ? "active" : ""}`} onClick={() => setOrderFilter("pending")}>
+              En attente ({countBy("pending")})
+            </button>
+            <button className={`vendor-filter-btn ${orderFilter === "shipped" ? "active" : ""}`} onClick={() => setOrderFilter("shipped")}>
+              Expédiées ({countBy("shipped")})
+            </button>
+            <button className={`vendor-filter-btn ${orderFilter === "delivered" ? "active" : ""}`} onClick={() => setOrderFilter("delivered")}>
+              Livrées ({countBy("delivered")})
+            </button>
+            <button className={`vendor-filter-btn ${orderFilter === "cancelled" ? "active" : ""}`} onClick={() => setOrderFilter("cancelled")}>
+              Annulées ({countBy("cancelled")})
+            </button>
           </div>
-        </div>
-
-        <div className="vendor-quick-links">
-          <Link href="/admin/shops" className="vendor-quick-link">
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <StoreIcon size={20} style={{ color: "var(--gold-600)" }} /> <strong>Boutiques</strong>
-            </div>
-            <span>{pendingShopsCount > 0 ? `${pendingShopsCount} en attente de vérification` : "Gestion et vérification"}</span>
-          </Link>
-          <Link href="/admin/moderation" className="vendor-quick-link">
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <ShieldCheckIcon size={20} style={{ color: "var(--gold-600)" }} /> <strong>Modération</strong>
-            </div>
-            <span>{pendingModerationCount > 0 ? `${pendingModerationCount} demande(s) en attente` : "Avis clients et sponsoring"}</span>
-          </Link>
-          <Link href="/admin/products" className="vendor-quick-link">
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <PackageIcon size={20} style={{ color: "var(--gold-600)" }} /> <strong>Produits</strong>
-            </div>
-            <span>Stock détaillé par boutique</span>
-          </Link>
-          <Link href="/admin/analytics" className="vendor-quick-link">
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <BarChartIcon size={20} style={{ color: "var(--gold-600)" }} /> <strong>Analytics</strong>
-            </div>
-            <span>Statistiques détaillées</span>
-          </Link>
-          <Link href="/admin/payouts" className="vendor-quick-link">
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <CreditCardIcon size={20} style={{ color: "var(--gold-600)" }} /> <strong>Payouts</strong>
-            </div>
-            <span>{earnings ? `${earnings.released_count} payout(s) à libérer` : "Gestion des retraits vendeur"}</span>
-          </Link>
-          <Link href="/admin/conversations" className="vendor-quick-link">
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-              <MessageIcon size={20} style={{ color: "var(--gold-600)" }} /> <strong>Conversations</strong>
-            </div>
-            <span>Surveillance vendeur ↔ client</span>
-          </Link>
-        </div>
-
-        <div className="vendor-filters">
-          <button className={`vendor-filter-btn ${orderFilter === "all" ? "active" : ""}`} onClick={() => setOrderFilter("all")}>
-            Toutes ({orders.length})
-          </button>
-          <button className={`vendor-filter-btn ${orderFilter === "pending" ? "active" : ""}`} onClick={() => setOrderFilter("pending")}>
-            En attente ({countBy("pending")})
-          </button>
-          <button className={`vendor-filter-btn ${orderFilter === "shipped" ? "active" : ""}`} onClick={() => setOrderFilter("shipped")}>
-            Expédiées ({countBy("shipped")})
-          </button>
-          <button className={`vendor-filter-btn ${orderFilter === "delivered" ? "active" : ""}`} onClick={() => setOrderFilter("delivered")}>
-            Livrées ({countBy("delivered")})
-          </button>
-          <button className={`vendor-filter-btn ${orderFilter === "cancelled" ? "active" : ""}`} onClick={() => setOrderFilter("cancelled")}>
-            Annulées ({countBy("cancelled")})
-          </button>
-        </div>
-
-        <div className="vendor-products-section">
-          <h2>Ventes récentes ({filteredOrders.length})</h2>
 
           {loading ? (
             <p>Chargement...</p>
@@ -356,7 +366,14 @@ export default function AdminDashboard() {
               );
             })
           )}
-        </div>
+        </section>
+
+        {/* ============ 6. ANALYTIQUE ============ */}
+        <section>
+          <SectionLabel>Analytique</SectionLabel>
+          <AdminAnalytics />
+          <AdminInsights />
+        </section>
       </div>
       <AdminBottomNav pendingShopsCount={pendingShopsCount} pendingModerationCount={pendingModerationCount} />
     </div>
