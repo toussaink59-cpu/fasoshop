@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
+import EmptyState from "@/app/components/EmptyState";
 import { PackageIcon, TruckIcon, CheckCircleIcon, MessageIcon, CreditCardIcon,
   MapPinIcon, SmartphoneIcon, StoreIcon, BadgeCheckIcon, SearchIcon } from "@/app/components/Icons";
 
@@ -181,13 +182,13 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
         {error && <div className="error-box">{error}</div>}
 
         {orders.length === 0 ? (
-          <div className="empty-state">
-            <div className="glyph" style={{ display: "inline-flex", color: "var(--gold-600)" }}><PackageIcon size={48} /></div>
-            <p>Vous n'avez pas encore passé de commande.</p>
-            <Link href="/shop">
-              <button className="btn btn-primary" style={{ marginTop: 10 }}>Voir le catalogue</button>
-            </Link>
-          </div>
+          <EmptyState
+              Icon={PackageIcon}
+              title="Aucune commande pour l'instant"
+              hint="Parcourez le catalogue et passez votre première commande en quelques clics."
+              ctaHref="/shop"
+              ctaLabel="Découvrir les produits"
+            />
         ) : (
           <>
             <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
@@ -208,10 +209,11 @@ function OrdersContent({ initialUser, categories, initialOrders, confirmedId, co
             </div>
 
             {filteredOrders.length === 0 ? (
-              <div className="empty-state">
-                <div className="glyph" style={{ display: "inline-flex", color: "var(--ink-400)" }}><SearchIcon size={48} /></div>
-                <p>Aucune commande pour ce filtre.</p>
-              </div>
+              <EmptyState
+                  Icon={SearchIcon}
+                  title="Aucune commande trouvée"
+                  hint="Essayez de changer le filtre pour voir d'autres commandes."
+                />
             ) : (
               filteredOrders.map((order) => (
                 <div className="order-card" key={order.id}>

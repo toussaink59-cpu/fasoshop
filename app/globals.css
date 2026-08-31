@@ -7384,3 +7384,19 @@ main {
 .sponsor-packs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
 @media (max-width: 980px) { .sponsor-packs { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 720px) { .sponsor-benefits, .sponsor-packs { grid-template-columns: 1fr; } }
+
+/* ===== SKELETONS (Polish UX) ===== */
+@keyframes kx-shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, #edeae3 25%, #f8f6f1 50%, #edeae3 75%);
+  background-size: 800px 100%;
+  animation: kx-shimmer 1.2s linear infinite;
+  border-radius: 8px;
+  display: block;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}

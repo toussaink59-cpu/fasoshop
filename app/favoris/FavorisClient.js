@@ -1,5 +1,6 @@
 "use client";
 
+import EmptyState from "@/app/components/EmptyState";
 import { HeartIcon, ShoppingBagIcon } from "@/app/components/Icons";
 
 

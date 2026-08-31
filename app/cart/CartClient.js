@@ -1,5 +1,6 @@
 ﻿"use client";
 
+import EmptyState from "@/app/components/EmptyState";
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";

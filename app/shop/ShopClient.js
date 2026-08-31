@@ -1,5 +1,7 @@
 "use client";
 
+import EmptyState from "@/app/components/EmptyState";
+import { ProductGridSkeleton } from "@/app/components/Skeletons";
 import { SparklesIcon, ArrowUpDownIcon, StarIcon, XIcon, TargetIcon, SettingsIcon, ShoppingBagIcon, CheckIcon, MapPinIcon } from "@/app/components/Icons";
 
 
@@ -580,7 +582,7 @@ function ShopContent({
 
 export default function ShopClient(props) {
   return (
-    <Suspense fallback={<div className="shell"><div className="content"><p>Chargement...</p></div></div>}>
+    <Suspense fallback={<div className="shell"><div className="content"><ProductGridSkeleton count={8} /></div></div>}>
       <ShopContent {...props} />
     </Suspense>
   );
