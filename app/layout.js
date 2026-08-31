@@ -39,6 +39,13 @@ export const metadata = {
     siteName: "Kimoxa",
     type: "website",
     locale: "fr_FR",
+    images: [{ url: "/icons/icon-512.png", width: 512, height: 512, alt: "Kimoxa — la marketplace qui connecte l'Afrique" }],
+  },
+  twitter: {
+    card: "summary",
+    title: "Kimoxa — Marketplace multi-vendeurs",
+    description: "Achetez local, soutenez local.",
+    images: ["/icons/icon-512.png"],
   },
 };
 export const viewport = {

@@ -9,6 +9,7 @@ const MAX_NAME_LENGTH = 200;
 const MAX_DESCRIPTION_LENGTH = 5000;
 const MAX_BRAND_LENGTH = 100;
 const MAX_IMAGES = 10;
+const PRODUCT_LIMIT_UNVERIFIED = 10; // Limite produits avant vérification boutique
 
 // Sanitization : supprime caractères dangereux
 function sanitize(str, maxLength = 200) {

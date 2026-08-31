@@ -6,11 +6,10 @@ import Image from "next/image";
 import styles from "./HeroCarousel.module.css";
 
 const SLIDES = [
-  { id: "brand", eyebrow: "Kimoxa", title: "Le marketplace des commerçants du Burkina Faso.", subtitle: "Achetez local, soutenez local.", href: "/shop", cta: "Découvrir le catalogue" },
-  { id: "shops", eyebrow: "Boutiques locales", title: "Des boutiques locales vérifiées.", subtitle: "Mode, beauté, électronique, maison : tout un marché dans votre poche.", href: "/nos-vendeurs", cta: "Voir les vendeurs", image: "/hero/shops.png", alt: "Boutiques locales au Burkina Faso" },
-  { id: "payments", eyebrow: "Confiance", title: "Payez en toute sécurité.", subtitle: "Orange Money, Moov Money, MTN MoMo, Wave ou à la livraison.", href: "/faq", cta: "Comment ça marche", image: "/hero/payments.png", alt: "Paiement mobile sécurisé" },
-  { id: "delivery", eyebrow: "Livraison", title: "Livré chez vous ou retrait en boutique.", subtitle: "Le vendeur livre à votre adresse, ou retrait gratuit sur place.", href: "/retours", cta: "En savoir plus", image: "/hero/delivery.png", alt: "Livraison à domicile", pos: "50% 25%" },
-  { id: "vendor", eyebrow: "Vendeurs", title: "Vendez sur Kimoxa.", subtitle: "Ouvrez votre boutique en quelques minutes, touchez tout le Burkina.", href: "/devenir-vendeur", cta: "Devenir vendeur", image: "/hero/vendor.png", alt: "Commerçant partenaire Kimoxa", pos: "50% 20%" },
+  { id: "brand", eyebrow: "Kimoxa", title: "Le marketplace des commerçants du Burkina Faso.", subtitle: "Achetez local, soutenez local.", href: "/shop", cta: "Découvrir le catalogue", image: "https://images.unsplash.com/photo-1555529669-e69e7aa0ba9a?w=800&q=80&auto=format&fit=crop", alt: "Marché local au Burkina Faso", pos: "50% 40%" },
+  { id: "payments", eyebrow: "Confiance", title: "Payez en toute sécurité.", subtitle: "Mobile Money ou à la livraison, votre argent est protégé.", href: "/faq", cta: "Comment ça marche", image: "https://images.unsplash.com/photo-1563013544-824ae1b704d3?w=800&q=80&auto=format&fit=crop", alt: "Paiement mobile sécurisé", pos: "50% 50%" },
+  { id: "delivery", eyebrow: "Livraison", title: "Livré chez vous, partout au Burkina.", subtitle: "Domicile ou retrait boutique, vous choisissez.", href: "/retours", cta: "En savoir plus", image: "https://images.unsplash.com/photo-1566576912321-d58ddd7a6088?w=800&q=80&auto=format&fit=crop", alt: "Livraison à domicile", pos: "50% 40%" },
+  { id: "vendor", eyebrow: "Vendeurs", title: "Vendez sur Kimoxa.", subtitle: "Ouvrez votre boutique en quelques minutes.", href: "/devenir-vendeur", cta: "Devenir vendeur", image: "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=800&q=80&auto=format&fit=crop", alt: "Commerçante dans sa boutique", pos: "50% 30%" },
 ];
 
 export default function HeroCarousel() {

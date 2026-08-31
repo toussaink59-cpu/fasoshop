@@ -1,3 +1,5 @@
+import CategoryTiles from "@/app/components/CategoryTiles";
+import TrustStrip from "@/app/components/TrustStrip";
 import RoleRedirect from "@/app/components/RoleRedirect";
 import { redirect } from "next/navigation";
 import { getCategoriesTree } from "@/lib/queries/categories";
@@ -69,6 +71,10 @@ export default async function HomePage() {
       <div className="woven-strip" />
 
       <HeroCarousel featuredProducts={newArrivals} />
+
+      <CategoryTiles />
+
+      <TrustStrip />
 
       <FlashSaleSection initialProducts={flashSales} />
 

@@ -33,11 +33,35 @@ export async function POST(request, { params }) {
         console.warn(`[webhook] ID sponsoring illisible: ${event.transactionId}`);
         return Response.json({ received: true });
       }
-      const [sr] = await sql`SELECT id, product_id, duration_days, status FROM sponsorship_requests WHERE id = ${sponsorId}`;
+      const [sr] = await sql`SELECT id, product_id, duration_days, price_fcfa, status FROM sponsorship_requests WHERE id = ${sponsorId} FOR UPDATE`;
       if (!sr) {
         console.warn(`[webhook] Sponsoring #${sponsorId} introuvable`);
         return Response.json({ received: true });
       }
+      if (sr.status === "approved" || sr.status === "rejected") {
+        return Response.json({ received: true, alreadyProcessed: true });
+      }
+
+      // P0 : vérification stricte du montant payé vs prix du sponsoring
+      const receivedAmount = Number(event.amount);
+      const expectedAmount = Number(sr.price_fcfa);
+      if (!Number.isFinite(receivedAmount) || !Number.isFinite(expectedAmount) || Math.abs(receivedAmount - expectedAmount) > 1) {
+        console.error(`[webhook] Montant sponsoring incohérent`, { expected: expectedAmount, received: receivedAmount, sponsorId });
+        await sql`UPDATE sponsorship_requests SET status = 'rejected', admin_notes = 'Montant incohérent', reviewed_at = NOW() WHERE id = ${sr.id} AND status = 'pending'`;
+        return Response.json({ error: "Montant incohérent." }, { status: 400 });
+      }
+
+      // P0 : activation atomique (transaction) pour éviter les doubles traitements
+      try {
+        await sql.begin(async (tx) => {
+          await tx`UPDATE sponsorship_requests SET status = 'approved', reviewed_at = NOW() WHERE id = ${sr.id} AND status = 'pending'`;
+          await tx`UPDATE products SET is_sponsored = true, sponsored_until = NOW() + ('${Number(sr.duration_days || 30)} days')::interval WHERE id = ${sr.product_id}`;
+        });
+      } catch (txErr) {
+        console.error(`[webhook] Erreur transaction sponsoring #${sr.id}`, txErr.message);
+        return Response.json({ error: "Erreur serveur." }, { status: 500 });
+      }
+      return Response.json({ received: true });
       if (sr.status === "approved" || sr.status === "rejected") {
         return Response.json({ received: true, alreadyProcessed: true });
       }
