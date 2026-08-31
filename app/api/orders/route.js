@@ -3,6 +3,7 @@ import { sendMail, emailTemplates, sendLowStockAlert, sendNewOrderToVendor } fro
 ﻿import { NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { rateLimit, clientKey } from "@/lib/rate-limit";
 
 const COMMISSION_RATE = (Number(process.env.COMMISSION_RATE_PERCENT) || 8) / 100;
 
