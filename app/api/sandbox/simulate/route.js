@@ -4,6 +4,8 @@
 // puis transmet au webhook comme le ferait un vrai fournisseur.
 import { getProvider } from "@/lib/payment/provider";
 import { signSandboxPayload } from "@/lib/payment/adapters/sandbox";
+import { isSandboxRequestAuthorized } from "@/lib/sandboxAuth";
+import { rateLimit, clientKey } from "@/lib/rate-limit";
 
 export async function POST(request) {
  // Actif UNIQUEMENT en mode sandbox (désactivé en production réelle)
