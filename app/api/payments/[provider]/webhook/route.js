@@ -78,7 +78,7 @@ export async function POST(request, { params }) {
     }
 
     // === BRANCHE COMMANDES ===
-    const [payment] = await sql`SELECT id, order_id, status, amount FROM payments WHERE transaction_id = ${event.transactionId}`;
+    const [payment] = await sql`SELECT id, order_id, status, amount, provider FROM payments WHERE transaction_id = ${event.transactionId} FOR UPDATE`;
     if (!payment) {
       console.warn(`[webhook/${providerName}] transaction_id inconnu: ${event.transactionId}`);
       return Response.json({ received: true });
@@ -86,10 +86,18 @@ export async function POST(request, { params }) {
     if (payment.status === "success" || payment.status === "failed") {
       return Response.json({ received: true, alreadyProcessed: true });
     }
+    if (payment.provider && payment.provider !== providerName) {
+      console.error(`[webhook] Fournisseur incohérent pour ${event.transactionId}`, { expected: payment.provider, got: providerName });
+      return Response.json({ error: "Fournisseur incohérent." }, { status: 400 });
+    }
     if (event.amount !== undefined && Math.abs(Number(event.amount) - Number(payment.amount)) > 1) {
       console.error(`[webhook/${providerName}] Montant incohérent`, { expected: payment.amount, received: event.amount });
       await sql`UPDATE payments SET status = 'failed', raw_response = ${JSON.stringify({ ...body, error: "amount_mismatch" })}::jsonb, updated_at = NOW() WHERE id = ${payment.id}`;
       return Response.json({ error: "Montant incohérent." }, { status: 400 });
+    }
+    if (!["success", "failed"].includes(String(event.status))) {
+      console.warn(`[webhook/${providerName}] Statut non reconnu: ${event.status}`);
+      return Response.json({ error: "Statut non reconnu." }, { status: 400 });
     }
     const newStatus = event.status === "success" ? "success" : "failed";
     await sql`UPDATE payments SET status = ${newStatus}, raw_response = ${JSON.stringify(body)}::jsonb, updated_at = NOW() WHERE id = ${payment.id}`;
