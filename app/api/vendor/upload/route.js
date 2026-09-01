@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 import { put } from "@vercel/blob";
 import { sameOrigin } from "@/lib/csrf";
 import { rateLimit, clientKey } from "@/lib/rate-limit";

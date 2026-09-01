@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 import sql from "@/lib/db";
 
 function guard() {

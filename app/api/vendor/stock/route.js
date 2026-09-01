@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 import { sameOrigin } from "@/lib/csrf";
 import sql from "@/lib/db";
 import { requireRole } from "@/lib/auth";

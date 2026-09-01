@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 // app/api/sandbox/simulate/route.js
 // Pont serveur pour le mode sandbox : signe le payload côté serveur
 // (le navigateur ne doit JAMAIS connaître le secret HMAC),

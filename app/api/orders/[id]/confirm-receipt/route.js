@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 import { sameOrigin } from "@/lib/csrf";
 import { createNotification } from "@/lib/notifications";
 import sql from "@/lib/db";

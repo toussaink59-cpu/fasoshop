@@ -1,3 +1,4 @@
+export const runtime = "nodejs";
 // app/api/payments/[provider]/webhook/route.js
 import sql from "@/lib/db";
 import { getProvider } from "@/lib/payment/provider";
@@ -91,7 +92,7 @@ export async function POST(request, { params }) {
       return Response.json({ error: "Fournisseur incohérent." }, { status: 400 });
     }
     if (event.amount !== undefined && Math.abs(Number(event.amount) - Number(payment.amount)) > 1) {
-      console.error(`[webhook/${providerName}] Montant incohérent`, { expected: payment.amount, received: event.amount });
+      console.error(`[webhook/${providerName}] Montant incohérent pour transaction ${event.transactionId}`);
       await sql`UPDATE payments SET status = 'failed', raw_response = ${JSON.stringify({ ...body, error: "amount_mismatch" })}::jsonb, updated_at = NOW() WHERE id = ${payment.id}`;
       return Response.json({ error: "Montant incohérent." }, { status: 400 });
     }
