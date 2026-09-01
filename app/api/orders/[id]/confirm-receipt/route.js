@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/lib/csrf";
 import { createNotification } from "@/lib/notifications";
 import sql from "@/lib/db";
 import { requireBuyer } from "@/lib/authHelpers";
@@ -7,6 +8,7 @@ import { sendOrderDeliveredEmail } from "@/lib/email/orders";
 // CLIENT confirme réception → delivered + payout libéré (si MM)
 // P0 : idempotent, atomique, historisé, distingue MM/COD
 export async function POST(request, { params }) {
+  if (!sameOrigin(request)) return Response.json({ error: "Origine non autorisée." }, { status: 403 });
   let user;
   try {
     user = await requireBuyer();

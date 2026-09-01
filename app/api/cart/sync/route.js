@@ -1,7 +1,9 @@
+import { sameOrigin } from "@/lib/csrf";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
 import sql from "@/lib/db";
 
 export async function POST(request) {
+  if (!sameOrigin(request)) return Response.json({ error: "Origine non autorisée." }, { status: 403 });
   const userId = request.headers.get("x-user-id");
   if (!userId) return Response.json({ error: "Non authentifie." }, { status: 401 });
   // P1-B : rate limit - max 10 syncs par minute par IP
@@ -40,6 +42,7 @@ export async function POST(request) {
 }
 
 export async function DELETE(request) {
+  if (!sameOrigin(request)) return Response.json({ error: "Origine non autorisée." }, { status: 403 });
   const userId = request.headers.get("x-user-id");
   if (!userId) return Response.json({ error: "Non authentifie." }, { status: 401 });
   const rlKeyDel = `cart-del:${clientKey(request)}`;

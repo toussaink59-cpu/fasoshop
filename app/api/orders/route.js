@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/lib/csrf";
 import { createNotification } from "@/lib/notifications";
 import { sendMail, emailTemplates, sendLowStockAlert, sendNewOrderToVendor } from "@/lib/email";
 ﻿import { NextResponse } from "next/server";
@@ -8,6 +9,7 @@ import { rateLimit, clientKey } from "@/lib/rate-limit";
 const COMMISSION_RATE = (Number(process.env.COMMISSION_RATE_PERCENT) || 8) / 100;
 
 export async function POST(request) {
+  if (!sameOrigin(request)) return Response.json({ error: "Origine non autorisée." }, { status: 403 });
   const user = await getCurrentUser();
   if (!user) {
     return NextResponse.json({ error: "Non authentifié" }, { status: 401 });

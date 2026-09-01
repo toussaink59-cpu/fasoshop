@@ -1,4 +1,6 @@
 import { put } from "@vercel/blob";
+import { sameOrigin } from "@/lib/csrf";
+import { rateLimit, clientKey } from "@/lib/rate-limit";
 import { inspectImage } from "@/lib/safeImage";
 
 // POST /api/vendor/upload

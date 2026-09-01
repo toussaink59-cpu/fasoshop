@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/lib/csrf";
 import { createNotification } from "@/lib/notifications";
 import sql from "@/lib/db";
 import { requireVendor } from "@/lib/authHelpers";
@@ -8,6 +9,7 @@ import { sendOrderShippedEmail } from "@/lib/email/orders";
 // P0 CRITIQUE : delivered INTERDIT au vendeur (c'est le rôle du client).
 // P0 CRITIQUE : cancel après shipped INTERDIT (colis déjà en route).
 export async function PATCH(request, { params }) {
+  if (!sameOrigin(request)) return Response.json({ error: "Origine non autorisée." }, { status: 403 });
   let user;
   try {
     user = await requireVendor();

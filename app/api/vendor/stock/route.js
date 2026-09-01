@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/lib/csrf";
 import sql from "@/lib/db";
 import { requireRole } from "@/lib/auth";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
@@ -62,6 +63,7 @@ export async function GET(request) {
 
 // POST /api/vendor/stock — création produit avec validation militaire
 export async function POST(request) {
+  if (!sameOrigin(request)) return Response.json({ error: "Origine non autorisée." }, { status: 403 });
   const userId = request.headers.get("x-user-id");
   
  // 1) Vérification de rôle en DB (défense en profondeur)

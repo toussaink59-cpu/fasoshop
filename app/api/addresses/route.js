@@ -1,3 +1,4 @@
+import { sameOrigin } from "@/lib/csrf";
 // app/api/addresses/route.js
 import sql from "@/lib/db";
 import { getUserAddresses } from "@/lib/queries/addresses";
@@ -43,6 +44,7 @@ export async function GET(request) {
 
 // POST /api/addresses — création adresse avec validation militaire
 export async function POST(request) {
+  if (!sameOrigin(request)) return Response.json({ error: "Origine non autorisée." }, { status: 403 });
   const userId = request.headers.get("x-user-id");
   const userRole = request.headers.get("x-user-role");
 
