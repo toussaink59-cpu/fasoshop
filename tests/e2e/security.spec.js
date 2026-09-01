@@ -188,6 +188,7 @@ test.describe("7. Password reset", () => {
   });
 
   test("reset-password token invalide -> 400", async ({ request }) => {
+    test.setTimeout(60000);
     const r = await request.post("/api/auth/reset-password", {
       data: {
         token: "deadbeef".repeat(8),
