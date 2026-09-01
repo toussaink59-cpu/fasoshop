@@ -41,6 +41,11 @@ export default async function globalSetup() {
           created_at TIMESTAMPTZ DEFAULT NOW()
         )
       `;
+      
+      await sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS body TEXT`;
+      await sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS message TEXT`;
+      await sql`ALTER TABLE notifications ADD COLUMN IF NOT EXISTS read BOOLEAN DEFAULT FALSE`;
+      console.log("[global-setup] ✓ Colonnes notifications OK");
       console.log("[global-setup] ✓ Table notifications OK");
     } catch (e) {
       console.warn("[global-setup] ⚠ Table notifications:", e.message);
