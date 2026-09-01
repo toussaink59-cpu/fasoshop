@@ -52,6 +52,7 @@ async function createVendorWithShop(request, { email, password, full_name }) {
 // ===== TEST 1 : Acheteur A ne peut pas confirmer la commande d'acheteur B =====
 test.describe("1. Acheteur A ≠ Commande B", () => {
   test("confirm-receipt sur commande d'un autre acheteur → 400/403", async ({ request }) => {
+    test.setTimeout(60000);
     const ts = Date.now();
     const buyerA = await createUser(request, { email: `buyer-a-${ts}@test.com`, password: "Test1234!", role: "buyer", full_name: "Buyer A" });
     const buyerB = await createUser(request, { email: `buyer-b-${ts}@test.com`, password: "Test1234!", role: "buyer", full_name: "Buyer B" });

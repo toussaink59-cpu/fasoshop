@@ -35,6 +35,8 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       ALLOW_TEST_HELPERS: "1",
+      NODE_ENV: "test",
+      NODE_ENV: "test",
       PAYMENT_PROVIDER: process.env.PAYMENT_PROVIDER || "sandbox",
       JWT_SECRET: process.env.JWT_SECRET || "ci-jwt-secret-e2e",
       INTERNAL_STATUS_SECRET: process.env.INTERNAL_STATUS_SECRET || "",
