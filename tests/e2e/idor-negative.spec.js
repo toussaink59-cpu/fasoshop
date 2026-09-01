@@ -58,8 +58,9 @@ test.describe("1. Acheteur A ≠ Commande B", () => {
     const buyerB = await createUser(request, { email: `buyer-b-${ts}@test.com`, password: "Test1234!", role: "buyer", full_name: "Buyer B" });
 
     await login(request, { email: buyerB.email, password: "Test1234!" });
+    const product = await createProductForTest(request, { stock: 10 });
     const orderRes = await request.post("/api/orders", {
-      data: { items: [{ productId: 1, quantity: 1 }], phone: "+22600000000", paymentMethod: "cod", deliveryMethod: "pickup" },
+      data: { items: [{ productId: product.id, quantity: 1 }], phone: "+22600000000", paymentMethod: "cod", deliveryMethod: "pickup" },
     });
     expect(orderRes.ok(), `orderRes failed: ${await orderRes.text()}`).toBeTruthy();
     const orderData = await orderRes.json();

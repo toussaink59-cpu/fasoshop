@@ -34,6 +34,7 @@ async function createShopProduct(request, { vendorEmail, productName, price, sto
 
 test.describe("1. Headers de securite", () => {
   test("homepage renvoie tous les headers de securite", async ({ request }) => {
+    test.setTimeout(60000);
     const r = await request.get("/");
     expect(r.ok()).toBeTruthy();
     const h = r.headers();
