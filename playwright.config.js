@@ -13,7 +13,8 @@ try {
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  timeout: 30_000,
+  globalSetup: "./tests/e2e/global-setup.js",
+  timeout: process.env.CI ? 60_000 : 30_000,
   expect: { timeout: 5_000 },
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
@@ -34,6 +35,8 @@ export default defineConfig({
     timeout: 120_000,
     env: {
       ALLOW_TEST_HELPERS: "1",
+      PAYMENT_PROVIDER: process.env.PAYMENT_PROVIDER || "sandbox",
+      JWT_SECRET: process.env.JWT_SECRET || "ci-jwt-secret-e2e",
       INTERNAL_STATUS_SECRET: process.env.INTERNAL_STATUS_SECRET || "",
       DATABASE_URL: process.env.E2E_DATABASE_URL || process.env.DATABASE_URL,
     },

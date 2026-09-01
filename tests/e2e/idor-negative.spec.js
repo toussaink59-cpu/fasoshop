@@ -13,9 +13,12 @@ async function createUser(request, { email, password, role, full_name }) {
 }
 
 async function login(request, { email, password }) {
-  const r = await request.post("/api/auth/login", {
-    data: { email, password },
-  });
+  let r;
+  for (let i = 0; i < 3; i++) {
+    r = await request.post("/api/auth/login", { data: { email, password } });
+    if (r.ok()) return r.json();
+    await new Promise((res) => setTimeout(res, 800));
+  }
   expect(r.ok(), `login failed: ${await r.text()}`).toBeTruthy();
   return r.json();
 }

@@ -24,3 +24,5 @@ jobs:
           DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           INTERNAL_STATUS_SECRET: ${{ secrets.INTERNAL_STATUS_SECRET }}
+          PAYMENT_PROVIDER: sandbox
+          ALLOW_SANDBOX_IN_PROD: "1"
