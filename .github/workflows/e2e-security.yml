@@ -26,3 +26,24 @@ jobs:
           INTERNAL_STATUS_SECRET: ${{ secrets.INTERNAL_STATUS_SECRET }}
           PAYMENT_PROVIDER: sandbox
           ALLOW_SANDBOX_IN_PROD: "1"
+          PAYMENT_SANDBOX_SECRET: ci-test-secret-webhook
+          CINETPAY_WEBHOOK_SECRET: ci-test-secret-webhook
+          LIGDICASH_WEBHOOK_SECRET: ci-test-secret-webhook
+          LIGDICASH_API_KEY: ci-test-key
+          LIGDICASH_API_USER: ci-test-user
+          LIGDICASH_MODE: test
+          APP_BASE_URL: http://localhost:3001
+          PAYMENT_SANDBOX_SECRET: ci-test-secret-webhook
+          CINETPAY_WEBHOOK_SECRET: ci-test-secret-webhook
+          LIGDICASH_WEBHOOK_SECRET: ci-test-secret-webhook
+          LIGDICASH_API_KEY: ci-test-key
+          LIGDICASH_API_USER: ci-test-user
+          LIGDICASH_MODE: test
+          APP_BASE_URL: http://localhost:3001
+          PAYMENT_SANDBOX_SECRET: ci-test-secret-webhook
+          CINETPAY_WEBHOOK_SECRET: ci-test-secret-webhook
+          LIGDICASH_WEBHOOK_SECRET: ci-test-secret-webhook
+          LIGDICASH_API_KEY: ci-test-key
+          LIGDICASH_API_USER: ci-test-user
+          LIGDICASH_MODE: test
+          APP_BASE_URL: http://localhost:3001
