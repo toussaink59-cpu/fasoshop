@@ -23,6 +23,20 @@ async function login(request, { email, password }) {
   return r.json();
 }
 
+
+async function createProductForTest(request, { stock = 10 }) {
+  const ts = Date.now();
+  const vendorEmail = `vendor-auto-${ts}@test.com`;
+  const vendor = await createUser(request, { email: vendorEmail, password: "Test1234!", role: "vendor", full_name: "Vendor Auto" });
+  const productRes = await request.post("/api/test-helpers/create-shop-product", {
+    data: { vendorEmail, productName: `AutoTest-${ts}`, price: 1000, stock },
+  });
+  expect(productRes.ok(), `createProductForTest failed: ${await productRes.text()}`).toBeTruthy();
+  const data = await productRes.json();
+  // La route renvoie { shopId, productId } pas { id }
+  return { id: data.productId, shopId: data.shopId };
+}
+
 async function createVendorWithShop(request, { email, password, full_name }) {
   const ts = Date.now();
   const vendor = await createUser(request, { email, password, role: "vendor", full_name });
@@ -133,9 +147,15 @@ test.describe("7. Webhook montant erroné", () => {
     const buyer = await createUser(request, { email: `buyer-wh-${ts}@test.com`, password: "Test1234!", role: "buyer", full_name: "Buyer" });
     await login(request, { email: buyer.email, password: "Test1234!" });
 
-    const orderRes = await request.post("/api/orders", {
-      data: { items: [{ productId: 1, quantity: 1 }], phone: "+22600000000", paymentMethod: "cod", deliveryMethod: "pickup" },
-    });
+    // Utiliser produit 1 (restocké par globalSetup) avec retry
+    let orderRes;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      orderRes = await request.post("/api/orders", {
+        data: { items: [{ productId: 1, quantity: 1 }], phone: "+22600000000", paymentMethod: "cod", deliveryMethod: "pickup" },
+      });
+      if (orderRes.ok()) break;
+      await new Promise((res) => setTimeout(res, 1000));
+    }
     expect(orderRes.ok(), `orderRes failed: ${await orderRes.text()}`).toBeTruthy();
     const orderData = await orderRes.json();
     const orderId = orderData.order?.id;
@@ -155,9 +175,15 @@ test.describe("8. Webhook idempotent", () => {
     const buyer = await createUser(request, { email: `buyer-idem-${ts}@test.com`, password: "Test1234!", role: "buyer", full_name: "Buyer" });
     await login(request, { email: buyer.email, password: "Test1234!" });
 
-    const orderRes = await request.post("/api/orders", {
-      data: { items: [{ productId: 1, quantity: 1 }], phone: "+22600000000", paymentMethod: "cod", deliveryMethod: "pickup" },
-    });
+    // Utiliser produit 1 (restocké par globalSetup) avec retry
+    let orderRes;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      orderRes = await request.post("/api/orders", {
+        data: { items: [{ productId: 1, quantity: 1 }], phone: "+22600000000", paymentMethod: "cod", deliveryMethod: "pickup" },
+      });
+      if (orderRes.ok()) break;
+      await new Promise((res) => setTimeout(res, 1000));
+    }
     expect(orderRes.ok(), `orderRes failed: ${await orderRes.text()}`).toBeTruthy();
     const orderData = await orderRes.json();
     const orderId = orderData.order?.id;

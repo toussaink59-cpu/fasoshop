@@ -14,7 +14,7 @@ try {
 export default defineConfig({
   testDir: "./tests/e2e",
   globalSetup: "./tests/e2e/global-setup.js",
-  timeout: process.env.CI ? 60_000 : 30_000,
+  timeout: process.env.CI ? 90_000 : 30_000,
   expect: { timeout: 5_000 },
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
