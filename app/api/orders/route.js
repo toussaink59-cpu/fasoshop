@@ -141,30 +141,40 @@ export async function POST(request) {
   );
   const grandTotal = Math.max(0, subtotalProducts + deliveryFee);
 
-    // === PROMO CODE (validation serveur) ===
+    // === PROMO CODE : validation déplacée DANS la transaction (P1-07) ===
     let promoDiscount = 0;
     let validPromoCode = null;
-    if (promo_code && String(promo_code).trim()) {
-      const [promo] = await sql`SELECT * FROM promo_codes WHERE code = ${String(promo_code).toUpperCase()} AND active = true`;
-      if (promo && (!promo.expires_at || new Date(promo.expires_at) >= new Date()) && (!promo.max_uses || promo.used_count < promo.max_uses)) {
-        const shopSubtotal = items.reduce((sum, it) => {
-          const pp = productsMap[Number(it.productId)];
-          return pp && Number(pp.shop_id) === Number(promo.shop_id) ? sum + Number(pp.price) * it.quantity : sum;
-        }, 0);
-        if (shopSubtotal >= (promo.min_amount || 0) && shopSubtotal > 0) {
-          promoDiscount = promo.discount_type === "percent" ? Math.round(shopSubtotal * promo.discount_value / 100) : Math.min(promo.discount_value, shopSubtotal);
-          validPromoCode = promo.code;
-          await sql`UPDATE promo_codes SET used_count = used_count + 1 WHERE id = ${promo.id}`;
-        }
-      }
-    }
-    const finalTotal = Math.max(0, grandTotal - promoDiscount);
-
-
+    let finalTotal = grandTotal;
   // === Transaction atomique : commande + stock + ledger ===
   try {
     const stockChanges = [];
     const result = await sql.begin(async (tx) => {
+      // P1-07 (audit) : validation promo DANS la transaction (anti-race)
+      if (promo_code && String(promo_code).trim()) {
+        const [promo] = await tx`
+          SELECT * FROM promo_codes
+          WHERE code = ${String(promo_code).toUpperCase()}
+            AND active = true
+            AND (expires_at IS NULL OR expires_at >= NOW())
+            AND (max_uses IS NULL OR used_count < max_uses)
+          FOR UPDATE
+        `;
+        if (promo) {
+          const shopSubtotal = items.reduce((sum, it) => {
+            const pp = productsMap[Number(it.productId)];
+            return pp && Number(pp.shop_id) === Number(promo.shop_id) ? sum + Number(pp.price) * it.quantity : sum;
+          }, 0);
+          if (shopSubtotal >= (promo.min_amount || 0) && shopSubtotal > 0) {
+            promoDiscount = promo.discount_type === "percent"
+              ? Math.round(shopSubtotal * promo.discount_value / 100)
+              : Math.min(promo.discount_value, shopSubtotal);
+            validPromoCode = promo.code;
+            finalTotal = Math.max(0, grandTotal - promoDiscount);
+            await tx`UPDATE promo_codes SET used_count = used_count + 1 WHERE id = ${promo.id}`;
+          }
+        }
+      }
+
       // 1. Création commande
       const [newOrder] = await tx`
         INSERT INTO orders (buyer_id, shipping_address, phone, payment_method,
@@ -187,10 +197,17 @@ export async function POST(request) {
         `;
 
         const oldStock = p.stock_quantity;
+        // P1-05 (audit) : verrouiller la ligne produit avant UPDATE
+        const [locked] = await tx`
+          SELECT id, stock_quantity FROM products WHERE id = ${p.id} FOR UPDATE
+        `;
+        if (!locked || locked.stock_quantity < item.quantity) {
+          throw new Error(`Stock insuffisant pour "${p.name}" (concurrence)`);
+        }
         const [upd] = await tx`
           UPDATE products
           SET stock_quantity = stock_quantity - ${item.quantity}
-          WHERE id = ${p.id} AND stock_quantity >= ${item.quantity}
+          WHERE id = ${p.id}
           RETURNING id
         `;
         if (!upd) {

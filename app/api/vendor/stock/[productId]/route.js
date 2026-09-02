@@ -22,104 +22,106 @@ export async function PATCH(request, { params }) {
     const hasFlashSaleChange = Object.prototype.hasOwnProperty.call(body, "flashSaleEndsAt");
 
     if (!hasStockChange && !hasPriceChange && !hasFlashSaleChange) {
-      return Response.json(
-        { error: "Aucune modification fournie." },
-        { status: 400 }
-      );
+      return Response.json({ error: "Aucune modification fournie." }, { status: 400 });
     }
 
-    // Vérifie que le produit appartient bien à ce vendeur
-    const [product] = await sql`
-      SELECT p.id, p.name, p.price, p.stock_quantity, p.low_stock_threshold, s.vendor_id, s.name AS shop_name, u.email AS vendor_email, u.full_name AS vendor_name
-      FROM products p
-      JOIN shops s ON s.id = p.shop_id
-      JOIN users u ON u.id = s.vendor_id
-      WHERE p.id = ${productId}
-    `;
-
-    if (!product) {
-      return Response.json({ error: "Produit introuvable." }, { status: 404 });
-    }
-    if (String(product.vendor_id) !== String(userId)) {
-      return Response.json(
-        { error: "Ce produit n'appartient pas à votre boutique." },
-        { status: 403 }
-      );
-    }
-
-    if (hasPriceChange && compareAtPrice !== null && Number(compareAtPrice) <= Number(product.price)) {
-      return Response.json(
-        { error: "Le prix barré doit être supérieur au prix de vente actuel." },
-        { status: 400 }
-      );
+    if (hasPriceChange && compareAtPrice !== null && Number(compareAtPrice) <= 0) {
+      return Response.json({ error: "Le prix barré doit être positif." }, { status: 400 });
     }
 
     if (hasFlashSaleChange && flashSaleEndsAt !== null) {
       const endsAt = new Date(flashSaleEndsAt);
       if (isNaN(endsAt.getTime()) || endsAt <= new Date()) {
-        return Response.json(
-          { error: "La date de fin de vente flash doit être dans le futur." },
-          { status: 400 }
-        );
+        return Response.json({ error: "La date de fin de vente flash doit être dans le futur." }, { status: 400 });
       }
     }
 
-    let newQuantity = product.stock_quantity;
-    if (hasStockChange) {
-      newQuantity = product.stock_quantity + Number(adjustment);
-      if (newQuantity < 0) {
-        return Response.json(
-          { error: "Le stock ne peut pas être négatif." },
-          { status: 400 }
-        );
-      }
-    }
-
-    const newCompareAtPrice = hasPriceChange ? compareAtPrice : undefined;
-    // À l'activation d'une vente flash, on capture le stock actuel comme référence
-    // pour la barre "X articles restants". À la désactivation, on l'efface aussi.
-    const newFlashSaleEndsAt = hasFlashSaleChange ? flashSaleEndsAt : undefined;
-    const newFlashSaleSnapshot = hasFlashSaleChange
-      ? (flashSaleEndsAt === null ? null : newQuantity)
-      : undefined;
-
-    const [updated] = await sql`
-      UPDATE products
-      SET
-        stock_quantity = ${newQuantity},
-        compare_at_price = ${hasPriceChange ? newCompareAtPrice : sql`compare_at_price`},
-        flash_sale_ends_at = ${hasFlashSaleChange ? newFlashSaleEndsAt : sql`flash_sale_ends_at`},
-        flash_sale_stock_snapshot = ${hasFlashSaleChange ? newFlashSaleSnapshot : sql`flash_sale_stock_snapshot`},
-        updated_at = NOW()
-      WHERE id = ${productId}
-      RETURNING id, name, stock_quantity, price, compare_at_price, flash_sale_ends_at, flash_sale_stock_snapshot
-    `;
-
- // Audit log de la modification produit
-    await sql`
-      INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
-      VALUES (${userId}, 'update_product', 'product', ${productId}, ${clientKey(request)})
-    `.catch(() => {});
-
-    if (hasStockChange) {
-      await sql`
-        INSERT INTO stock_movements (product_id, type, quantity, reason, created_by)
-        VALUES (${productId}, 'adjustment', ${Number(adjustment)}, ${reason || "Ajustement manuel"}, ${userId})
+    // P1-05 (audit) : TOUT dans une transaction + FOR UPDATE sur le produit
+    // pour éviter que l'UPDATE stock n'écrase une commande concurrente.
+    const updated = await sql.begin(async (tx) => {
+      // Vérifier ownership + verrouiller la ligne produit
+      const [product] = await tx`
+        SELECT p.id, p.name, p.price, p.stock_quantity, p.low_stock_threshold, s.vendor_id, s.name AS shop_name, u.email AS vendor_email, u.full_name AS vendor_name
+        FROM products p
+        JOIN shops s ON s.id = p.shop_id
+        JOIN users u ON u.id = s.vendor_id
+        WHERE p.id = ${productId}
+        FOR UPDATE
       `;
-    }
 
-    
+      if (!product) throw Object.assign(new Error("Produit introuvable."), { code: "not_found" });
+      if (String(product.vendor_id) !== String(userId)) {
+        throw Object.assign(new Error("Ce produit n'appartient pas à votre boutique."), { code: "forbidden" });
+      }
+
+      // Validation compareAtPrice SOUS verrou (compare au prix courant)
+      if (hasPriceChange && compareAtPrice !== null && Number(compareAtPrice) <= Number(product.price)) {
+        throw Object.assign(new Error("Le prix barré doit être supérieur au prix de vente actuel."), { code: "bad_price" });
+      }
+
+      // Calcul nouveau stock (atomicité : on applique adjustment sur stock_quantity courant)
+      let newQuantity = product.stock_quantity;
+      if (hasStockChange) {
+        newQuantity = product.stock_quantity + Number(adjustment);
+        if (newQuantity < 0) {
+          throw Object.assign(new Error("Le stock ne peut pas être négatif."), { code: "negative_stock" });
+        }
+      }
+
+      const newCompareAtPrice = hasPriceChange ? compareAtPrice : undefined;
+      const newFlashSaleEndsAt = hasFlashSaleChange ? flashSaleEndsAt : undefined;
+      const newFlashSaleSnapshot = hasFlashSaleChange
+        ? (flashSaleEndsAt === null ? null : newQuantity)
+        : undefined;
+
+      const [upd] = await tx`
+        UPDATE products
+        SET
+          stock_quantity = ${newQuantity},
+          compare_at_price = ${hasPriceChange ? newCompareAtPrice : sql`compare_at_price`},
+          flash_sale_ends_at = ${hasFlashSaleChange ? newFlashSaleEndsAt : sql`flash_sale_ends_at`},
+          flash_sale_stock_snapshot = ${hasFlashSaleChange ? newFlashSaleSnapshot : sql`flash_sale_stock_snapshot`},
+          updated_at = NOW()
+        WHERE id = ${productId}
+        RETURNING id, name, stock_quantity, price, compare_at_price, flash_sale_ends_at, flash_sale_stock_snapshot
+      `;
+
+      // Audit log
+      await tx`
+        INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
+        VALUES (${userId}, 'update_product', 'product', ${productId}, ${clientKey(request)})
+      `.catch(() => {});
+
+      if (hasStockChange) {
+        await tx`
+          INSERT INTO stock_movements (product_id, type, quantity, reason, created_by)
+          VALUES (${productId}, 'adjustment', ${Number(adjustment)}, ${reason || "Ajustement manuel"}, ${userId})
+        `;
+      }
+
+      return { upd, product, newQuantity };
+    });
+
+    // Alert stock bas (hors TX, non bloquant)
     if (hasStockChange) {
       sendLowStockAlert({
-        product: { name: product.name, low_stock_threshold: product.low_stock_threshold },
-        vendor: { email: product.vendor_email, name: product.vendor_name, shopName: product.shop_name },
-        oldStock: product.stock_quantity,
-        newStock: newQuantity,
+        product: { name: updated.product.name, low_stock_threshold: updated.product.low_stock_threshold },
+        vendor: { email: updated.product.vendor_email, name: updated.product.vendor_name, shopName: updated.product.shop_name },
+        oldStock: updated.product.stock_quantity,
+        newStock: updated.newQuantity,
       }).catch(e => console.error("[lowStock] Envoi echoue:", e));
     }
 
-    return Response.json({ product: updated });
+    return Response.json({ product: updated.upd });
   } catch (err) {
+    console.error("Erreur mise à jour produit:", err);
+    if (err?.code === "not_found") return Response.json({ error: "Produit introuvable." }, { status: 404 });
+    if (err?.code === "forbidden") return Response.json({ error: "Ce produit n'appartient pas à votre boutique." }, { status: 403 });
+    if (err?.code === "bad_price") return Response.json({ error: "Le prix barré doit être supérieur au prix de vente actuel." }, { status: 400 });
+    if (err?.code === "negative_stock") return Response.json({ error: "Le stock ne peut pas être négatif." }, { status: 400 });
+    return Response.json({ error: "Erreur serveur lors de la mise à jour du produit." }, { status: 500 });
+  }
+} catch (err) {
     console.error("Erreur mise à jour produit:", err);
     return Response.json(
       { error: "Erreur serveur lors de la mise à jour du produit." },
