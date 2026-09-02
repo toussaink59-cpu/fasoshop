@@ -12,6 +12,7 @@ import {
   markFailed,
   markUnconfirmed,
 } from "@/lib/payouts";
+import { logger, generateRequestId } from "@/lib/logger";
 
 const ALLOWED_PAYMENT_METHODS = ["orange_money", "moov_money", "bank_transfer", "cash"];
 
@@ -89,6 +90,9 @@ async function finalizeLedgerPaid(ledgerId, userId, ip, { amount, method, refere
 }
 
 export async function POST(request, { params }) {
+  const requestId = generateRequestId();
+  const startTime = Date.now();
+
   const guardError = await adminGuard(request);
   if (guardError) return guardError;
 
@@ -290,9 +294,24 @@ export async function POST(request, { params }) {
       console.error('[notif] payout_paid error:', notifErr.message);
     }
 
+    logger.info("Admin payout processed", {
+      route: "/api/admin/payouts/[id]",
+      method: "POST",
+      request_id: requestId,
+      admin_id: userId,
+      reference: transactionReference,
+      duration_ms: Date.now() - startTime,
+    });
     return Response.json({ ok: true, payout: { reference: transactionReference } });
   } catch (err) {
-    console.error("[admin/payouts POST]", err.message);
+    logger.error("Admin payout failed", {
+      route: "/api/admin/payouts/[id]",
+      method: "POST",
+      request_id: requestId,
+      admin_id: userId,
+      error: err.message,
+      duration_ms: Date.now() - startTime,
+    });
     if (err.code === "already_paid") {
       return Response.json({ error: "Ce payout a déjà été payé." }, { status: 400 });
     }

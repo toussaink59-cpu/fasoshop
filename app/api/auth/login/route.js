@@ -4,8 +4,12 @@ import sql from "@/lib/db";
 import { compare } from "bcryptjs";
 import { signToken, AUTH_COOKIE_NAME } from "@/lib/auth";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
+import { logger, generateRequestId } from "@/lib/logger";
 
 export async function POST(request) {
+  const requestId = generateRequestId();
+  const startTime = Date.now();
+
   try {
     const body = await request.json();
     const { email, password } = body;
@@ -154,9 +158,23 @@ export async function POST(request) {
       VALUES (${user.id}, 'login_success', 'user', ${user.id}, ${clientKey(request)})
     `.catch(() => {});
 
+    logger.info("User logged in", {
+      route: "/api/auth/login",
+      method: "POST",
+      request_id: requestId,
+      user_id: user.id,
+      role: user.role,
+      duration_ms: Date.now() - startTime,
+    });
     return response;
   } catch (error) {
-    console.error("Erreur lors de la connexion:", error);
+    logger.error("Login failed", {
+      route: "/api/auth/login",
+      method: "POST",
+      request_id: requestId,
+      error: error.message,
+      duration_ms: Date.now() - startTime,
+    });
     return NextResponse.json(
       { error: "Erreur interne du serveur" },
       { status: 500 }

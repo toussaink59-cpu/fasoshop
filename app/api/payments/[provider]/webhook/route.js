@@ -3,8 +3,12 @@ export const runtime = "nodejs";
 import sql from "@/lib/db";
 import { getProvider } from "@/lib/payment/provider";
 import { sendMail, emailTemplates } from "@/lib/email";
+import { logger, generateRequestId } from "@/lib/logger";
 
 export async function POST(request, { params }) {
+  const requestId = generateRequestId();
+  const startTime = Date.now();
+
   const { provider: providerName } = await params;
   try {
     const provider = getProvider();
@@ -15,14 +19,27 @@ export async function POST(request, { params }) {
     const signatureHeader = request.headers.get("x-signature") || request.headers.get("x-hub-signature-256") || request.headers.get("x-ligdicash-signature") || request.headers.get("x-cinetpay-signature") || "";
     const signatureValid = await adapter.verifyWebhookSignature(rawBody, signatureHeader);
     if (!signatureValid) {
-      console.warn(`[webhook/${providerName}] Signature invalide`);
+      logger.warn("Webhook signature invalid", {
+        route: "/api/payments/" + providerName + "/webhook",
+        method: "POST",
+        request_id: requestId,
+        provider: providerName,
+        duration_ms: Date.now() - startTime,
+      });
       return Response.json({ error: "Signature invalide." }, { status: 403 });
     }
 
     const body = JSON.parse(rawBody);
     const event = await adapter.parseWebhookEvent(body);
     if (!event.transactionId) {
-      console.warn(`[webhook/${providerName}] transaction_id manquant`, body);
+      logger.warn("Webhook missing transaction_id", {
+        route: "/api/payments/" + providerName + "/webhook",
+        method: "POST",
+        request_id: requestId,
+        provider: providerName,
+        body_preview: JSON.stringify(body).slice(0, 200),
+        duration_ms: Date.now() - startTime,
+      });
       return Response.json({ error: "transaction_id manquant." }, { status: 400 });
     }
 
@@ -115,9 +132,25 @@ export async function POST(request, { params }) {
     } else {
       await sql`INSERT INTO security_audit_log (action, resource_type, resource_id, ip_address) VALUES ('payment_failed', 'payment', ${payment.id}, ${providerName})`.catch(() => {});
     }
+    logger.info("Webhook processed", {
+      route: "/api/payments/" + providerName + "/webhook",
+      method: "POST",
+      request_id: requestId,
+      provider: providerName,
+      transaction_id: event.transactionId,
+      status: newStatus,
+      duration_ms: Date.now() - startTime,
+    });
     return Response.json({ received: true, status: newStatus });
   } catch (err) {
-    console.error(`[webhook/${providerName}] Erreur:`, err);
+    logger.error("Webhook processing failed", {
+      route: "/api/payments/" + providerName + "/webhook",
+      method: "POST",
+      request_id: requestId,
+      provider: providerName,
+      error: err.message,
+      duration_ms: Date.now() - startTime,
+    });
     return Response.json({ error: "Internal error" }, { status: 500 });
   }
 }

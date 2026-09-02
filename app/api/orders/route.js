@@ -6,10 +6,14 @@ import { sendMail, emailTemplates, sendLowStockAlert, sendNewOrderToVendor } fro
 import sql from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
+import { logger, generateRequestId } from "@/lib/logger";
 
 const COMMISSION_RATE = (Number(process.env.COMMISSION_RATE_PERCENT) || 8) / 100;
 
 export async function POST(request) {
+  const requestId = generateRequestId();
+  const startTime = Date.now();
+
   if (!sameOrigin(request)) return Response.json({ error: "Origine non autorisée." }, { status: 403 });
   const user = await getCurrentUser();
   if (!user) {
@@ -334,9 +338,24 @@ export async function POST(request) {
       })
     )).catch(e => console.error("[lowStock] Envoi post-commande echoue:", e));
 
+    logger.info("Order created", {
+      route: "/api/orders",
+      method: "POST",
+      request_id: requestId,
+      user_id: user.id,
+      order_id: result.id,
+      total: result.total,
+      duration_ms: Date.now() - startTime,
+    });
     return NextResponse.json({ order: result });
   } catch (err) {
-    console.error("[orders] POST error:", err);
+    logger.error("Order creation failed", {
+      route: "/api/orders",
+      method: "POST",
+      request_id: requestId,
+      error: err.message,
+      duration_ms: Date.now() - startTime,
+    });
     return NextResponse.json(
       { error: err.message || "Erreur lors de la commande" },
       { status: 500 }
