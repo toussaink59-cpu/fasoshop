@@ -8,6 +8,9 @@ const REDIRECT_URI = process.env.NEXT_PUBLIC_SITE_URL
   ? process.env.NEXT_PUBLIC_SITE_URL + "/api/auth/google/callback"
   : "http://localhost:3000/api/auth/google/callback";
 
+// P0-04 (audit) : verification state OAuth anti-CSRF
+const STATE_COOKIE = "oauth_state";
+
 async function exchangeCodeForUser(code) {
   // 1. Échanger code contre tokens
   const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
@@ -36,9 +39,19 @@ export async function GET(request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const error = url.searchParams.get("error");
+  const receivedState = url.searchParams.get("state");
 
   if (error || !code) {
     return NextResponse.redirect(new URL("/login?error=google_denied", request.url));
+  }
+
+  // P0-04 : verification state anti-CSRF
+  const storedState = request.cookies.get(STATE_COOKIE)?.value;
+  if (!receivedState || !storedState || receivedState !== storedState) {
+    console.error("[OAuth] State mismatch ou absent - attaque CSRF probable");
+    const response = NextResponse.redirect(new URL("/login?error=invalid_state", request.url));
+    response.cookies.delete(STATE_COOKIE);
+    return response;
   }
 
   try {
@@ -93,9 +106,15 @@ export async function GET(request) {
       path: "/",
       maxAge: 7 * 24 * 60 * 60,
     });
+    
+    // P0-04 : supprimer cookie state après usage (one-time use)
+    response.cookies.delete(STATE_COOKIE);
+    
     return response;
   } catch (err) {
     console.error("Google callback error:", err);
-    return NextResponse.redirect(new URL("/login?error=google_failed", request.url));
+    const response = NextResponse.redirect(new URL("/login?error=google_failed", request.url));
+    response.cookies.delete(STATE_COOKIE);
+    return response;
   }
 }
