@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -19,30 +19,32 @@ function AdminOrdersContent() {
   const filter = searchParams.get("filter");
 
   const [orders, setOrders] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
-      const res = await fetch("/api/admin/orders");
-      if (res.status === 401 || res.status === 403) {
-        router.push("/login");
-        return;
-      }
-      if (res.ok) {
-        const data = await res.json();
-        setOrders(data.orders || []);
-      }
-      setLoading(false);
-    })();
-  }, [router]);
+  // P2-13 : pagination + filtre stagnant cote serveur
+  const loadOrders = useCallback(async (p) => {
+    setLoading(true);
+    const params = new URLSearchParams({ page: String(p), limit: "25" });
+    if (filter) params.set("filter", filter);
+    const res = await fetch("/api/admin/orders?" + params.toString());
+    if (res.status === 401 || res.status === 403) {
+      router.push("/login");
+      return;
+    }
+    if (res.ok) {
+      const data = await res.json();
+      setOrders(data.orders || []);
+      setPagination(data.pagination || null);
+    }
+    setLoading(false);
+  }, [router, filter]);
 
-  const isStagnant = (o) =>
-    ["pending", "paid"].includes(o.status) &&
-    Date.now() - new Date(o.created_at).getTime() > 3 * 24 * 60 * 60 * 1000;
+  useEffect(() => { loadOrders(page); }, [page, loadOrders]);
+  useEffect(() => { setPage(1); }, [filter]);
 
-  const shown = filter === "stagnant" ? orders.filter(isStagnant) : orders;
   const title = filter === "stagnant" ? "Commandes stagnantes (> 3 jours)" : "Toutes les commandes";
-
   const cell = { padding: "12px 16px", fontSize: "14px" };
   const th = { ...cell, textAlign: "left", fontSize: "13px", fontWeight: 600 };
 
@@ -53,13 +55,13 @@ function AdminOrdersContent() {
           ← Retour au dashboard
         </Link>
         <h1 style={{ margin: "12px 0 0", fontSize: "24px", fontWeight: 700 }}>
-          {title} ({shown.length})
+          {title} ({pagination ? pagination.total : orders.length})
         </h1>
       </div>
 
       {loading ? (
         <div style={{ padding: "40px", textAlign: "center", color: "#666" }}>Chargement…</div>
-      ) : shown.length === 0 ? (
+      ) : orders.length === 0 ? (
         <div style={{ padding: "40px", textAlign: "center", background: "#f9f9f9", borderRadius: "8px" }}>
           <p style={{ color: "#666" }}>Aucune commande trouvée</p>
         </div>
@@ -76,18 +78,16 @@ function AdminOrdersContent() {
               </tr>
             </thead>
             <tbody>
-              {shown.map((o) => (
+              {orders.map((o) => (
                 <tr key={o.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
                   <td style={cell}>#{o.id}</td>
-                  <td style={cell}>
-                    {o.user_name || o.customer_name || o.full_name || o.user?.full_name || "—"}
-                  </td>
+                  <td style={cell}>{o.buyer_name || "—"}</td>
                   <td style={cell}>
                     <span style={{
                       display: "inline-block", padding: "4px 8px", borderRadius: "4px",
                       fontSize: "12px", fontWeight: 600,
-                      background: o.status === "paid" ? "#e8f5e9" : o.status === "cancelled" ? "#fdecea" : "#fff3e0",
-                      color: o.status === "paid" ? "#2e7d32" : o.status === "cancelled" ? "#c62828" : "#f57c00",
+                      background: o.status === "paid" ? "#e8f5e9" : o.status === "cancelled" ? "#fdecea" : o.status === "delivered" ? "#e8f5e9" : "#fff3e0",
+                      color: o.status === "paid" || o.status === "delivered" ? "#2e7d32" : o.status === "cancelled" ? "#c62828" : "#f57c00",
                     }}>
                       {(ORDER_STATUS[o.status] || {}).label || o.status}
                     </span>
@@ -102,6 +102,16 @@ function AdminOrdersContent() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {pagination && (pagination.totalPages || 0) > 1 && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: 16 }}>
+          <button className="btn btn-ghost" disabled={!pagination.hasPrev || loading} onClick={() => setPage(page - 1)}>← Précédent</button>
+          <span style={{ fontSize: "0.85rem", color: "#666" }}>
+            Page {pagination.page} sur {pagination.totalPages} · {pagination.total} commandes
+          </span>
+          <button className="btn btn-ghost" disabled={!pagination.hasNext || loading} onClick={() => setPage(page + 1)}>Suivant →</button>
         </div>
       )}
     </div>

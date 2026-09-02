@@ -32,8 +32,13 @@ export async function GET(request) {
 
   const [{ count }] = await sql`SELECT COUNT(*)::int AS count FROM shops`;
 
+  // P2-13 : compteurs par statut pour les cartes stats du front
+  const statusRows = await sql`SELECT status, COUNT(*)::int AS count FROM shops GROUP BY status`;
+  const statusCounts = Object.fromEntries(statusRows.map((r) => [r.status, Number(r.count)]));
+
   return Response.json({
     shops,
+    statusCounts,
     pagination: buildPaginationMeta(page, limit, Number(count)),
   });
 }

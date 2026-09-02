@@ -99,22 +99,30 @@ export default function AdminShopsPage() {
   const [error, setError] = useState("");
   const [updatingShopId, setUpdatingShopId] = useState(null);
 
+  const [page, setPage] = useState(1);
+  const [pagination, setPagination] = useState(null);
+  const [statusCounts, setStatusCounts] = useState({});
   const [inspectingShop, setInspectingShop] = useState(null);
   const [rejectingShop, setRejectingShop] = useState(null);
   const [rejectReason, setRejectReason] = useState("");
 
-  const loadShops = useCallback(async () => {
-    const res = await fetch("/api/admin/shops");
+  const loadShops = useCallback(async (p) => {
+    const res = await fetch("/api/admin/shops?page=" + p + "&limit=25");
     if (res.status === 401 || res.status === 403) { router.push("/login"); return; }
     const data = await res.json();
     setShops(data.shops || []);
+    setPagination(data.pagination || null);
+    setStatusCounts(data.statusCounts || {});
     setLoading(false);
   }, [router]);
+
+  // P2-13 : chargement pagine
+  useEffect(() => { loadShops(page); }, [page, loadShops]);
 
   useEffect(() => {
     fetch("/api/auth/me").then((r) => r.json()).then((data) => {
       if (!data.user || data.user.role !== "admin") { router.push("/login"); return; }
-      setUser(data.user); loadShops();
+      setUser(data.user);
     });
   }, [loadShops, router]);
 
@@ -130,7 +138,7 @@ export default function AdminShopsPage() {
     const data = await res.json();
     setUpdatingShopId(null);
     if (!res.ok) { setError(data.error || "Erreur lors de la validation."); return; }
-    setInspectingShop(null); loadShops();
+    setInspectingShop(null); loadShops(page);
   }
 
   async function handleReject(shopId, reason) {
@@ -140,7 +148,7 @@ export default function AdminShopsPage() {
     const data = await res.json();
     setUpdatingShopId(null);
     if (!res.ok) { setError(data.error || "Erreur lors du rejet."); return; }
-    setInspectingShop(null); setRejectingShop(null); setRejectReason(""); loadShops();
+    setInspectingShop(null); setRejectingShop(null); setRejectReason(""); loadShops(page);
   }
 
   async function handleSuspend(shopId) {
@@ -150,7 +158,7 @@ export default function AdminShopsPage() {
     const data = await res.json();
     setUpdatingShopId(null);
     if (!res.ok) { setError(data.error || "Erreur."); return; }
-    setInspectingShop(null); loadShops();
+    setInspectingShop(null); loadShops(page);
   }
 
   async function handleLogout() {
@@ -158,8 +166,10 @@ export default function AdminShopsPage() {
     router.push("/login");
   }
 
-  const pendingShopsCount = shops.filter((s) => s.status === "pending").length;
-  const activeShopsCount = shops.filter((s) => s.status === "active").length;
+  // P2-13 : compteurs globaux fournis par l'API (pas seulement la page courante)
+  const pendingShopsCount = Number(statusCounts.pending || 0);
+  const activeShopsCount = Number(statusCounts.active || 0);
+  const totalShopsCount = Number(pagination ? pagination.total : shops.length);
 
   return (
     <div className="shell">
@@ -183,7 +193,7 @@ export default function AdminShopsPage() {
         <div className="vendor-stats-grid">
           <div className="vendor-stat-card">
             <div className="vendor-stat-icon" style={{ color: "var(--gold-600)" }}><StoreIcon size={28} /></div>
-            <div className="vendor-stat-value">{shops.length}</div>
+            <div className="vendor-stat-value">{totalShopsCount}</div>
             <div className="vendor-stat-label">Boutiques totales</div>
           </div>
           <div className="vendor-stat-card">
@@ -291,6 +301,16 @@ export default function AdminShopsPage() {
           )}
         </div>
       </div>
+
+      {!loading && pagination && (pagination.totalPages || 0) > 1 && (
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: 16 }}>
+          <button className="btn btn-ghost" disabled={!pagination.hasPrev} onClick={() => setPage(Math.max(1, page - 1))}>← Précédent</button>
+          <span style={{ fontSize: "0.85rem", color: "var(--ink-400)" }}>
+            Page {pagination.page} sur {pagination.totalPages} · {pagination.total} boutiques
+          </span>
+          <button className="btn btn-ghost" disabled={!pagination.hasNext} onClick={() => setPage(page + 1)}>Suivant →</button>
+        </div>
+      )}
 
       <DocumentModal
         shop={inspectingShop} onClose={() => setInspectingShop(null)}
