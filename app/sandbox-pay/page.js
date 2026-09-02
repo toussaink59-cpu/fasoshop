@@ -2,6 +2,7 @@
 "use client";
 
 import { useSearchParams, useRouter } from "next/navigation";
+import { useToast } from "@/lib/toast";
 import { Suspense } from "react";
 
 function SandboxPayContent() {
@@ -27,13 +28,13 @@ function SandboxPayContent() {
 
       if (!res.ok) {
         const data = await res.json();
-        alert("Erreur simulation : " + (data.error || res.status));
+        toast.error("Erreur simulation : " + (data.error || res.status));
         return;
       }
 
       router.push(returnUrl || "/orders");
     } catch (err) {
-      alert("Erreur simulation : " + err.message);
+      toast.error("Erreur simulation : " + err.message);
     }
   }
 
@@ -68,6 +69,7 @@ function SandboxPayContent() {
 }
 
 export default function SandboxPayPage() {
+  const toast = useToast();
   return (
     <Suspense fallback={<div className="shell"><p>Chargement...</p></div>}>
       <SandboxPayContent />

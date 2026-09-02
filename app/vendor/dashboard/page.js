@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useToast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import VendorBottomNav from "@/app/components/VendorBottomNav";
@@ -26,6 +27,7 @@ function parseImages(raw) {
 }
 
 export default function VendorDashboard() {
+  const toast = useToast();
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [products, setProducts] = useState([]);
@@ -1047,7 +1049,7 @@ export default function VendorDashboard() {
                         </div>
 
                         <div className="vendor-action-group">
-                          <button className="btn btn-ghost" onClick={() => { navigator.share ? navigator.share({ title: p.name, text: p.name + " — " + Number(p.price).toLocaleString("fr-FR") + " FCFA sur Kimoxa", url: window.location.origin + "/shop/" + p.id }) : navigator.clipboard.writeText(window.location.origin + "/shop/" + p.id).then(() => alert("Lien copié !")); }} style={{ display: "flex", alignItems: "center", gap: 4 }}>📲 Partager</button>
+                          <button className="btn btn-ghost" onClick={() => { navigator.share ? navigator.share({ title: p.name, text: p.name + " — " + Number(p.price).toLocaleString("fr-FR") + " FCFA sur Kimoxa", url: window.location.origin + "/shop/" + p.id }) : navigator.clipboard.writeText(window.location.origin + "/shop/" + p.id).then(() => toast.success("Lien copié !")); }} style={{ display: "flex", alignItems: "center", gap: 4 }}>📲 Partager</button>
               <button className="btn btn-danger" onClick={() => handleDeleteProduct(p.id, p.name)} style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <TrashIcon size={14} /> Supprimer le produit
                           </button>

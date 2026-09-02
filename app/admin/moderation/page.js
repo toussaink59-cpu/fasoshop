@@ -1,6 +1,7 @@
 "use client";
 
 import { RocketIcon, StarIcon } from "@/app/components/Icons";
+import { useToast } from "@/lib/toast";
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";

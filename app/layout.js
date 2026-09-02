@@ -1,5 +1,6 @@
-﻿import "./globals.css";
+import "./globals.css";
 import { Fraunces, Work_Sans, IBM_Plex_Mono } from "next/font/google";
+import { ToastProvider } from "@/lib/toast";
 import Script from "next/script";
 import ServiceWorker from "@/app/components/ServiceWorker";
 import PwaInstallPrompt from "@/app/components/PwaInstallPrompt";
@@ -71,10 +72,12 @@ export default function RootLayout({ children }) {
             src="https://plausible.io/js/script.js"
           />
         )}
-        {children}
-            <NotificationBell />
+        <ToastProvider>
+          {children}
+        </ToastProvider>
+        <NotificationBell />
         <WhatsAppFloat />
-    </body>
+      </body>
     </html>
   );
 }

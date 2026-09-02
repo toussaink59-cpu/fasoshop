@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useToast } from "@/lib/toast";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import AdminBottomNav from "@/app/components/AdminBottomNav";
@@ -97,6 +98,7 @@ export default function AdminShopsPage() {
   const [shops, setShops] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const toast = useToast();
   const [updatingShopId, setUpdatingShopId] = useState(null);
 
   const [page, setPage] = useState(1);
@@ -139,6 +141,7 @@ export default function AdminShopsPage() {
     setUpdatingShopId(null);
     if (!res.ok) { setError(data.error || "Erreur lors de la validation."); return; }
     setInspectingShop(null); loadShops(page);
+    toast.success("Boutique mise à jour");
   }
 
   async function handleReject(shopId, reason) {

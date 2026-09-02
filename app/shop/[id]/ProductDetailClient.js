@@ -1,6 +1,7 @@
 ﻿"use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useToast } from "@/lib/toast";
 import Link from "next/link";
 import Image from "next/image";
 import { addToCart } from "@/lib/cart";
@@ -26,11 +27,12 @@ async function startConversation(productId) {
   if (res.status === 401) { window.location.href = "/login"; return; }
   const data = await res.json();
   if (res.ok) window.location.href = `/messages/${data.conversationId}`;
-  else alert(data.error || "Impossible de contacter le vendeur.");
+  else toast.error(data.error || "Impossible de contacter le vendeur.");
 }
 
 export default function ProductDetailClient({ id, product, initialReviews, initialUser, categories }) {
   const [reviews, setReviews] = useState(initialReviews);
+  const toast = useToast();
   const [justAdded, setJustAdded] = useState(false);
   const [rating, setRating] = useState(5);
   const [comment, setComment] = useState("");

@@ -1,6 +1,7 @@
 "use client";
 
 import { MapPinIcon } from "@/app/components/Icons";
+import { useToast } from "@/lib/toast";
 import { useState } from "react";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
@@ -112,6 +113,7 @@ export default function AddressesClient({ initialUser, categories, initialAddres
 
   async function handleDelete(id) {
     if (!window.confirm("Supprimer cette adresse ?")) return;
+    // P2-15 : toast après suppression réussie (ci-dessous)
     setError("");
     const res = await fetch(`/api/addresses/${id}`, { method: "DELETE" });
     if (!res.ok) {

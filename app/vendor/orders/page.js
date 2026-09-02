@@ -1,6 +1,7 @@
 "use client";
 
 import { MessageCircleIcon, LockIcon, MailIcon, MapPinIcon, PhoneIcon, SmartphoneIcon, CheckCircleIcon, ArrowRightIcon, XCircleIcon, BanknoteIcon } from "@/app/components/Icons";
+import { useToast } from "@/lib/toast";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";

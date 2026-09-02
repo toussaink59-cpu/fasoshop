@@ -1,6 +1,9 @@
 "use client";
 
+import { useToast } from "@/lib/toast";
+
 export default function ShareKimoxaFooter() {
+  const toast = useToast();
   const handleClick = (e) => {
     e.preventDefault();
     const url = typeof window !== "undefined" ? window.location.origin : "";
@@ -8,7 +11,7 @@ export default function ShareKimoxaFooter() {
     if (navigator.share) {
       navigator.share({ title: "Kimoxa", text, url }).catch(() => {});
     } else {
-      navigator.clipboard.writeText(url).then(() => alert("Lien copié !")).catch(() => {});
+      navigator.clipboard.writeText(url).then(() => toast.success("Lien copié !")).catch(() => {});
     }
   };
   return (
