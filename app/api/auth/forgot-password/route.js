@@ -74,8 +74,18 @@ export async function POST(request) {
     const firstName = (user.full_name || "").split(" ")[0] || "Client";
 
     if (!resend) {
-      console.warn("[DIAGNOSTIC_EMAIL] RESEND_API_KEY absente sur Vercel prod - email simule, non envoye");
-    console.warn("[forgot-password] RESEND_API_KEY non configure. Token:", rawToken);
+      // P0-01 (audit) : le token brut ne doit JAMAIS apparaitre dans les logs,
+      // meme en dev. En non-prod, canal dev/test propre via la reponse JSON
+      // (devResetUrl) au lieu des logs. En prod : reponse generique identique
+      // au cas "email inconnu" (anti-enumeration).
+      console.warn("[forgot-password] RESEND_API_KEY non configure - email non envoye");
+      if (process.env.NODE_ENV !== "production") {
+        return Response.json({
+          ok: true,
+          message: "Si cet email est associe a un compte, un lien de reinitialisation a ete envoye.",
+          devResetUrl: resetUrl,
+        });
+      }
       return genericResponse;
     }
 
