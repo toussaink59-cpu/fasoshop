@@ -156,9 +156,12 @@ export async function GET() {
       },
     });
   } catch (err) {
+    // P1-09 (audit) : ne JAMAIS exposer err.message dans la reponse JSON
+    // (information disclosure - requetes SQL, noms de colonnes, etc.)
+    // Le log complet reste cote serveur pour debugging.
     console.error("[vendor/revenue] GET error:", err);
     return NextResponse.json(
-      { error: "Erreur serveur", detail: String(err?.message || err) },
+      { error: "Erreur serveur." },
       { status: 500 }
     );
   }
