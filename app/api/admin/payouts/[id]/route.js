@@ -40,14 +40,7 @@ async function finalizeLedgerPaid(ledgerId, userId, ip, { amount, method, refere
       VALUES (${ledgerId}, ${userId}, ${amount}, ${method}, ${reference}, ${notes || null}, ${ip})
     `;
 
-    // Clôture les demandes de reversement de la boutique (cohérence escrow)
-    await tx`
-      UPDATE payout_requests
-      SET status = 'paid', processed_at = NOW(), processed_by = ${userId}
-      WHERE shop_id = ${ledger.shop_id} AND status IN ('pending', 'approved')
-    `;
-
-    // Clôture les demandes de reversement de la boutique (cohérence escrow)
+    // P0-02 (audit) : cloture UNIQUE des demandes de reversement (suppression du doublon)
     await tx`
       UPDATE payout_requests
       SET status = 'paid', processed_at = NOW(), processed_by = ${userId}
@@ -228,14 +221,7 @@ export async function POST(request, { params }) {
         VALUES (${userId}, 'payout_paid_manual', 'payout', ${ledgerId}, ${ip})
       `.catch(() => {});
 
-      // Clôture les demandes de reversement de la boutique
-      await tx`
-        UPDATE payout_requests
-        SET status = 'paid', processed_at = NOW(), processed_by = ${userId}
-        WHERE shop_id = ${ledger.shop_id} AND status IN ('pending', 'approved')
-      `;
-
-      // Clôture les demandes de reversement de la boutique
+      // P0-02 (audit) : cloture UNIQUE des demandes de reversement
       await tx`
         UPDATE payout_requests
         SET status = 'paid', processed_at = NOW(), processed_by = ${userId}
@@ -253,7 +239,7 @@ export async function POST(request, { params }) {
             userId: vendorUser.id,
             type: 'payout_paid',
             title: 'Reversement envoyé',
-            body: Number(amount || ledger.payout_amount || 0).toLocaleString('fr-FR') + ' FCFA versés sur votre Mobile Money',
+            body: Number(amountPaid || ledger.payout_amount || 0).toLocaleString('fr-FR') + ' FCFA versés sur votre Mobile Money',
             link: '/vendor/revenue',
             data: { ledgerId: ledger.id },
           });
