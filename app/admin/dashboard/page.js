@@ -310,6 +310,11 @@ export default function AdminDashboard() {
           </section>
         )}
 
+        {/* ============ 6. ANALYTIQUE ============ */}
+        <section>
+          <SectionLabel>Analytique</SectionLabel>
+          <AdminAnalytics />
+        </section>
         {/* ============ 5. VENTES RÉCENTES ============ */}
         <section style={{ marginBottom: 24 }}>
           <SectionLabel>Ventes récentes</SectionLabel>
@@ -367,11 +372,6 @@ export default function AdminDashboard() {
           )}
         </section>
 
-        {/* ============ 6. ANALYTIQUE ============ */}
-        <section>
-          <SectionLabel>Analytique</SectionLabel>
-          <AdminAnalytics />
-        </section>
       </div>
       <AdminBottomNav pendingShopsCount={pendingShopsCount} pendingModerationCount={pendingModerationCount} />
     </div>
