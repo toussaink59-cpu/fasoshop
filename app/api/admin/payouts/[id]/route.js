@@ -8,6 +8,9 @@ import {
   prepareAttempt,
   sendPayout,
   checkPayoutStatus,
+  markSucceeded,
+  markFailed,
+  markUnconfirmed,
 } from "@/lib/payouts";
 
 const ALLOWED_PAYMENT_METHODS = ["orange_money", "moov_money", "bank_transfer", "cash"];
@@ -18,10 +21,13 @@ function sanitize(str, maxLength = 200) {
 }
 
 // Finalise le payout côté DB (transaction courte, sans appel réseau dedans)
-async function finalizeLedgerPaid(ledgerId, userId, ip, { amount, method, reference, notes }) {
+// P0-03 (audit) : atomicite complete - markSucceeded DANS la transaction
+// pour eviter l'incoherence "argent parti mais ledger non paye"
+async function finalizeLedgerPaid(ledgerId, userId, ip, { amount, method, reference, notes, idempotencyKey }) {
   return sql.begin(async (tx) => {
     const [ledger] = await tx`
-      SELECT id, payout_status, shop_id FROM shop_commission_ledger
+      SELECT id, payout_status, shop_id, payout_amount
+      FROM shop_commission_ledger
       WHERE id = ${ledgerId}
       FOR UPDATE
     `;
@@ -29,27 +35,55 @@ async function finalizeLedgerPaid(ledgerId, userId, ip, { amount, method, refere
     if (ledger.payout_status === "paid") throw Object.assign(new Error("already_paid"), { code: "already_paid" });
     if (ledger.payout_status !== "released") throw Object.assign(new Error("Payout non disponible."), { code: "bad_status" });
 
+    // Verification montant (tolerance 1%)
+    const expected = Number(ledger.payout_amount);
+    if (Math.abs(amount - expected) / expected > 0.01) {
+      throw Object.assign(new Error("Montant incoherent."), { code: "amount_mismatch" });
+    }
+
+    // 1) Marquer payout_attempts = succeeded (atomicite avec ledger)
+    if (idempotencyKey) {
+      await tx`
+        UPDATE payout_attempts
+        SET status = 'succeeded', provider_reference = ${reference}, error_message = NULL, updated_at = NOW()
+        WHERE idempotency_key = ${idempotencyKey}
+      `;
+    }
+
+    // 2) Marquer ledger = paid
     await tx`
       UPDATE shop_commission_ledger
       SET payout_status = 'paid', payout_paid_at = NOW()
       WHERE id = ${ledgerId}
     `;
+
+    // 3) Inserer transaction admin
     await tx`
       INSERT INTO admin_payout_transactions
         (ledger_id, admin_id, amount_paid, payment_method, transaction_reference, notes, ip_address)
       VALUES (${ledgerId}, ${userId}, ${amount}, ${method}, ${reference}, ${notes || null}, ${ip})
     `;
 
-    // P0-02 (audit) : cloture UNIQUE des demandes de reversement (suppression du doublon)
-    await tx`
-      UPDATE payout_requests
-      SET status = 'paid', processed_at = NOW(), processed_by = ${userId}
+    // 4) Cloturer payout_requests du shop (uniquement si somme <= montant paye)
+    const [reqSum] = await tx`
+      SELECT COALESCE(SUM(amount), 0)::int AS sum
+      FROM payout_requests
       WHERE shop_id = ${ledger.shop_id} AND status IN ('pending', 'approved')
     `;
+    if ((reqSum?.sum || 0) <= amount) {
+      await tx`
+        UPDATE payout_requests
+        SET status = 'paid', processed_at = NOW(), processed_by = ${userId}
+        WHERE shop_id = ${ledger.shop_id} AND status IN ('pending', 'approved')
+      `;
+    }
+
+    // 5) Audit log
     await tx`
       INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
-      VALUES (${userId}, 'payout_paid_auto', 'payout', ${ledgerId}, ${ip})
+      VALUES (${userId}, 'payout_paid_atomic', 'payout', ${ledgerId}, ${ip})
     `.catch(() => {});
+
     return true;
   });
 }
@@ -150,15 +184,22 @@ export async function POST(request, { params }) {
         description: `Payout Kimoxa #${ledgerId}`,
       });
 
+      // P0-03 : succes fournisseur = TOUJOURS appeler finalizeLedgerPaid avec idempotencyKey
+      // Si echec DB, markSucceeded a deja ete fait dans la transaction, donc on peut retry
       if (sent.status === "succeeded") {
         try {
           await finalizeLedgerPaid(ledgerId, userId, ip, {
             amount: v.amount, method: provider, reference: sent.reference, notes: null,
+            idempotencyKey: prep.idempotencyKey,
           });
         } catch (e) {
-          // Argent parti mais DB non finalisée → alerte admin, ne jamais renvoyer
-          console.error("[payout] SUCCÈS FOURNISSEUR MAIS ÉCHEC DB :", ledgerId, sent.reference);
-          return Response.json({ error: "Paiement envoyé; régularisation interne en cours (ne pas renvoyer)." }, { status: 409 });
+          // Si already_paid, c'est OK (idempotence)
+          if (e?.code === "already_paid") {
+            return Response.json({ ok: true, payout: { reference: sent.reference, idempotent: true } });
+          }
+          // Sinon, alerter mais ne pas renvoyer 500 (l'argent est parti)
+          console.error("[payout] finalizeLedgerPaid error (ledger=" + ledgerId + ", ref=" + sent.reference + "):", e.message);
+          return Response.json({ error: "Paiement envoyé; régularisation DB en cours. Ne pas renvoyer.", reference: sent.reference }, { status: 500 });
         }
         return Response.json({ ok: true, payout: { reference: sent.reference } });
       }
