@@ -1,10 +1,11 @@
+import CategoryTiles from "@/app/components/CategoryTiles";
 import TrustStrip from "@/app/components/TrustStrip";
 import RoleRedirect from "@/app/components/RoleRedirect";
 import { redirect } from "next/navigation";
 import { getCategoriesTree } from "@/lib/queries/categories";
 import { getCurrentUser } from "@/lib/session";
 import { getActiveFlashSales } from "@/lib/queries/flashSales";
-import { getNewArrivals } from "@/lib/queries/homepage";
+import { getNewArrivals, getBestSellers, getTopRated } from "@/lib/queries/homepage";
 import { getProducts } from "@/lib/queries/products";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
@@ -24,7 +25,7 @@ export const metadata = {
 };
 
 export default async function HomePage() {
-  let categories, user, flashSales, newArrivals;
+  let categories, user, flashSales, newArrivals, bestSellers;
   try {
     [categories, user, flashSales, newArrivals] = await Promise.all([
     getCategoriesTree(),
@@ -32,6 +33,14 @@ export default async function HomePage() {
     getActiveFlashSales(),
     getNewArrivals(),
     ]);
+    // Anti-répétition : jamais de produits déjà présents dans Nouveautés
+    if (!Array.isArray(bestSellers) || bestSellers.length === 0) {
+      try {
+        const top = await getTopRated(8);
+        const newArrIds = new Set((newArrivals || []).map((x) => x.id));
+        bestSellers = (top || []).filter((x) => !newArrIds.has(x.id));
+      } catch { bestSellers = []; }
+    }
   } catch (err) {
     console.error('[page.js] Erreur chargement données accueil:', err.message);
     // Fallback : valeurs par défaut pour permettre le démarrage
@@ -39,6 +48,7 @@ export default async function HomePage() {
     user = null;
     flashSales = [];
     newArrivals = [];
+    bestSellers = [];
   }
 
   // Redirection automatique selon le role (PWA, bookmark, lien direct)
@@ -71,6 +81,7 @@ export default async function HomePage() {
 
       <HeroCarousel featuredProducts={newArrivals} />
 
+      <CategoryTiles />
 
       <TrustStrip />
 
@@ -81,6 +92,14 @@ export default async function HomePage() {
         icon={null}
         seeAllHref={null}
         products={newArrivals}
+        user={user}
+      />
+
+      <HorizontalProductSection
+        title="Meilleures ventes"
+        icon={null}
+        seeAllHref="/shop?sort=popular"
+        products={bestSellers}
         user={user}
       />
 

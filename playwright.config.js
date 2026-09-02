@@ -32,7 +32,7 @@ export default defineConfig({
     command: "npm run dev -- -p 3001",
     url: "http://localhost:3001",
     reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
+    timeout: 300_000,
     env: {
       ALLOW_TEST_HELPERS: "1",
       NODE_ENV: "test",

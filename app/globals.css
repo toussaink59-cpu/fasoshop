@@ -1,4 +1,5 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
+﻿@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
 
 :root {
   --ink-900: #241712;
@@ -7400,3 +7401,148 @@ main {
 @media (prefers-reduced-motion: reduce) {
   .skeleton { animation: none; }
 }
+
+
+/* =====================================================
+   RE-SKIN PRO MARKETPLACE (structure ancienne conservee)
+   Palette : navy #0d1220 / blanc chaud #f7f5f2 / or #d4af37 / orange #e8590c
+   ===================================================== */
+body { background: #f7f5f2 !important; font-family: Inter, ui-sans-serif, system-ui, sans-serif !important; }
+h1, h2, h3, h4 { font-family: Inter, ui-sans-serif, system-ui, sans-serif !important; font-weight: 800 !important; letter-spacing: -0.02em !important; color: #0d1220 !important; }
+
+/* --- Header navy pro --- */
+.site-header { background: #0d1220 !important; border-bottom: 1px solid rgba(212, 175, 55, 0.25) !important; }
+.site-header-logo svg, .site-header-logo svg * { fill: #d4af37 !important; stroke: #d4af37 !important; }
+.site-header-logo span, .site-header-logo div { color: #d4af37 !important; }
+.btn-header-link {
+  background: transparent !important;
+  color: #fff !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  border-radius: 999px !important;
+  padding: 8px 16px !important;
+  font-weight: 600 !important;
+}
+.btn-header-link:hover { color: #d4af37 !important; border-color: #d4af37 !important; }
+.site-header-icon-btn { color: #fff !important; background: rgba(255, 255, 255, 0.08) !important; border-radius: 10px !important; }
+.site-header-icon-btn:hover { color: #d4af37 !important; }
+.site-header-badge { background: #d4af37 !important; color: #0d1220 !important; }
+.search-bar-standalone {
+  background: #fff !important;
+  border: none !important;
+  border-radius: 999px !important;
+  height: 40px !important;
+}
+.search-bar-standalone input { background: transparent !important; color: #0d1220 !important; }
+
+/* --- Trust strip pro --- */
+.trust-item { background: #fff !important; border: 1px solid #e7e3da !important; border-radius: 12px !important; }
+.trust-item-icon { background: #f7ecd2 !important; color: #a1730f !important; }
+.trust-item-title { color: #0d1220 !important; font-family: Inter, sans-serif !important; }
+
+/* --- Cartes produits pro : plus grandes, epurees --- */
+.home-hscroll-item { min-width: 210px; }
+.shop-card {
+  background: #fff !important;
+  border: 1px solid #e7e3da !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.shop-card:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(13, 18, 32, 0.08); }
+.shop-card-image-wrap { background: #f4f1ea !important; border-radius: 10px !important; }
+.shop-card-image-wrap img, .shop-card-image { height: 200px !important; object-fit: cover !important; }
+.shop-card-name, .shop-card .name {
+  font-family: Inter, sans-serif !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  color: #0d1220 !important;
+}
+.shop-card-condition { background: #f0ece5 !important; color: #5a5148 !important; }
+.shop-card [class*="price"]:not([class*="old"]):not([class*="was"]) { color: #e8590c !important; font-weight: 800 !important; }
+.shop-card .btn.btn-primary, .shop-card button.btn {
+  background: #0d1220 !important;
+  color: #fff !important;
+  border: none !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+}
+.shop-card .btn.btn-primary:hover, .shop-card button.btn:hover { background: #d4af37 !important; color: #0d1220 !important; }
+
+/* --- Hero CTA or pro --- */
+[class*="cta"] { background: #d4af37 !important; color: #241712 !important; font-weight: 800 !important; border-radius: 9px !important; }
+[class*="cta"]:hover { background: #e3c34f !important; }
+
+
+/* === 3 SECTIONS = 3 COULEURS DIFFERENTES === */
+/* 1) Pills catégories : BLANC + active NAVY */
+.pill-bar {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e7e3da !important;
+}
+.pill-bar-head {
+  background: #fff !important;
+  border: 1px solid #e2ddd2 !important;
+  color: #0d1220 !important;
+  font-weight: 600 !important;
+}
+.pill-bar-head.active, .pill-bar-head[class*="active"], .pill-bar-head[class*="selected"] {
+  background: #0d1220 !important;
+  color: #fff !important;
+  border-color: #0d1220 !important;
+}
+
+/* 2) Hero carrousel : CREME chaud */
+[class*="hero"] {
+  background: linear-gradient(135deg, #f4efe6, #efe6d8) !important;
+}
+
+/* 3) Bandeau confiance : NAVY + or */
+.trust-strip-wrap {
+  background: #0d1220 !important;
+  border-radius: 14px !important;
+  padding: 14px !important;
+}
+.trust-item {
+  background: #121828 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+.trust-item-title { color: #fff !important; }
+.trust-item-desc { color: rgba(255, 255, 255, 0.68) !important; }
+.trust-item-icon {
+  background: rgba(212, 175, 55, 0.15) !important;
+  color: #d4af37 !important;
+}
+
+
+/* === MOBILE PRO : active navy + bottom nav navy === */
+.pill-bar:first-child { background: #0d1220 !important; color: #fff !important; }
+
+.bottom-nav {
+  background: #0d1220 !important;
+  border-top: 1px solid rgba(212, 175, 55, 0.25) !important;
+}
+.bottom-nav-item { color: rgba(255, 255, 255, 0.65) !important; }
+.bottom-nav-item.is-active { color: #d4af37 !important; }
+.bottom-nav-badge { background: #d4af37 !important; color: #0d1220 !important; }
+
+
+/* === FIX PILLS : active navy + bottom navy === */
+.pill-bar { background: #ffffff !important; border-bottom: 1px solid #e7e3da !important; }
+.pill {
+  background: #fff !important;
+  border: 1px solid #e2ddd2 !important;
+  color: #0d1220 !important;
+  font-weight: 600 !important;
+}
+.pill.is-active, .pill[class*="active"] {
+  background: #0d1220 !important;
+  color: #fff !important;
+  border-color: #0d1220 !important;
+}
+.bottom-nav {
+  background: #0d1220 !important;
+  border-top: 1px solid rgba(212, 175, 55, 0.25) !important;
+}
+.bottom-nav-item { color: rgba(255, 255, 255, 0.65) !important; }
+.bottom-nav-item.is-active { color: #d4af37 !important; }
+.bottom-nav-badge { background: #d4af37 !important; color: #0d1220 !important; }

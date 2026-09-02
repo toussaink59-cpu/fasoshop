@@ -90,7 +90,7 @@ export default function SearchBar({ initialValue = "", autoFocus = false }) {
           autoFocus={autoFocus}
           onChange={(e) => setValue(e.target.value)}
           onFocus={() => setOpen(true)}
-          placeholder="Rechercher un produit, une boutique..."
+          placeholder="Rechercher un produit, une marque..."
           aria-label="Rechercher sur Kimoxa"
         />
       </form>
