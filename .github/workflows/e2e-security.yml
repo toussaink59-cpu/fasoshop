@@ -1,11 +1,14 @@
-﻿name: "E2E Security Tests"
+name: "E2E Security Tests"
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+
 env:
   ALLOW_TEST_HELPERS: "1"
+  NODE_ENV: "test"
+
 jobs:
   e2e-security:
     name: "Playwright Security Suite"
@@ -13,37 +16,46 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "npm"
+
       - run: npm ci
-      - run: npx playwright install chromium --with-deps
-      - run: npx playwright test
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+
+      - name: Run Playwright tests
+        run: npx playwright test
         env:
+          # DB
           DATABASE_URL: ${{ secrets.E2E_DATABASE_URL }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           INTERNAL_STATUS_SECRET: ${{ secrets.INTERNAL_STATUS_SECRET }}
+          CRON_SECRET: ci-test-cron-secret
+
+          # Payment sandbox
           PAYMENT_PROVIDER: sandbox
           ALLOW_SANDBOX_IN_PROD: "1"
           PAYMENT_SANDBOX_SECRET: ci-test-secret-webhook
+
+          # Webhooks
           CINETPAY_WEBHOOK_SECRET: ci-test-secret-webhook
           LIGDICASH_WEBHOOK_SECRET: ci-test-secret-webhook
           LIGDICASH_API_KEY: ci-test-key
           LIGDICASH_API_USER: ci-test-user
           LIGDICASH_MODE: test
+
+          # OAuth Google (dummy en CI)
+          GOOGLE_CLIENT_ID: ci-test-google-client-id
+          GOOGLE_CLIENT_SECRET: ci-test-google-client-secret
+
+          # URLs
           APP_BASE_URL: http://localhost:3001
-          PAYMENT_SANDBOX_SECRET: ci-test-secret-webhook
-          CINETPAY_WEBHOOK_SECRET: ci-test-secret-webhook
-          LIGDICASH_WEBHOOK_SECRET: ci-test-secret-webhook
-          LIGDICASH_API_KEY: ci-test-key
-          LIGDICASH_API_USER: ci-test-user
-          LIGDICASH_MODE: test
-          APP_BASE_URL: http://localhost:3001
-          PAYMENT_SANDBOX_SECRET: ci-test-secret-webhook
-          CINETPAY_WEBHOOK_SECRET: ci-test-secret-webhook
-          LIGDICASH_WEBHOOK_SECRET: ci-test-secret-webhook
-          LIGDICASH_API_KEY: ci-test-key
-          LIGDICASH_API_USER: ci-test-user
-          LIGDICASH_MODE: test
-          APP_BASE_URL: http://localhost:3001
+          NEXT_PUBLIC_APP_URL: http://localhost:3001
+          NEXT_PUBLIC_SITE_URL: http://localhost:3001
+
+          # Business
+          COMMISSION_RATE_PERCENT: 8
