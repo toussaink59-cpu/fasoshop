@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 import { sameOrigin } from "@/lib/csrf";
 import { createNotification } from "@/lib/notifications";
 import { sendMail, emailTemplates, sendLowStockAlert, sendNewOrderToVendor } from "@/lib/email";
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
@@ -32,6 +32,14 @@ export async function POST(request) {
   // === Validation des entrées ===
   if (!Array.isArray(items) || items.length === 0) {
     return NextResponse.json({ error: "Panier vide" }, { status: 400 });
+  }
+
+  // ✅ P2-12 : limite anti-DoS sur le nombre d'items
+  if (items.length > 50) {
+    return NextResponse.json(
+      { error: "Trop d'articles dans le panier (max 50)." },
+      { status: 400 }
+    );
   }
 
   if (deliveryMethod === "delivery" && (!shippingAddress || !shippingAddress.trim())) {
@@ -129,7 +137,6 @@ export async function POST(request) {
     }
   }
 
-
   // === Calcul des frais de livraison PAR BOUTIQUE ===
   let deliveryFee = 0;
   if (deliveryMethod === "delivery") {
@@ -145,10 +152,11 @@ export async function POST(request) {
   );
   const grandTotal = Math.max(0, subtotalProducts + deliveryFee);
 
-    // === PROMO CODE : validation déplacée DANS la transaction (P1-07) ===
-    let promoDiscount = 0;
-    let validPromoCode = null;
-    let finalTotal = grandTotal;
+  // === PROMO CODE : validation déplacée DANS la transaction (P1-07) ===
+  let promoDiscount = 0;
+  let validPromoCode = null;
+  let finalTotal = grandTotal;
+
   // === Transaction atomique : commande + stock + ledger ===
   try {
     const stockChanges = [];
@@ -241,10 +249,8 @@ export async function POST(request) {
         `;
       }
 
-
       return newOrder;
     });
-
 
     // Email de confirmation de commande (non bloquant)
     try {
@@ -357,7 +363,7 @@ export async function POST(request) {
       duration_ms: Date.now() - startTime,
     });
     return NextResponse.json(
-      { error: err.message || "Erreur lors de la commande" },
+      { error: "Erreur lors de la commande" },
       { status: 500 }
     );
   }

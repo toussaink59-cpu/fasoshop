@@ -60,7 +60,7 @@ export async function PATCH(request) {
   for (const key of ALLOWED_FIELDS) {
     if (key in body) {
       const val = sanitize(body[key]);
-      
+
       // Validation spécifique par champ
       if (key === "phone" && !isValidPhoneBF(val)) {
         return NextResponse.json({ error: "Téléphone BF invalide (format +226XXXXXXXX)." }, { status: 400 });
@@ -71,7 +71,7 @@ export async function PATCH(request) {
       if ((key === "nationality" || key === "country_of_residence") && !isValidCountryCode(val)) {
         return NextResponse.json({ error: `Code pays ${key} invalide (format ISO alpha-2, ex: BF, FR).` }, { status: 400 });
       }
-      
+
       updates[key] = val;
     }
   }
@@ -93,11 +93,11 @@ export async function PATCH(request) {
     updates.full_name = `${fn || ""} ${ln || ""}`.trim();
   }
 
-  // P1-10 : utiliser des requêtes préparées au lieu de sql.unsafe()
-  // Mettre à jour chaque champ séparément (plus sûr, évite injection SQL)
+  // ✅ P2-10 : requêtes préparées sécurisées (remplace tx.unsafe)
+  // ${sql(key)} échappe le nom de colonne → protection contre injection SQL
   await sql.begin(async (tx) => {
     for (const [key, value] of Object.entries(updates)) {
-      await tx.unsafe(`UPDATE users SET ${key} = $1 WHERE id = $2`, [value, user.id]);
+      await tx`UPDATE users SET ${sql(key)} = ${value} WHERE id = ${user.id}`;
     }
   });
 
