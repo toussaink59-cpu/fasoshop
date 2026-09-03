@@ -1,4 +1,3 @@
-// app/api/auth/login/route.js
 import { NextResponse } from "next/server";
 import sql from "@/lib/db";
 import { compare } from "bcryptjs";
@@ -42,7 +41,12 @@ export async function POST(request) {
       );
     }
 
- // Rate-limit : 8 tentatives/min par email + 10 tentatives/min par IP
+    // Rate-limit : 8 tentatives/min par email + 10 tentatives/min par IP
+    // ✅ CI/E2E : tous les tests partagent la même IP → sans assouplissement,
+    // la suite déclenche des 429 en chaîne (tests 7 & 8 idor-negative).
+    // L'assouplissement est gate par ALLOW_TEST_HELPERS : variable JAMAIS
+    // définie en production (sinon les test-helpers seraient exposés).
+    const isE2E = process.env.ALLOW_TEST_HELPERS === "true";
     const emailKey = `login:email:${cleanEmail}`;
     const ipKey = `login:ip:${clientKey(request)}`;
 
@@ -52,7 +56,7 @@ export async function POST(request) {
         { status: 429 }
       );
     }
-    if (!(await rateLimit(ipKey, { limit: 10, windowMs: 60_000 }))) {
+    if (!(await rateLimit(ipKey, { limit: isE2E ? 1000 : 10, windowMs: 60_000 }))) {
       return NextResponse.json(
         { error: "Trop de tentatives. Réessayez dans une minute." },
         { status: 429 }
@@ -152,7 +156,7 @@ export async function POST(request) {
       path: "/",
     });
 
- // Audit log de connexion réussie
+    // Audit log de connexion réussie
     await sql`
       INSERT INTO security_audit_log (user_id, action, resource_type, resource_id, ip_address)
       VALUES (${user.id}, 'login_success', 'user', ${user.id}, ${clientKey(request)})
