@@ -46,7 +46,13 @@ export async function POST(request) {
     // la suite déclenche des 429 en chaîne (tests 7 & 8 idor-negative).
     // L'assouplissement est gate par ALLOW_TEST_HELPERS : variable JAMAIS
     // définie en production (sinon les test-helpers seraient exposés).
-    const isE2E = process.env.ALLOW_TEST_HELPERS === "true";
+    // 🔧 Corrige un bug de comparaison : la CI définit ALLOW_TEST_HELPERS="1"
+    // (voir .github/workflows/e2e-security.yml et lib/rate-limit.js, même
+    // convention partout ailleurs : create-user, test-helpers, create-shop-
+    // product vérifient tous "1", jamais "true"). Avec "=== \"true\"", isE2E
+    // valait toujours false en CI et l'assouplissement ne s'appliquait
+    // jamais — c'est ce qui causait les échecs des tests 7, 8 et 11.
+    const isE2E = process.env.ALLOW_TEST_HELPERS === "1";
     const emailKey = `login:email:${cleanEmail}`;
     const ipKey = `login:ip:${clientKey(request)}`;
 
