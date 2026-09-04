@@ -8,6 +8,7 @@ import { Suspense } from "react";
 function SandboxPayContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const toast = useToast();
 
   const transactionId = searchParams.get("transaction_id");
   const amount = searchParams.get("amount");
@@ -15,10 +16,14 @@ function SandboxPayContent() {
 
   async function simulatePayment(status) {
     try {
-      // Le navigateur appelle le pont serveur (qui signe côté serveur)
       const res = await fetch("/api/sandbox/simulate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          // ✅ Header exigé par isSandboxRequestAuthorized (dev uniquement)
+          "x-sandbox-admin-secret":
+            process.env.NEXT_PUBLIC_SANDBOX_ADMIN_SECRET || "",
+        },
         body: JSON.stringify({
           transaction_id: transactionId,
           status,
@@ -27,11 +32,14 @@ function SandboxPayContent() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        const data = await res.json().catch(() => ({}));
         toast.error("Erreur simulation : " + (data.error || res.status));
         return;
       }
 
+      toast.success(
+        "Paiement simulé : " + (status === "success" ? "RÉUSSI" : "ÉCHOUÉ")
+      );
       router.push(returnUrl || "/orders");
     } catch (err) {
       toast.error("Erreur simulation : " + err.message);
@@ -69,7 +77,6 @@ function SandboxPayContent() {
 }
 
 export default function SandboxPayPage() {
-  const toast = useToast();
   return (
     <Suspense fallback={<div className="shell"><p>Chargement...</p></div>}>
       <SandboxPayContent />
