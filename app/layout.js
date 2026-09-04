@@ -1,5 +1,5 @@
 import "./globals.css";
-import { Fraunces, Work_Sans, IBM_Plex_Mono } from "next/font/google";
+import { Fraunces, Work_Sans, IBM_Plex_Mono, Inter } from "next/font/google";
 import { ToastProvider } from "@/lib/toast";
 import Script from "next/script";
 import ServiceWorker from "@/app/components/ServiceWorker";
@@ -28,6 +28,16 @@ const ibmPlexMono = IBM_Plex_Mono({
   display: "swap",
   variable: "--font-ibm-plex-mono",
 });
+// 🔧 Corrige une régression (re-skin "cartes pro Inter", commit e03f60b) :
+// Inter avait été ajoutée via un @import url(...) externe, réintroduisant
+// exactement la cascade de requêtes bloquante que next/font éliminait.
+// Migrée ici selon le même pattern que les 3 autres polices.
+const inter = Inter({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  display: "swap",
+  variable: "--font-inter",
+});
 
 export const metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://kimoxa.com"),
@@ -54,7 +64,7 @@ export const viewport = {
 };
 export default function RootLayout({ children }) {
   return (
-    <html lang="fr" className={`${fraunces.variable} ${workSans.variable} ${ibmPlexMono.variable}`}>
+    <html lang="fr" className={`${fraunces.variable} ${workSans.variable} ${ibmPlexMono.variable} ${inter.variable}`}>
       <body>
         <ServiceWorker />
         <PwaInstallPrompt />
