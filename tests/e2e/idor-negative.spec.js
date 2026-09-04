@@ -149,11 +149,18 @@ test.describe("7. Webhook montant erroné", () => {
     const buyer = await createUser(request, { email: `buyer-wh-${ts}@test.com`, password: "Test1234!", role: "buyer", full_name: "Buyer" });
     await login(request, { email: buyer.email, password: "Test1234!" });
 
-    // Utiliser produit 1 (restocké par globalSetup) avec retry
+    // 🔧 Corrige "Produit 1 introuvable" : le globalSetup ne fait que
+    // VÉRIFIER si le produit 1 existe (et le restocker si oui) — il ne le
+    // crée jamais s'il est absent. Sur une base de test vide/fraîche, ce
+    // produit n'existe simplement pas. On crée notre propre produit
+    // (pattern déjà utilisé par createProductForTest() dans ce fichier)
+    // plutôt que de dépendre d'un ID supposé exister.
+    const product = await createProductForTest(request, { stock: 10 });
+
     let orderRes;
     for (let attempt = 0; attempt < 3; attempt++) {
       orderRes = await request.post("/api/orders", {
-        data: { items: [{ productId: 1, quantity: 1 }], phone: "+22600000000", paymentMethod: "cod", deliveryMethod: "pickup" },
+        data: { items: [{ productId: product.id, quantity: 1 }], phone: "+22600000000", paymentMethod: "cod", deliveryMethod: "pickup" },
       });
       if (orderRes.ok()) break;
       await new Promise((res) => setTimeout(res, 1000));
@@ -177,11 +184,14 @@ test.describe("8. Webhook idempotent", () => {
     const buyer = await createUser(request, { email: `buyer-idem-${ts}@test.com`, password: "Test1234!", role: "buyer", full_name: "Buyer" });
     await login(request, { email: buyer.email, password: "Test1234!" });
 
-    // Utiliser produit 1 (restocké par globalSetup) avec retry
+    // 🔧 Même correctif que le test 7 : produit créé dynamiquement plutôt
+    // que de dépendre d'un "produit 1" qui peut ne pas exister.
+    const product = await createProductForTest(request, { stock: 10 });
+
     let orderRes;
     for (let attempt = 0; attempt < 3; attempt++) {
       orderRes = await request.post("/api/orders", {
-        data: { items: [{ productId: 1, quantity: 1 }], phone: "+22600000000", paymentMethod: "cod", deliveryMethod: "pickup" },
+        data: { items: [{ productId: product.id, quantity: 1 }], phone: "+22600000000", paymentMethod: "cod", deliveryMethod: "pickup" },
       });
       if (orderRes.ok()) break;
       await new Promise((res) => setTimeout(res, 1000));
