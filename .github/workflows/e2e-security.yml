@@ -10,6 +10,26 @@ env:
   NODE_ENV: "test"
 
 jobs:
+  dependency-audit:
+    name: "Audit des dépendances (npm audit)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+
+      - run: npm ci
+
+      # Échoue uniquement sur HIGH/CRITICAL pour éviter de bloquer sur des
+      # avertissements mineurs peu actionnables. Lecture seule : npm audit
+      # (sans --fix) ne modifie jamais le projet.
+      - name: npm audit (high/critical uniquement)
+        run: npm audit --audit-level=high
+
   e2e-security:
     name: "Playwright Security Suite"
     runs-on: ubuntu-latest
