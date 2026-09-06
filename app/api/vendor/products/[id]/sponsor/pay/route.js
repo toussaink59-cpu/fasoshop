@@ -43,9 +43,15 @@ export async function POST(request, { params }) {
 
     const [inserted] = await sql`
       INSERT INTO sponsorship_requests (product_id, shop_id, status, duration_days, price_fcfa)
-      VALUES (${productId}, ${product.shop_id}, 'paid', ${pack.durationDays}, ${pack.priceFcfa})
+      VALUES (${productId}, ${product.shop_id}, 'pending', ${pack.durationDays}, ${pack.priceFcfa})
       RETURNING id
     `;
+    // 🔒 Corrige un bug critique : le webhook (app/api/payments/[provider]/webhook/route.js)
+    // n'active le sponsoring que si la ligne est encore au statut 'pending'
+    // au moment du paiement confirmé (UPDATE ... WHERE status = 'pending').
+    // Insérer directement en 'paid' ici faisait que cette condition ne
+    // matchait jamais aucune ligne : le produit n'était donc JAMAIS
+    // réellement sponsorisé, même après un paiement réussi et validé.
 
     const transactionId = `KMX-SPONSOR-${inserted.id}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 

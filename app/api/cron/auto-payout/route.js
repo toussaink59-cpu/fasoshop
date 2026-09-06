@@ -1,5 +1,15 @@
 ﻿import sql from "@/lib/db";
 import { isValidCronAuth } from "@/lib/cronAuth";
+// 🔒 Ce fichier contenait 4 chaînes SQL entre guillemets DOUBLES au lieu
+// de simples ('active', 'paid', 'pending'/'approved', et une chaîne vide).
+// En PostgreSQL, les guillemets doubles désignent des IDENTIFIANTS
+// (colonnes/tables), pas des chaînes de caractères — ces requêtes
+// provoquaient une erreur SQL ("column ... does not exist") à chaque
+// exécution. Comme PAYOUT_MODE est à "manual" par défaut, ce cron
+// retournait tôt (skipped) et le bug restait invisible — mais le jour où
+// le mode "auto" serait activé, ce cron aurait échoué intégralement sans
+// jamais payer personne (échec silencieux, pas de corruption de données,
+// mais fonctionnalité entièrement cassée).
 import {
   payoutMode,
   validatePayout,
@@ -30,7 +40,7 @@ async function finalizeLedgerPaid(ledgerId, { amount, method, reference }) {
       UPDATE payout_requests
       SET status = 'paid',
           processed_at = NOW(),
-          admin_notes = COALESCE(admin_notes, "") || " · Auto-payout #" || ${ledgerId}
+          admin_notes = COALESCE(admin_notes, '') || ' · Auto-payout #' || ${ledgerId}
       WHERE shop_id = ${ledger.shop_id}
         AND status IN ('pending', 'approved')
     `;
@@ -74,12 +84,12 @@ export async function POST(request) {
       FROM shop_commission_ledger scl
       JOIN shops s ON s.id = scl.shop_id
       WHERE scl.payout_status = 'released'
-        AND s.status = "active"
+        AND s.status = 'active'
         AND s.mobile_money_number IS NOT NULL
         AND NOT EXISTS (
           SELECT 1 FROM payout_requests pr
           WHERE pr.shop_id = scl.shop_id
-            AND pr.status IN ("pending", "approved")
+            AND pr.status IN ('pending', 'approved')
         )
       ORDER BY scl.payout_released_at ASC
       LIMIT 50
@@ -96,7 +106,7 @@ export async function POST(request) {
           SELECT COALESCE(SUM(scl2.payout_amount), 0)::int AS sum
           FROM shop_commission_ledger scl2
           WHERE scl2.shop_id = ${row.shop_id}
-            AND scl2.payout_status = "paid"
+            AND scl2.payout_status = 'paid'
             AND scl2.payout_paid_at >= CURRENT_DATE
         `;
         if ((vendorDaySum?.sum || 0) + Number(row.payout_amount) > MAX_PER_VENDOR_DAY) {

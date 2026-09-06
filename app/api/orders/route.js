@@ -9,6 +9,10 @@ import { rateLimit, clientKey } from "@/lib/rate-limit";
 import { logger, generateRequestId } from "@/lib/logger";
 
 const COMMISSION_RATE = (Number(process.env.COMMISSION_RATE_PERCENT) || 8) / 100;
+// 🔒 Le ledger enregistrait auparavant un taux figé (9.0) au lieu du taux
+// réellement appliqué (COMMISSION_RATE, 8% par défaut) — écart permanent
+// entre l'argent réellement prélevé et ce qui est enregistré en base,
+// et traçabilité cassée si COMMISSION_RATE_PERCENT change un jour.
 
 export async function POST(request) {
   const requestId = generateRequestId();
@@ -245,7 +249,7 @@ export async function POST(request) {
             (shop_id, order_id, commission_amount, gross_amount, status,
              commission_rate, payout_amount, payout_status, delivery_fee_amount)
           VALUES (${Number(shopId)}, ${newOrder.id}, ${commissionAmount}, ${shopSubtotal}, 'due',
-                  9.0, ${payoutAmount}, 'held', ${shopDeliveryFee})
+                  ${COMMISSION_RATE * 100}, ${payoutAmount}, 'held', ${shopDeliveryFee})
         `;
       }
 
