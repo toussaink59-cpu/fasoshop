@@ -58,6 +58,22 @@ export async function GET(request) {
     const g = await exchangeCodeForUser(code);
     if (!g.email || !g.sub) throw new Error("Email Google manquant");
 
+    // 🔒 Corrige une faille de prise de contrôle de compte : Google renvoie
+    // un champ email_verified dans sa réponse userinfo. Sans cette
+    // vérification, lier ou créer un compte à partir d'un e-mail non
+    // confirmé par Google permettrait potentiellement à quelqu'un de se
+    // connecter avec l'adresse de quelqu'un d'autre et de prendre le
+    // contrôle d'un compte Kimoxa existant sans jamais connaître son mot
+    // de passe. Référence : OWASP "OAuth account hijacking via unverified
+    // email". On refuse tout le flux (liaison ET création) si l'e-mail
+    // n'est pas explicitement confirmé par Google.
+    if (g.email_verified !== true && g.email_verified !== "true") {
+      console.error("[OAuth] Email Google non vérifié - refus:", g.email);
+      const response = NextResponse.redirect(new URL("/login?error=google_email_unverified", request.url));
+      response.cookies.delete(STATE_COOKIE);
+      return response;
+    }
+
     // Chercher user par email
     let [user] = await sql`SELECT * FROM users WHERE email = ${g.email}`;
 
