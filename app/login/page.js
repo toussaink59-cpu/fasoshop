@@ -1,10 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
 import { LockIcon, EyeIcon, EyeOffIcon, MailIcon } from "@/app/components/Icons";
+
+// Messages affichés quand /api/auth/google/callback redirige vers
+// /login?error=xxx. On lit window.location.search dans un useEffect
+// plutôt que le hook useSearchParams de Next.js pour ne pas forcer
+// cette page (actuellement statique) à nécessiter un Suspense boundary.
+const OAUTH_ERROR_MESSAGES = {
+  google_denied: "Connexion Google annulée.",
+  invalid_state: "Session de connexion expirée, merci de réessayer.",
+  google_email_unverified: "Votre e-mail Google n'est pas vérifié. Utilisez un compte Google avec un e-mail confirmé, ou connectez-vous avec votre mot de passe Kimoxa.",
+  google_failed: "La connexion avec Google a échoué. Merci de réessayer ou d'utiliser votre mot de passe.",
+};
 
 function GoogleIcon({ size = 18 }) {
   return (
@@ -23,6 +34,17 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPwd, setShowPwd] = useState(false);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("error");
+    if (code && OAUTH_ERROR_MESSAGES[code]) {
+      setError(OAUTH_ERROR_MESSAGES[code]);
+      // Nettoie l'URL pour éviter que le message ne réapparaisse après un
+      // rafraîchissement manuel de la page par l'utilisateur.
+      window.history.replaceState({}, "", "/login");
+    }
+  }, []);
 
   async function handleSubmit(e) {
     e.preventDefault();

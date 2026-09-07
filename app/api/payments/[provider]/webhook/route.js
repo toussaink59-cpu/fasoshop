@@ -73,26 +73,20 @@ export async function POST(request, { params }) {
       try {
         await sql.begin(async (tx) => {
           await tx`UPDATE sponsorship_requests SET status = 'approved', reviewed_at = NOW() WHERE id = ${sr.id} AND status = 'pending'`;
-          await tx`UPDATE products SET is_sponsored = true, sponsored_until = NOW() + ('${Number(sr.duration_days || 30)} days')::interval WHERE id = ${sr.product_id}`;
+          // 🔒 Corrige un bug qui empêchait TOUTE activation de sponsoring
+          // même après le correctif du statut 'pending' : NOW() + ('${jours}
+          // days')::interval imbrique le paramètre DANS des guillemets simples,
+          // ce que PostgreSQL ne sait pas typer ("could not determine data
+          // type of parameter $1") — la transaction entière échouait et
+          // annulait aussi la mise à jour de statut. Vérifié avec une vraie
+          // requête PostgreSQL : la multiplication entier * INTERVAL fonctionne.
+          await tx`UPDATE products SET is_sponsored = true, sponsored_until = NOW() + (${Number(sr.duration_days || 30)} * INTERVAL '1 day') WHERE id = ${sr.product_id}`;
         });
       } catch (txErr) {
         console.error(`[webhook] Erreur transaction sponsoring #${sr.id}`, txErr.message);
         return Response.json({ error: "Erreur serveur." }, { status: 500 });
       }
       return Response.json({ received: true });
-      if (sr.status === "approved" || sr.status === "rejected") {
-        return Response.json({ received: true, alreadyProcessed: true });
-      }
-      if (event.status === "success") {
-        const days = sr.duration_days || 30;
-        await sql`UPDATE sponsorship_requests SET status = 'approved', reviewed_at = NOW() WHERE id = ${sr.id}`;
-        await sql`UPDATE products SET is_sponsored = true, sponsored_until = NOW() + (${days} || ' days')::interval WHERE id = ${sr.product_id}`;
-        console.log(`[webhook] Sponsoring #${sr.id} ACTIVÉ (${days}j)`);
-      } else if (event.status === "failed") {
-        await sql`UPDATE sponsorship_requests SET status = 'rejected', admin_notes = 'Paiement échoué', reviewed_at = NOW() WHERE id = ${sr.id}`;
-        console.log(`[webhook] Sponsoring #${sr.id} paiement échoué`);
-      }
-      return Response.json({ received: true, sponsor: true, status: event.status });
     }
 
     // === BRANCHE COMMANDES ===
