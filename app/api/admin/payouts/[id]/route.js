@@ -8,9 +8,6 @@ import {
   prepareAttempt,
   sendPayout,
   checkPayoutStatus,
-  markSucceeded,
-  markFailed,
-  markUnconfirmed,
 } from "@/lib/payouts";
 import { logger, generateRequestId } from "@/lib/logger";
 
@@ -22,8 +19,8 @@ function sanitize(str, maxLength = 200) {
 }
 
 // Finalise le payout côté DB (transaction courte, sans appel réseau dedans)
-// P0-03 (audit) : atomicite complete - markSucceeded DANS la transaction
-// pour eviter l'incoherence "argent parti mais ledger non paye"
+// Atomicité complète : markSucceeded DANS la transaction
+// pour éviter l'incohérence "argent parti mais ledger non payé"
 async function finalizeLedgerPaid(ledgerId, userId, ip, { amount, method, reference, notes, idempotencyKey }) {
   return sql.begin(async (tx) => {
     const [ledger] = await tx`
@@ -36,13 +33,13 @@ async function finalizeLedgerPaid(ledgerId, userId, ip, { amount, method, refere
     if (ledger.payout_status === "paid") throw Object.assign(new Error("already_paid"), { code: "already_paid" });
     if (ledger.payout_status !== "released") throw Object.assign(new Error("Payout non disponible."), { code: "bad_status" });
 
-    // Verification montant (tolerance 1%)
+    // Vérification montant (tolérance 1%)
     const expected = Number(ledger.payout_amount);
     if (Math.abs(amount - expected) / expected > 0.01) {
-      throw Object.assign(new Error("Montant incoherent."), { code: "amount_mismatch" });
+      throw Object.assign(new Error("Montant incohérent."), { code: "amount_mismatch" });
     }
 
-    // 1) Marquer payout_attempts = succeeded (atomicite avec ledger)
+    // 1) Marquer payout_attempts = succeeded (atomicité avec ledger)
     if (idempotencyKey) {
       await tx`
         UPDATE payout_attempts
@@ -58,14 +55,14 @@ async function finalizeLedgerPaid(ledgerId, userId, ip, { amount, method, refere
       WHERE id = ${ledgerId}
     `;
 
-    // 3) Inserer transaction admin
+    // 3) Insérer transaction admin
     await tx`
       INSERT INTO admin_payout_transactions
         (ledger_id, admin_id, amount_paid, payment_method, transaction_reference, notes, ip_address)
       VALUES (${ledgerId}, ${userId}, ${amount}, ${method}, ${reference}, ${notes || null}, ${ip})
     `;
 
-    // 4) Cloturer payout_requests du shop (uniquement si somme <= montant paye)
+    // 4) Clôturer payout_requests du shop (uniquement si somme <= montant payé)
     const [reqSum] = await tx`
       SELECT COALESCE(SUM(amount), 0)::int AS sum
       FROM payout_requests
@@ -139,7 +136,7 @@ export async function POST(request, { params }) {
       `;
       const provider = shop?.mobile_money_provider === "moov" ? "moov_money" : "orange_money";
 
-      // --- Validation métier stricte (problème 1) ---
+      // --- Validation métier stricte ---
       const v = validatePayout({
         amount: Number(ledger.payout_amount),
         phone: shop?.mobile_money_number,
@@ -147,7 +144,7 @@ export async function POST(request, { params }) {
       });
       if (!v.ok) return Response.json({ error: v.error }, { status: 400 });
 
-      // --- Idempotence (problème 2) ---
+      // --- Idempotence ---
       const prep = await prepareAttempt({
         resourceType: "ledger",
         resourceId: ledgerId,
@@ -188,8 +185,7 @@ export async function POST(request, { params }) {
         description: `Payout Kimoxa #${ledgerId}`,
       });
 
-      // P0-03 : succes fournisseur = TOUJOURS appeler finalizeLedgerPaid avec idempotencyKey
-      // Si echec DB, markSucceeded a deja ete fait dans la transaction, donc on peut retry
+      // succès fournisseur = TOUJOURS appeler finalizeLedgerPaid avec idempotencyKey
       if (sent.status === "succeeded") {
         try {
           await finalizeLedgerPaid(ledgerId, userId, ip, {
@@ -212,11 +208,22 @@ export async function POST(request, { params }) {
         return Response.json({ error: `Paiement refusé : ${sent.error}` }, { status: 400 });
       }
 
-      // unconfirmed : on ne renvoie JAMAIS (problèmes 2 + 3)
+      // unconfirmed : on ne renvoie JAMAIS
       return Response.json({ error: sent.error }, { status: 409 });
     }
 
-    // ================= MODE MANUEL (inchangé, sécurisé) =================
+    // ================= MODE MANUEL =================
+    // FIX BUG CRITIQUE (audit 2026-09-12) :
+    // AVANT : `const [ledger] = ...` était déclaré DANS le callback sql.begin,
+    //         or le bloc de notification (après la transaction) référençait
+    //         `ledger` → ReferenceError → l'API renvoyait une ERREUR 400
+    //         ALORS QUE le payout était déjà commité en base. Résultat :
+    //         l'admin retentait, le vendeur ne recevait jamais sa notif,
+    //         et chaque retry ajoutait de la confusion ("déjà payé").
+    // MAINTENANT : paidLedger est déclaré dans la portée de POST et
+    //         renseigné à l'intérieur de la transaction.
+    let paidLedger = null;
+
     const amountPaid = Number(body.amountPaid);
     const paymentMethod = String(body.paymentMethod || "").toLowerCase();
     const transactionReference = sanitize(body.transactionReference, 100);
@@ -266,27 +273,29 @@ export async function POST(request, { params }) {
         VALUES (${userId}, 'payout_paid_manual', 'payout', ${ledgerId}, ${ip})
       `.catch(() => {});
 
-      // P0-02 (audit) : cloture UNIQUE des demandes de reversement
+      // Clôture UNIQUE des demandes de reversement
       await tx`
         UPDATE payout_requests
         SET status = 'paid', processed_at = NOW(), processed_by = ${userId}
         WHERE shop_id = ${ledger.shop_id} AND status IN ('pending', 'approved')
       `;
+
+      // FIX : expose le ledger au code post-transaction
+      paidLedger = ledger;
     });
 
-    
     // NOTIF: payout_paid - vendeur voit son reversement versé
     try {
-      if (ledger && ledger.shop_id) {
-        const [vendorUser] = await sql`SELECT u.id FROM users u JOIN shops s ON s.vendor_id = u.id WHERE s.id = ${ledger.shop_id} LIMIT 1`;
+      if (paidLedger && paidLedger.shop_id) {
+        const [vendorUser] = await sql`SELECT u.id FROM users u JOIN shops s ON s.vendor_id = u.id WHERE s.id = ${paidLedger.shop_id} LIMIT 1`;
         if (vendorUser) {
           await createNotification({
             userId: vendorUser.id,
             type: 'payout_paid',
             title: 'Reversement envoyé',
-            body: Number(amountPaid || ledger.payout_amount || 0).toLocaleString('fr-FR') + ' FCFA versés sur votre Mobile Money',
+            body: Number(amountPaid || paidLedger.payout_amount || 0).toLocaleString('fr-FR') + ' FCFA versés sur votre Mobile Money',
             link: '/vendor/revenue',
-            data: { ledgerId: ledger.id },
+            data: { ledgerId: paidLedger.id },
           });
         }
       }

@@ -50,6 +50,29 @@ function getSafeReturnUrl(
   }
 }
 
+// CORRECTION (2026-09-12) : formatage défensif du montant.
+// AVANT : "{amount || "Inconnu"} FCFA" affichait "NaN FCFA"
+// si le paramètre d'URL était illisible.
+function formatAmount(
+  rawAmount
+) {
+  const value =
+    Number(rawAmount);
+
+  if (
+    !Number.isFinite(value) ||
+    value <= 0
+  ) {
+    return "Inconnu";
+  }
+
+  return (
+    value.toLocaleString(
+      "fr-FR"
+    ) + " FCFA"
+  );
+}
+
 function SandboxPayContent() {
   const searchParams =
     useSearchParams();
@@ -243,9 +266,7 @@ function SandboxPayContent() {
           <strong>
             Montant :
           </strong>{" "}
-          {amount ||
-            "Inconnu"}{" "}
-          FCFA
+          {formatAmount(amount)}
         </p>
       </div>
 

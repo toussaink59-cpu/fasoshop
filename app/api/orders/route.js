@@ -8,11 +8,21 @@ import { getCurrentUser } from "@/lib/session";
 import { rateLimit, clientKey } from "@/lib/rate-limit";
 import { logger, generateRequestId } from "@/lib/logger";
 
-const COMMISSION_RATE = (Number(process.env.COMMISSION_RATE_PERCENT) || 8) / 100;
-// 🔒 Le ledger enregistrait auparavant un taux figé (9.0) au lieu du taux
-// réellement appliqué (COMMISSION_RATE, 8% par défaut) — écart permanent
-// entre l'argent réellement prélevé et ce qui est enregistré en base,
-// et traçabilité cassée si COMMISSION_RATE_PERCENT change un jour.
+// FIX FINANCE (audit 2026-09-12) : le taux de commission ne doit JAMAIS
+// reposer sur un fallback silencieux. docs/finance.md annonce 5,5 % tandis
+// que l'ancien code appliquait 8 % par défaut — écart de reversements.
+// Désormais la variable COMMISSION_RATE_PERCENT est OBLIGATOIRE et validée
+// (0-100) à chaque commande : une config manquante = erreur explicite,
+// pas un taux inventé. SOURCE DE VÉRITÉ : COMMISSION_RATE_PERCENT (env).
+function getCommissionRate() {
+  const raw = Number(process.env.COMMISSION_RATE_PERCENT);
+  if (!Number.isFinite(raw) || raw < 0 || raw > 100) {
+    throw new Error(
+      "COMMISSION_RATE_PERCENT manquant ou invalide (nombre entre 0 et 100 requis dans .env.local)."
+    );
+  }
+  return raw / 100;
+}
 
 export async function POST(request) {
   const requestId = generateRequestId();
@@ -38,7 +48,7 @@ export async function POST(request) {
     return NextResponse.json({ error: "Panier vide" }, { status: 400 });
   }
 
-  // ✅ P2-12 : limite anti-DoS sur le nombre d'items
+  // Limite anti-DoS sur le nombre d'items
   if (items.length > 50) {
     return NextResponse.json(
       { error: "Trop d'articles dans le panier (max 50)." },
@@ -52,6 +62,13 @@ export async function POST(request) {
 
   if (!phone || !phone.trim()) {
     return NextResponse.json({ error: "Numéro de téléphone requis" }, { status: 400 });
+  }
+
+  // FIX : validation minimale du format téléphone (évite les injections
+  // de caractères dans les SMS/e-mails et les numéros inutilisables)
+  const cleanPhone = String(phone).trim();
+  if (!/^[+\d][\d\s.\-()]{5,19}$/.test(cleanPhone)) {
+    return NextResponse.json({ error: "Format de numéro de téléphone invalide." }, { status: 400 });
   }
 
   if (!["cod", "mobile_money"].includes(paymentMethod)) {
@@ -83,7 +100,8 @@ export async function POST(request) {
   // === Résolution des produits avec stock réel ===
   const products = await sql`
     SELECT p.id, p.price, p.stock_quantity, p.name, p.shop_id, p.status, p.low_stock_threshold,
-           s.name AS shop_name, u.email AS vendor_email, u.full_name AS vendor_name
+           s.name AS shop_name, s.delivery_fee AS shop_delivery_fee, u.id AS vendor_id,
+           u.email AS vendor_email, u.full_name AS vendor_name
     FROM products p
     JOIN shops s ON s.id = p.shop_id
     JOIN users u ON u.id = s.vendor_id
@@ -105,6 +123,18 @@ export async function POST(request) {
     if (p.stock_quantity < item.quantity) {
       return NextResponse.json(
         { error: `Stock insuffisant pour "${p.name}" (${p.stock_quantity} restants)` },
+        { status: 400 }
+      );
+    }
+  }
+
+  // FIX FINANCE/SÉCURITÉ : un vendeur ne peut PAS acheter ses propres produits.
+  // Bloque le wash trading (fausses ventes pour laver de l'argent), la
+  // manipulation des stats et la fraude à la commission.
+  for (const p of products) {
+    if (String(p.vendor_id) === String(user.id)) {
+      return NextResponse.json(
+        { error: "Vous ne pouvez pas commander vos propres produits." },
         { status: 400 }
       );
     }
@@ -156,16 +186,19 @@ export async function POST(request) {
   );
   const grandTotal = Math.max(0, subtotalProducts + deliveryFee);
 
-  // === PROMO CODE : validation déplacée DANS la transaction (P1-07) ===
+  // === PROMO CODE ===
   let promoDiscount = 0;
   let validPromoCode = null;
   let finalTotal = grandTotal;
+
+  // Taux de commission validé (fail-fast si env manquante)
+  const COMMISSION_RATE = getCommissionRate();
 
   // === Transaction atomique : commande + stock + ledger ===
   try {
     const stockChanges = [];
     const result = await sql.begin(async (tx) => {
-      // P1-07 (audit) : validation promo DANS la transaction (anti-race)
+      // Validation promo DANS la transaction (anti-race)
       if (promo_code && String(promo_code).trim()) {
         const [promo] = await tx`
           SELECT * FROM promo_codes
@@ -195,7 +228,7 @@ export async function POST(request) {
       const [newOrder] = await tx`
         INSERT INTO orders (buyer_id, shipping_address, phone, payment_method,
                             total, subtotal, delivery_fee, status, delivery_method, promo_code, promo_discount)
-        VALUES (${user.id}, ${shippingAddress || ""}, ${phone}, ${paymentMethod},
+        VALUES (${user.id}, ${shippingAddress || ""}, ${cleanPhone}, ${paymentMethod},
                 ${finalTotal}, ${subtotalProducts}, ${deliveryFee}, 'pending', ${deliveryMethod}, ${validPromoCode}, ${promoDiscount})
         RETURNING id, total, subtotal, delivery_fee, status
       `;
@@ -213,7 +246,7 @@ export async function POST(request) {
         `;
 
         const oldStock = p.stock_quantity;
-        // P1-05 (audit) : verrouiller la ligne produit avant UPDATE
+        // Verrouiller la ligne produit avant UPDATE
         const [locked] = await tx`
           SELECT id, stock_quantity FROM products WHERE id = ${p.id} FOR UPDATE
         `;
@@ -242,6 +275,8 @@ export async function POST(request) {
         const commissionAmount = Math.round(shopSubtotal * COMMISSION_RATE);
         const shopDeliveryFee =
           deliveryMethod === "delivery" ? Number(shopsMap[shopId]?.delivery_fee || 0) : 0;
+        // NOTE finance : la remise promo est financée par Kimoxa (elle réduit
+        // le total payé par l'acheteur mais PAS le sous-total commissionné).
         const payoutAmount = shopSubtotal - commissionAmount + shopDeliveryFee;
 
         await tx`

@@ -6,6 +6,12 @@
 //
 // Le navigateur ne connaît jamais PAYMENT_SANDBOX_SECRET.
 // Il transmet uniquement un capability temporaire signé.
+//
+// CORRECTION (2026-09-12) : la route ne gérait QUE les commandes
+// (table payments). Le sponsoring (transaction_id "KMX-SPONSOR-*")
+// vit dans sponsorship_requests.payment_id : toute simulation de
+// sponsoring renvoyait "Transaction introuvable" et la demande
+// restait bloquée en "pending" sans jamais pouvoir être payée.
 
 import sql from "@/lib/db";
 import { sameOrigin } from "@/lib/csrf";
@@ -21,6 +27,67 @@ import {
 import {
   verifySandboxCapability,
 } from "@/lib/sandboxAuth";
+
+// =====================================================
+// Forward signé vers le webhook (factorisé)
+// =====================================================
+async function forwardToWebhook({
+  request,
+  transactionId,
+  status,
+  amount,
+}) {
+  const payload = {
+    transaction_id:
+      transactionId,
+
+    status,
+
+    amount:
+      Number(amount),
+  };
+
+  const signature =
+    signSandboxPayload(payload);
+
+  const baseUrl =
+    process.env.APP_BASE_URL ||
+    new URL(request.url).origin;
+
+  const webhookUrl =
+    `${baseUrl}/api/payments/sandbox/webhook`;
+
+  const webhookResponse =
+    await fetch(webhookUrl, {
+      method: "POST",
+
+      headers: {
+        "Content-Type":
+          "application/json",
+
+        "x-signature":
+          signature,
+
+        "x-sandbox-internal":
+          "1",
+      },
+
+      body:
+        JSON.stringify(payload),
+    });
+
+  const data =
+    await webhookResponse
+      .json()
+      .catch(() => ({
+        error:
+          "Réponse webhook invalide.",
+      }));
+
+  return Response.json(data, {
+    status: webhookResponse.status,
+  });
+}
 
 export async function POST(
   request
@@ -226,7 +293,130 @@ export async function POST(
   }
 
   // =====================================================
-  // 8. Vérification DB
+  // 8a. BRANCHE SPONSORING (KMX-SPONSOR-*)
+  //     La transaction vit dans sponsorship_requests,
+  //     référencée par payment_id — jamais dans payments.
+  // =====================================================
+
+  if (
+    transactionId.startsWith(
+      "KMX-SPONSOR-"
+    )
+  ) {
+    let sponsorReq;
+
+    try {
+      [sponsorReq] = await sql`
+        SELECT
+          sr.id,
+          sr.shop_id,
+          sr.status,
+          sr.price_fcfa,
+          s.vendor_id
+        FROM sponsorship_requests sr
+        JOIN shops s
+          ON s.id = sr.shop_id
+        WHERE sr.payment_id =
+          ${transactionId}
+        LIMIT 1
+      `;
+    } catch (err) {
+      console.error(
+        "[sandbox/simulate] DB lookup sponsoring error:",
+        err
+      );
+
+      return Response.json(
+        {
+          error:
+            "Erreur serveur.",
+        },
+        { status: 500 }
+      );
+    }
+
+    if (!sponsorReq) {
+      return Response.json(
+        {
+          error:
+            "Transaction introuvable (sponsoring).",
+        },
+        { status: 404 }
+      );
+    }
+
+    // La demande doit appartenir au vendeur connecté.
+    if (
+      String(sponsorReq.vendor_id) !==
+      String(user.id)
+    ) {
+      return Response.json(
+        {
+          error:
+            "Not found.",
+        },
+        { status: 404 }
+      );
+    }
+
+    // Anti-rejeu : seule une demande 'pending' est payable.
+    if (
+      sponsorReq.status !==
+      "pending"
+    ) {
+      return Response.json(
+        {
+          error:
+            "Cette demande a déjà été traitée.",
+        },
+        { status: 409 }
+      );
+    }
+
+    // Cohérence du montant (tolérance 1 FCFA).
+    const expected =
+      Number(sponsorReq.price_fcfa);
+
+    if (
+      !Number.isFinite(expected) ||
+      expected <= 0 ||
+      Math.abs(expected - amount) > 1
+    ) {
+      return Response.json(
+        {
+          error:
+            "Montant incohérent.",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Forward signé vers le webhook (branche KMX-SPONSOR).
+    try {
+      return await forwardToWebhook({
+        request,
+        transactionId,
+        status,
+        amount: expected,
+      });
+    } catch (err) {
+      console.error(
+        "[sandbox/simulate] webhook sponsoring error:",
+        err
+      );
+
+      return Response.json(
+        {
+          error:
+            "Erreur lors de la simulation du paiement.",
+        },
+        { status: 500 }
+      );
+    }
+  }
+
+  // =====================================================
+  // 8b. BRANCHE COMMANDES (table payments)
   // =====================================================
 
   let payment;
@@ -336,98 +526,17 @@ export async function POST(
   }
 
   // =====================================================
-  // 9. Payload webhook
+  // 9-11. Forward signé vers le webhook
   // =====================================================
 
-  const payload = {
-    transaction_id:
+  try {
+    return await forwardToWebhook({
+      request,
       transactionId,
-
-    status,
-
-    amount:
-      Number(payment.amount),
-  };
-
-  // =====================================================
-  // 10. Signature HMAC côté serveur
-  // =====================================================
-
-  let signature;
-
-  try {
-    signature =
-      signSandboxPayload(
-        payload
-      );
-  } catch (err) {
-    console.error(
-      "[sandbox/simulate] signature error:",
-      err
-    );
-
-    return Response.json(
-      {
-        error:
-          "Configuration sandbox invalide.",
-      },
-      { status: 500 }
-    );
-  }
-
-  // =====================================================
-  // 11. Appel interne du webhook
-  // =====================================================
-
-  try {
-    const baseUrl =
-      process.env.APP_BASE_URL ||
-      new URL(
-        request.url
-      ).origin;
-
-    const webhookUrl =
-      `${baseUrl}/api/payments/sandbox/webhook`;
-
-    const webhookResponse =
-      await fetch(
-        webhookUrl,
-        {
-          method: "POST",
-
-          headers: {
-            "Content-Type":
-              "application/json",
-
-            "x-signature":
-              signature,
-
-            "x-sandbox-internal":
-              "1",
-          },
-
-          body:
-            JSON.stringify(
-              payload
-            ),
-        }
-      );
-
-    const data =
-      await webhookResponse
-        .json()
-        .catch(() => ({
-          error:
-            "Réponse webhook invalide.",
-        }));
-
-    return Response.json(
-      data,
-      {
-        status:
-          webhookResponse.status,
-      }
-    );
+      status,
+      amount:
+        Number(payment.amount),
+    });
   } catch (err) {
     console.error(
       "[sandbox/simulate] webhook error:",
