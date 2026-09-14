@@ -43,7 +43,7 @@ export default function ShopClient({ shop, products, initialUser, categories }) 
               width: 64,
               height: 64,
               borderRadius: "50%",
-              background: "var(--gold-600, #c9a44c)",
+              background: "var(--gold-600, #afb647)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
