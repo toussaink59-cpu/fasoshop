@@ -1,5 +1,7 @@
+import { Inter, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
-import { Fraunces, Work_Sans, IBM_Plex_Mono, Inter } from "next/font/google";
+import "./tokens.css";
+
 import { ToastProvider } from "@/lib/toast";
 import Script from "next/script";
 import ServiceWorker from "@/app/components/ServiceWorker";
@@ -7,50 +9,44 @@ import PwaInstallPrompt from "@/app/components/PwaInstallPrompt";
 import WhatsAppFloat from "@/app/components/WhatsAppFloat";
 import NotificationBell from "@/app/components/NotificationBell";
 
-// Perf : polices auto-hébergées par next/font au build. Plus de requête
-// vers fonts.googleapis.com au chargement de la page, et aucun FOUT.
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-  style: ["normal"],
+// Inter : police principale de toute l'interface.
+const inter = Inter({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-inter",
   display: "swap",
-  variable: "--font-fraunces",
+  weight: ["400", "500", "600", "700", "800"],
 });
-const workSans = Work_Sans({
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  display: "swap",
-  variable: "--font-work-sans",
-});
+
+// IBM Plex Mono : chiffres, prix, statistiques et données tabulaires.
 const ibmPlexMono = IBM_Plex_Mono({
   subsets: ["latin"],
+  variable: "--font-mono",
+  display: "swap",
   weight: ["500"],
-  display: "swap",
-  variable: "--font-ibm-plex-mono",
-});
-// 🔧 Corrige une régression (re-skin "cartes pro Inter", commit e03f60b) :
-// Inter avait été ajoutée via un @import url(...) externe, réintroduisant
-// exactement la cascade de requêtes bloquante que next/font éliminait.
-// Migrée ici selon le même pattern que les 3 autres polices.
-const inter = Inter({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  display: "swap",
-  variable: "--font-inter",
 });
 
 export const metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://kimoxa.com"),
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "https://kimoxa.com"
+  ),
   title: {
     default: "Kimoxa — Marketplace multi-vendeurs pour toute l'Afrique",
     template: "%s | Kimoxa",
   },
-  description: "Kimoxa, la marketplace multi-vendeurs qui connecte l'Afrique qui vend à l'Afrique qui achète.",
+  description:
+    "Kimoxa, la marketplace multi-vendeurs qui connecte l'Afrique qui vend à l'Afrique qui achète.",
   openGraph: {
     siteName: "Kimoxa",
     type: "website",
     locale: "fr_FR",
-    images: [{ url: "/icons/icon-512.png", width: 512, height: 512, alt: "Kimoxa — la marketplace qui connecte l'Afrique" }],
+    images: [
+      {
+        url: "/icons/icon-512.png",
+        width: 512,
+        height: 512,
+        alt: "Kimoxa — la marketplace qui connecte l'Afrique",
+      },
+    ],
   },
   twitter: {
     card: "summary",
@@ -59,22 +55,29 @@ export const metadata = {
     images: ["/icons/icon-512.png"],
   },
 };
+
 export const viewport = {
-  themeColor: "#241712",
+  themeColor: "#0d1220",
 };
+
 export default function RootLayout({ children }) {
   return (
-    <html lang="fr" className={`${fraunces.variable} ${workSans.variable} ${ibmPlexMono.variable} ${inter.variable}`}>
-      <body>
+    <html lang="fr" className={`${inter.variable} ${ibmPlexMono.variable}`}>
+      <body className="antialiased">
         <ServiceWorker />
         <PwaInstallPrompt />
-        <meta name="theme-color" content="#241712" />
+
+        <meta name="theme-color" content="#0d1220" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta
+          name="apple-mobile-web-app-status-bar-style"
+          content="black-translucent"
+        />
         <meta name="apple-mobile-web-app-title" content="Kimoxa" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
+
         {process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN && (
           <Script
             strategy="afterInteractive"
@@ -82,9 +85,9 @@ export default function RootLayout({ children }) {
             src="https://plausible.io/js/script.js"
           />
         )}
-        <ToastProvider>
-          {children}
-        </ToastProvider>
+
+        <ToastProvider>{children}</ToastProvider>
+
         <NotificationBell />
         <WhatsAppFloat />
       </body>

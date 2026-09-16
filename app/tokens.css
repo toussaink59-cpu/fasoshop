@@ -1,0 +1,884 @@
+/* ==========================================================================
+   KIMOXA — DESIGN SYSTEM « PRO PAN-AFRICAIN »
+   Fichier : app/tokens.css
+   --------------------------------------------------------------------------
+   Rôle :
+   - source de vérité des tokens visuels ;
+   - compatibilité avec les anciennes variables de globals.css ;
+   - consolidation progressive du design system ;
+   - aucune logique métier ;
+   - aucun comportement JavaScript.
+   --------------------------------------------------------------------------
+   Ordre de chargement :
+   layout.js charge globals.css puis tokens.css.
+   tokens.css gagne donc la cascade lorsqu'une spécificité équivalente
+   est utilisée.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   1. TOKENS — SOURCE DE VÉRITÉ UNIQUE
+   -------------------------------------------------------------------------- */
+
+:root {
+  /* ------------------------------------------------------------------------
+     Surfaces
+     ------------------------------------------------------------------------ */
+  --surface: #f7f5f2;
+  --surface-raised: #ffffff;
+  --surface-dark: #0d1220;
+  --surface-dark-2: #161e33;
+
+  /* ------------------------------------------------------------------------
+     Bordures
+     ------------------------------------------------------------------------ */
+  --line: rgba(13, 18, 32, 0.10);
+  --line-soft: rgba(13, 18, 32, 0.06);
+  --line-dark: rgba(255, 255, 255, 0.10);
+
+  /* ------------------------------------------------------------------------
+     Accents
+     ------------------------------------------------------------------------ */
+  --gold: #d4af37;
+  --gold-soft: rgba(212, 175, 55, 0.14);
+
+  /* CTA principal unique */
+  --cta: #e8590c;
+  --cta-hover: #cf4d08;
+  --cta-active: #b84407;
+
+  /* ------------------------------------------------------------------------
+     Sémantique
+     ------------------------------------------------------------------------ */
+  --success: #3f6b3f;
+  --success-soft: rgba(63, 107, 63, 0.12);
+
+  --danger: #9e2b3e;
+  --danger-soft: rgba(158, 43, 62, 0.10);
+
+  --info: #2b587e;
+  --info-soft: rgba(43, 88, 126, 0.12);
+
+  --warning: #c08a1e;
+  --warning-soft: rgba(192, 138, 30, 0.12);
+
+  /* ------------------------------------------------------------------------
+     Texte
+     ------------------------------------------------------------------------ */
+  --text: #1c2434;
+  --text-muted: #5d6675;
+  --text-faint: #8b93a1;
+  --text-on-dark: #f2f0ea;
+
+  /* ------------------------------------------------------------------------
+     Formes
+     ------------------------------------------------------------------------ */
+  --radius-s: 6px;
+  --radius: 10px;
+  --radius-l: 14px;
+
+  /* ------------------------------------------------------------------------
+     Ombres
+     ------------------------------------------------------------------------ */
+  --shadow-1: 0 1px 2px rgba(13, 18, 32, 0.06);
+  --shadow-2: 0 10px 28px rgba(13, 18, 32, 0.12);
+
+  /* ------------------------------------------------------------------------
+     Typographie
+     ------------------------------------------------------------------------ */
+  --font-sans:
+    var(--font-inter),
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    sans-serif;
+
+  --font-num:
+    var(--font-mono),
+    ui-monospace,
+    "SF Mono",
+    Menlo,
+    monospace;
+}
+
+/* --------------------------------------------------------------------------
+   2. ALIAS LEGACY — COMPATIBILITÉ AVEC L'ANCIEN GLOBALS.CSS
+   --------------------------------------------------------------------------
+   Ces alias permettent à l'ancien CSS de continuer à fonctionner tout en
+   utilisant la nouvelle palette.
+
+   IMPORTANT :
+   On conserve les noms historiques pour éviter de casser les composants
+   existants pendant la consolidation.
+   -------------------------------------------------------------------------- */
+
+:root {
+  /* ------------------------------------------------------------------------
+     Ancienne palette "ink"
+     ------------------------------------------------------------------------ */
+  --ink-900: var(--surface-dark);
+  --ink-800: #141b30;
+  --ink-700: #2a3348;
+  --ink-500: #4a5468;
+  --ink-400: var(--text-muted);
+  --ink-300: var(--text-faint);
+
+  /* ------------------------------------------------------------------------
+     Ancienne palette "sand"
+     ------------------------------------------------------------------------ */
+  --sand-50: var(--surface);
+  --sand-100: #eeebe5;
+  --sand-200: #eeebe5;
+  --sand-300: #e3ded4;
+
+  /* ------------------------------------------------------------------------
+     Ancienne palette "gold"
+     ------------------------------------------------------------------------ */
+  --gold-600: #b28e25;
+  --gold-500: var(--gold);
+  --gold-400: #e2c65c;
+  --gold-300: #ecd478;
+
+  /* ------------------------------------------------------------------------
+     Ancienne palette orange
+     ------------------------------------------------------------------------ */
+  --orange-600: var(--cta-hover);
+  --orange-500: var(--cta);
+  --orange-400: #ed7334;
+
+  /* ------------------------------------------------------------------------
+     Ancienne palette bissap
+     ------------------------------------------------------------------------ */
+  --bissap-600: var(--danger);
+  --bissap-500: var(--danger);
+  --bissap-100: var(--danger-soft);
+  --bissap: var(--danger);
+
+  /* ------------------------------------------------------------------------
+     Ancienne palette millet
+     ------------------------------------------------------------------------ */
+  --millet-600: var(--success);
+  --millet-500: var(--success);
+  --millet-100: var(--success-soft);
+  --millet: var(--success);
+
+  /* ------------------------------------------------------------------------
+     Ancienne bordure
+     ------------------------------------------------------------------------ */
+  --border: rgba(13, 18, 32, 0.10);
+
+  /* ------------------------------------------------------------------------
+     Ancienne typographie
+     ------------------------------------------------------------------------ */
+  --font-display: var(--font-sans);
+  --font-body: var(--font-sans);
+  --font-work: var(--font-sans);
+
+  /*
+   * Compatibilité avec les anciens noms rencontrés dans le CSS.
+   * IBM Plex Mono est exposée par layout.js sous --font-mono.
+   */
+  --font-plex-mono: var(--font-num);
+}
+
+/* --------------------------------------------------------------------------
+   3. BASE TYPOGRAPHIQUE
+   -------------------------------------------------------------------------- */
+
+body {
+  font-family: var(--font-sans);
+  background: var(--surface);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: var(--font-sans);
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+strong,
+b {
+  font-weight: 700;
+}
+
+/* --------------------------------------------------------------------------
+   4. CHIFFRES ET DONNÉES FINANCIÈRES
+   -------------------------------------------------------------------------- */
+
+.stat-card .value,
+.va-kpi .value,
+.vendor-stat-card .value,
+.vendor-stat-value,
+.price,
+.fcfa,
+.product-price,
+.order-total,
+table [class*="amount"],
+table [class*="total"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/*
+ * IBM Plex Mono uniquement pour les données numériques.
+ * Le texte courant reste en Inter.
+ */
+.price,
+.fcfa,
+.product-price,
+.order-total,
+.stat-card .value,
+.va-kpi .value,
+.vendor-stat-card .value,
+.vendor-stat-value {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* --------------------------------------------------------------------------
+   5. BOUTONS — SYSTÈME UNIFIÉ
+   -------------------------------------------------------------------------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  min-height: 44px;
+  padding: 0 20px;
+
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1;
+
+  cursor: pointer;
+  text-decoration: none;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* --------------------------------------------------------------------------
+   Bouton primaire
+   -------------------------------------------------------------------------- */
+
+.btn-primary {
+  background: var(--cta);
+  border-color: var(--cta);
+  color: #ffffff;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--cta-hover);
+  border-color: var(--cta-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-1);
+}
+
+.btn-primary:active:not(:disabled) {
+  background: var(--cta-active);
+  border-color: var(--cta-active);
+  transform: translateY(0);
+}
+
+/* --------------------------------------------------------------------------
+   Bouton secondaire
+   -------------------------------------------------------------------------- */
+
+.btn-secondary,
+.shop-card .btn,
+.product-card .btn,
+.card .btn {
+  background: transparent;
+  border-color: rgba(13, 18, 32, 0.25);
+  color: var(--surface-dark);
+}
+
+.btn-secondary:hover:not(:disabled),
+.shop-card .btn:hover:not(:disabled),
+.product-card .btn:hover:not(:disabled),
+.card .btn:hover:not(:disabled) {
+  background: var(--surface-dark);
+  border-color: var(--surface-dark);
+  color: #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   Bouton sombre
+   -------------------------------------------------------------------------- */
+
+.btn-dark {
+  background: var(--surface-dark);
+  border-color: var(--surface-dark);
+  color: #ffffff;
+}
+
+.btn-dark:hover:not(:disabled) {
+  background: var(--surface-dark-2);
+  border-color: var(--surface-dark-2);
+}
+
+/* --------------------------------------------------------------------------
+   Boutons sémantiques
+   -------------------------------------------------------------------------- */
+
+.btn-success {
+  background: var(--success);
+  border-color: var(--success);
+  color: #ffffff;
+}
+
+.btn-success:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.btn-danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #ffffff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+/* --------------------------------------------------------------------------
+   Bouton ghost
+   -------------------------------------------------------------------------- */
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.btn-ghost:hover:not(:disabled) {
+  background: var(--sand-200);
+}
+
+/* --------------------------------------------------------------------------
+   Tailles
+   -------------------------------------------------------------------------- */
+
+.btn-sm {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--radius-s);
+  font-size: 0.875rem;
+}
+
+.btn-lg {
+  min-height: 52px;
+  padding: 0 28px;
+  font-size: 1.05rem;
+}
+
+/* --------------------------------------------------------------------------
+   Bouton hero
+   -------------------------------------------------------------------------- */
+
+.btn-hero {
+  background: #ffffff;
+  border-color: #ffffff;
+  color: var(--surface-dark);
+}
+
+.btn-hero:hover:not(:disabled) {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--surface-dark);
+}
+
+/* --------------------------------------------------------------------------
+   6. DASHBOARDS — ADMIN + VENDEUR
+   -------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------
+   Topbar unifiée
+   -------------------------------------------------------------------------- */
+
+.topbar {
+  background: var(--surface-dark);
+  color: var(--text-on-dark);
+  border-bottom: 3px solid var(--gold);
+}
+
+.topbar a,
+.topbar .nav-link,
+.topbar .topbar-link {
+  color: rgba(242, 240, 234, 0.75);
+}
+
+.topbar a:hover,
+.topbar .nav-link:hover {
+  color: #ffffff;
+}
+
+.topbar a.active,
+.topbar .active,
+.topbar [aria-current="page"] {
+  color: var(--gold);
+}
+
+.topbar .brand,
+.topbar .logo {
+  color: var(--gold);
+  font-weight: 800;
+}
+
+/* --------------------------------------------------------------------------
+   Cartes KPI unifiées
+   -------------------------------------------------------------------------- */
+
+.stat-card,
+.va-kpi,
+.vendor-stat-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-1);
+  padding: 18px 20px;
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.stat-card:hover,
+.va-kpi:hover,
+.vendor-stat-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+
+.stat-card .label,
+.va-kpi .label,
+.vendor-stat-card .label,
+.vendor-stat-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+}
+
+.stat-card .value,
+.va-kpi .value,
+.vendor-stat-card .value,
+.vendor-stat-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--surface-dark);
+  margin-top: 6px;
+}
+
+/* --------------------------------------------------------------------------
+   Liens rapides
+   -------------------------------------------------------------------------- */
+
+.quick-links a {
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  font-weight: 600;
+  color: var(--text);
+
+  transition:
+    border-color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.quick-links a:hover {
+  border-color: var(--gold);
+  transform: translateY(-1px);
+}
+
+/* --------------------------------------------------------------------------
+   Alertes
+   -------------------------------------------------------------------------- */
+
+.vendor-alert,
+.alert-success {
+  border-left: 4px solid var(--success);
+  background: var(--success-soft);
+}
+
+.alert-danger {
+  border-left: 4px solid var(--danger);
+  background: var(--danger-soft);
+}
+
+.alert-warning {
+  border-left: 4px solid var(--warning);
+  background: var(--warning-soft);
+}
+
+.alert-info {
+  border-left: 4px solid var(--info);
+  background: var(--info-soft);
+}
+
+/* --------------------------------------------------------------------------
+   Tableaux
+   -------------------------------------------------------------------------- */
+
+table th,
+.table th {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  border-bottom: 2px solid var(--line);
+}
+
+table tbody tr:hover,
+.table tbody tr:hover {
+  background: var(--sand-100);
+}
+
+/* --------------------------------------------------------------------------
+   Badges
+   -------------------------------------------------------------------------- */
+
+.badge,
+.tag {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 3px 10px;
+
+  border-radius: 999px;
+
+  font-size: 0.75rem;
+  font-weight: 600;
+
+  background: var(--sand-200);
+  color: var(--text-muted);
+}
+
+.badge-success,
+.tag-success {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.badge-danger,
+.tag-danger {
+  background: var(--danger-soft);
+  color: var(--danger);
+}
+
+.badge-warning,
+.tag-warning {
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.badge-info,
+.tag-info {
+  background: var(--info-soft);
+  color: var(--info);
+}
+
+.badge-gold,
+.tag-gold {
+  background: var(--gold-soft);
+  color: #8a6d1f;
+}
+
+/* --------------------------------------------------------------------------
+   7. HEADER / FOOTER / CARTES
+   -------------------------------------------------------------------------- */
+
+.site-header,
+.main-header,
+header.site-header {
+  background: var(--surface-dark);
+  border-bottom: 3px solid var(--gold);
+}
+
+.brand,
+.logo {
+  color: var(--gold);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.shop-card,
+.product-card,
+.card {
+  background: var(--surface-raised);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-l);
+  box-shadow: var(--shadow-1);
+
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.shop-card:hover,
+.product-card:hover,
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+
+.product-card .name,
+.product-card .title {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* --------------------------------------------------------------------------
+   8. FORMULAIRES
+   -------------------------------------------------------------------------- */
+
+input[type="search"],
+.search-input {
+  border-radius: var(--radius);
+  border: 1px solid var(--line);
+  background: var(--surface-raised);
+}
+
+input[type="search"]:focus,
+.search-input:focus {
+  border-color: var(--gold);
+  outline: 2px solid var(--gold-soft);
+}
+
+.form-control,
+input,
+select,
+textarea {
+  border-radius: var(--radius-s);
+  border: 1px solid var(--line);
+}
+
+.form-control:focus,
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--gold);
+  outline: 2px solid var(--gold-soft);
+}
+
+/* --------------------------------------------------------------------------
+   9. MOTIF TISSÉ — SIGNATURE AFRICAINE
+   -------------------------------------------------------------------------- */
+
+.woven-strip {
+  height: 6px;
+  width: 100%;
+
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--gold) 0 10px,
+    var(--surface-dark) 10px 20px,
+    var(--cta) 20px 24px,
+    var(--surface-dark) 24px 34px
+  );
+}
+
+/* --------------------------------------------------------------------------
+   10. LIENS ET ÉTATS
+   --------------------------------------------------------------------------
+   IMPORTANT :
+   On ne définit PAS "a { color: ... }" globalement.
+   Les liens du header, footer, CTA, cartes, dashboards, etc. doivent pouvoir
+   conserver leur couleur contextuelle.
+   -------------------------------------------------------------------------- */
+
+::selection {
+  background: var(--gold-soft);
+}
+
+/* --------------------------------------------------------------------------
+   11. COMPATIBILITÉS CIBLÉES
+   --------------------------------------------------------------------------
+   Ces règles servent uniquement à neutraliser les anciennes règles qui
+   possédaient déjà une forte spécificité ou !important dans globals.css.
+
+   Elles sont volontairement ciblées.
+   -------------------------------------------------------------------------- */
+
+/* --------------------------------------------------------------------------
+   CTA historiques réellement nommés comme tels
+   -------------------------------------------------------------------------- */
+
+.cta,
+.cta-button,
+.btn-cta {
+  background: var(--cta);
+  border-color: var(--cta);
+  color: #ffffff;
+}
+
+.cta:hover:not(:disabled),
+.cta-button:hover:not(:disabled),
+.btn-cta:hover:not(:disabled) {
+  background: var(--cta-hover);
+  border-color: var(--cta-hover);
+}
+
+/* --------------------------------------------------------------------------
+   Anciennes valeurs en Fraunces → Inter
+   -------------------------------------------------------------------------- */
+
+.stat-card .value,
+.product-card .name,
+.product-card .title,
+.brand {
+  font-family: var(--font-sans);
+}
+
+/* --------------------------------------------------------------------------
+   Topbar historique → Navy
+   -------------------------------------------------------------------------- */
+
+.topbar {
+  background: var(--surface-dark);
+  color: var(--text-on-dark);
+}
+
+/* --------------------------------------------------------------------------
+   12. ACCESSIBILITÉ
+   -------------------------------------------------------------------------- */
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   13. RESPONSIVE
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 768px) {
+  .btn {
+    min-height: 48px;
+  }
+
+  .btn-sm {
+    min-height: 40px;
+  }
+
+  .btn-lg {
+    min-height: 52px;
+  }
+
+  .stat-card,
+  .va-kpi,
+  .vendor-stat-card {
+    padding: 16px;
+  }
+
+  .stat-card .value,
+  .va-kpi .value,
+  .vendor-stat-card .value,
+  .vendor-stat-value {
+    font-size: 1.35rem;
+  }
+}
+
+
+/* ==========================================================================
+   CONTRASTE — texte lisible sur toutes les surfaces sombres
+   (header public navy, topbar legacy des pages internes)
+   ========================================================================== */
+
+/* Header public : fond navy impose texte clair */
+.site-header { color: #f2f0ea; }
+.site-header a,
+.site-header button,
+.site-header .btn-header-link,
+.site-header .site-header-icon-btn {
+  color: rgba(242, 240, 234, 0.85) !important;
+}
+.site-header a:hover,
+.site-header button:hover,
+.site-header .btn-header-link:hover,
+.site-header .site-header-icon-btn:hover {
+  color: #ffffff !important;
+}
+.site-header .site-header-badge {
+  background: var(--cta);
+  color: #ffffff;
+}
+/* Champ de recherche : fond clair lisible dans le header sombre */
+.site-header input,
+.site-header .search-input,
+.site-header [class*="search"] input {
+  background: #ffffff;
+  color: #1c2434;
+  border-color: transparent;
+}
+.site-header input::placeholder { color: #8b93a1; }
+
+/* Topbar legacy (pages messages, compte, conversations...) passée navy :
+   ses liens/boutons héritent de couleurs conçues pour l'ancien fond. */
+.topbar { color: #f2f0ea; }
+.topbar a,
+.topbar button,
+.topbar .topbar-textlink,
+.topbar .topbar-icon,
+.topbar .topbar-link {
+  color: rgba(242, 240, 234, 0.85) !important;
+}
+.topbar a:hover,
+.topbar button:hover,
+.topbar .topbar-textlink:hover,
+.topbar .topbar-icon:hover {
+  color: #ffffff !important;
+}
+.topbar .topbar-badge {
+  background: var(--cta);
+  color: #ffffff;
+}
+.topbar input, .topbar select {
+  background: #ffffff;
+  color: #1c2434;
+}
+
+/* Logo : le prop light est appliqué dans SiteHeader.js (voir note livrée).
+   Sécurité CSS si un logo sombre subsiste sur fond sombre. */
+.site-header-logo { display: inline-flex; }

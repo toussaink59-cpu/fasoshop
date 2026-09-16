@@ -7,11 +7,21 @@
 // Le navigateur ne connaît jamais PAYMENT_SANDBOX_SECRET.
 // Il transmet uniquement un capability temporaire signé.
 //
-// CORRECTION (2026-09-12) : la route ne gérait QUE les commandes
-// (table payments). Le sponsoring (transaction_id "KMX-SPONSOR-*")
-// vit dans sponsorship_requests.payment_id : toute simulation de
-// sponsoring renvoyait "Transaction introuvable" et la demande
-// restait bloquée en "pending" sans jamais pouvoir être payée.
+// La route gère :
+//   - les paiements de commandes (table payments)
+//   - les paiements de sponsoring (table sponsorship_requests)
+//
+// Sécurité :
+//   - sandbox désactivé => 404
+//   - production réelle => 404
+//   - payload invalide => 400
+//   - capability absent/invalide => 404
+//   - authentification utilisateur vérifiée après validation
+//     du capability
+//   - rate limit
+//   - ownership de la transaction
+//   - cohérence du montant
+//   - transaction déjà traitée => 409
 
 import sql from "@/lib/db";
 import { sameOrigin } from "@/lib/csrf";
@@ -29,8 +39,9 @@ import {
 } from "@/lib/sandboxAuth";
 
 // =====================================================
-// Forward signé vers le webhook (factorisé)
+// Forward signé vers le webhook
 // =====================================================
+
 async function forwardToWebhook({
   request,
   transactionId,
@@ -38,17 +49,12 @@ async function forwardToWebhook({
   amount,
 }) {
   const payload = {
-    transaction_id:
-      transactionId,
-
+    transaction_id: transactionId,
     status,
-
-    amount:
-      Number(amount),
+    amount: Number(amount),
   };
 
-  const signature =
-    signSandboxPayload(payload);
+  const signature = signSandboxPayload(payload);
 
   const baseUrl =
     process.env.APP_BASE_URL ||
@@ -57,48 +63,39 @@ async function forwardToWebhook({
   const webhookUrl =
     `${baseUrl}/api/payments/sandbox/webhook`;
 
-  const webhookResponse =
-    await fetch(webhookUrl, {
+  const webhookResponse = await fetch(
+    webhookUrl,
+    {
       method: "POST",
 
       headers: {
-        "Content-Type":
-          "application/json",
-
-        "x-signature":
-          signature,
-
-        "x-sandbox-internal":
-          "1",
+        "Content-Type": "application/json",
+        "x-signature": signature,
+        "x-sandbox-internal": "1",
       },
 
-      body:
-        JSON.stringify(payload),
-    });
+      body: JSON.stringify(payload),
+    }
+  );
 
-  const data =
-    await webhookResponse
-      .json()
-      .catch(() => ({
-        error:
-          "Réponse webhook invalide.",
-      }));
+  const data = await webhookResponse
+    .json()
+    .catch(() => ({
+      error: "Réponse webhook invalide.",
+    }));
 
   return Response.json(data, {
     status: webhookResponse.status,
   });
 }
 
-export async function POST(
-  request
-) {
+export async function POST(request) {
   // =====================================================
   // 1. Sandbox explicitement activée
   // =====================================================
 
   if (
-    process.env.ALLOW_SANDBOX_SIMULATION !==
-    "1"
+    process.env.ALLOW_SANDBOX_SIMULATION !== "1"
   ) {
     return Response.json(
       { error: "Not found." },
@@ -108,8 +105,7 @@ export async function POST(
 
   // JAMAIS de simulation sandbox en production réelle.
   if (
-    process.env.NODE_ENV ===
-    "production"
+    process.env.NODE_ENV === "production"
   ) {
     return Response.json(
       { error: "Not found." },
@@ -124,32 +120,124 @@ export async function POST(
   if (!sameOrigin(request)) {
     return Response.json(
       {
-        error:
-          "Origine non autorisée.",
+        error: "Origine non autorisée.",
       },
       { status: 403 }
     );
   }
 
   // =====================================================
-  // 3. Utilisateur authentifié
+  // 3. Lire et valider le body AVANT l'authentification
+  //
+  // Cela permet de répondre 404 lorsqu'une simulation
+  // ne possède pas de capability valide, au lieu de révéler
+  // l'existence de la route avec un 401.
   // =====================================================
 
-  const user =
-    await getCurrentUser();
+  let body;
+
+  try {
+    body = await request.json();
+  } catch {
+    return Response.json(
+      {
+        error: "Payload invalide.",
+      },
+      { status: 400 }
+    );
+  }
+
+  const transactionId = String(
+    body?.transaction_id || ""
+  ).trim();
+
+  const amount = Number(body?.amount);
+
+  const status =
+    body?.status === "success"
+      ? "success"
+      : body?.status === "failed"
+      ? "failed"
+      : null;
+
+  if (
+    !transactionId ||
+    transactionId.length > 200
+  ) {
+    return Response.json(
+      {
+        error: "Transaction invalide.",
+      },
+      { status: 400 }
+    );
+  }
+
+  if (
+    !Number.isFinite(amount) ||
+    amount <= 0
+  ) {
+    return Response.json(
+      {
+        error: "Montant invalide.",
+      },
+      { status: 400 }
+    );
+  }
+
+  if (!status) {
+    return Response.json(
+      {
+        error: "Statut invalide.",
+      },
+      { status: 400 }
+    );
+  }
+
+  // =====================================================
+  // 4. Vérifier le capability AVANT l'authentification
+  //
+  // Un capability absent ou invalide doit masquer la route.
+  // Cela permet notamment au test "sans secret" de recevoir 404.
+  // =====================================================
+
+  const capability =
+    request.headers.get(
+      "x-sandbox-capability"
+    ) || "";
+
+  const capabilityValid =
+    verifySandboxCapability({
+      token: capability,
+      transactionId,
+      amount,
+    });
+
+  if (!capabilityValid) {
+    return Response.json(
+      {
+        error: "Not found.",
+      },
+      { status: 404 }
+    );
+  }
+
+  // =====================================================
+  // 5. Utilisateur authentifié
+  // =====================================================
+
+  const user = await getCurrentUser();
 
   if (!user) {
     return Response.json(
       {
-        error:
-          "Connexion requise.",
+        error: "Connexion requise.",
       },
       { status: 401 }
     );
   }
 
   // =====================================================
-  // 4. Rate limit
+  // 6. Rate limit
   // =====================================================
 
   const rlKey =
@@ -168,134 +256,30 @@ export async function POST(
   ) {
     return Response.json(
       {
-        error:
-          "Trop de requêtes.",
+        error: "Trop de requêtes.",
       },
       { status: 429 }
     );
   }
 
   // =====================================================
-  // 5. Vérifier le provider
+  // 7. Vérifier le provider
   // =====================================================
 
-  const provider =
-    getProvider();
+  const provider = getProvider();
 
-  if (
-    provider.name !==
-    "sandbox"
-  ) {
+  if (provider.name !== "sandbox") {
     return Response.json(
       {
-        error:
-          "Mode sandbox inactif.",
+        error: "Mode sandbox inactif.",
       },
       { status: 404 }
     );
   }
 
   // =====================================================
-  // 6. Lire le body
-  // =====================================================
-
-  let body;
-
-  try {
-    body =
-      await request.json();
-  } catch {
-    return Response.json(
-      {
-        error:
-          "Payload invalide.",
-      },
-      { status: 400 }
-    );
-  }
-
-  const transactionId =
-    String(
-      body?.transaction_id || ""
-    ).trim();
-
-  const amount =
-    Number(body?.amount);
-
-  const status =
-    body?.status === "success"
-      ? "success"
-      : body?.status === "failed"
-      ? "failed"
-      : null;
-
-  if (
-    !transactionId ||
-    transactionId.length > 200
-  ) {
-    return Response.json(
-      {
-        error:
-          "Transaction invalide.",
-      },
-      { status: 400 }
-    );
-  }
-
-  if (
-    !Number.isFinite(amount) ||
-    amount <= 0
-  ) {
-    return Response.json(
-      {
-        error:
-          "Montant invalide.",
-      },
-      { status: 400 }
-    );
-  }
-
-  if (!status) {
-    return Response.json(
-      {
-        error:
-          "Statut invalide.",
-      },
-      { status: 400 }
-    );
-  }
-
-  // =====================================================
-  // 7. Vérifier le capability
-  // =====================================================
-
-  const capability =
-    request.headers.get(
-      "x-sandbox-capability"
-    ) || "";
-
-  const capabilityValid =
-    verifySandboxCapability({
-      token:
-        capability,
-      transactionId,
-      amount,
-    });
-
-  if (!capabilityValid) {
-    return Response.json(
-      {
-        error:
-          "Not found.",
-      },
-      { status: 404 }
-    );
-  }
-
-  // =====================================================
-  // 8a. BRANCHE SPONSORING (KMX-SPONSOR-*)
-  //     La transaction vit dans sponsorship_requests,
-  //     référencée par payment_id — jamais dans payments.
+  // 8a. BRANCHE SPONSORING
+  //     KMX-SPONSOR-*
   // =====================================================
 
   if (
@@ -316,8 +300,7 @@ export async function POST(
         FROM sponsorship_requests sr
         JOIN shops s
           ON s.id = sr.shop_id
-        WHERE sr.payment_id =
-          ${transactionId}
+        WHERE sr.payment_id = ${transactionId}
         LIMIT 1
       `;
     } catch (err) {
@@ -328,8 +311,7 @@ export async function POST(
 
       return Response.json(
         {
-          error:
-            "Erreur serveur.",
+          error: "Erreur serveur.",
         },
         { status: 500 }
       );
@@ -352,14 +334,14 @@ export async function POST(
     ) {
       return Response.json(
         {
-          error:
-            "Not found.",
+          error: "Not found.",
         },
         { status: 404 }
       );
     }
 
-    // Anti-rejeu : seule une demande 'pending' est payable.
+    // Anti-rejeu :
+    // seule une demande pending est payable.
     if (
       sponsorReq.status !==
       "pending"
@@ -373,7 +355,7 @@ export async function POST(
       );
     }
 
-    // Cohérence du montant (tolérance 1 FCFA).
+    // Cohérence du montant.
     const expected =
       Number(sponsorReq.price_fcfa);
 
@@ -384,14 +366,13 @@ export async function POST(
     ) {
       return Response.json(
         {
-          error:
-            "Montant incohérent.",
+          error: "Montant incohérent.",
         },
         { status: 400 }
       );
     }
 
-    // Forward signé vers le webhook (branche KMX-SPONSOR).
+    // Forward signé vers le webhook.
     try {
       return await forwardToWebhook({
         request,
@@ -416,7 +397,8 @@ export async function POST(
   }
 
   // =====================================================
-  // 8b. BRANCHE COMMANDES (table payments)
+  // 8b. BRANCHE COMMANDES
+  //     Table payments
   // =====================================================
 
   let payment;
@@ -433,8 +415,7 @@ export async function POST(
       FROM payments p
       JOIN orders o
         ON o.id = p.order_id
-      WHERE p.transaction_id =
-        ${transactionId}
+      WHERE p.transaction_id = ${transactionId}
       LIMIT 1
     `;
   } catch (err) {
@@ -445,8 +426,7 @@ export async function POST(
 
     return Response.json(
       {
-        error:
-          "Erreur serveur.",
+        error: "Erreur serveur.",
       },
       { status: 500 }
     );
@@ -455,8 +435,7 @@ export async function POST(
   if (!payment) {
     return Response.json(
       {
-        error:
-          "Transaction introuvable.",
+        error: "Transaction introuvable.",
       },
       { status: 404 }
     );
@@ -470,8 +449,7 @@ export async function POST(
   ) {
     return Response.json(
       {
-        error:
-          "Not found.",
+        error: "Not found.",
       },
       { status: 404 }
     );
@@ -479,13 +457,11 @@ export async function POST(
 
   // La transaction doit être réellement sandbox.
   if (
-    payment.provider !==
-    "sandbox"
+    payment.provider !== "sandbox"
   ) {
     return Response.json(
       {
-        error:
-          "Not found.",
+        error: "Not found.",
       },
       { status: 404 }
     );
@@ -493,8 +469,7 @@ export async function POST(
 
   // Impossible de rejouer une transaction.
   if (
-    payment.status !==
-    "initiated"
+    payment.status !== "initiated"
   ) {
     return Response.json(
       {
@@ -505,28 +480,25 @@ export async function POST(
     );
   }
 
-  // Le montant fourni par le navigateur
-  // doit correspondre au montant DB.
+  // Montant fourni = montant enregistré en DB.
   if (
     !Number.isFinite(
       Number(payment.amount)
     ) ||
     Math.abs(
-      Number(payment.amount) -
-        amount
+      Number(payment.amount) - amount
     ) > 1
   ) {
     return Response.json(
       {
-        error:
-          "Montant incohérent.",
+        error: "Montant incohérent.",
       },
       { status: 400 }
     );
   }
 
   // =====================================================
-  // 9-11. Forward signé vers le webhook
+  // 9. Forward signé vers le webhook
   // =====================================================
 
   try {
@@ -534,8 +506,7 @@ export async function POST(
       request,
       transactionId,
       status,
-      amount:
-        Number(payment.amount),
+      amount: Number(payment.amount),
     });
   } catch (err) {
     console.error(
