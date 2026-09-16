@@ -1,126 +1,180 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+// app/admin/orders/page.js — RÉÉCRITURE PRO
+// Design system : app/dashboard.css (à importer ici).
+// API inchangée : GET /api/admin/orders?page=&limit=25&filter=stagnant
+
+import { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { ShoppingCartIcon, ArrowRightIcon } from "@/app/components/Icons";
+import KimoxaLogo from "@/app/components/KimoxaLogo";
+import "../../dashboard.css";
 
 const ORDER_STATUS = {
-  pending: { label: "En attente" },
-  paid: { label: "Payée" },
-  preparation: { label: "En préparation" },
-  shipped: { label: "Expédiée" },
-  delivered: { label: "Livrée" },
-  cancelled: { label: "Annulée" },
+  pending:     { label: "En attente",     cls: "status-pending" },
+  paid:        { label: "Payée",          cls: "status-paid" },
+  preparation: { label: "En préparation", cls: "status-preparation" },
+  shipped:     { label: "Expédiée",       cls: "status-shipped" },
+  delivered:   { label: "Livrée",         cls: "status-delivered" },
+  cancelled:   { label: "Annulée",        cls: "status-cancelled" },
 };
+
+const fmtAmount = (n) => `${Number(n || 0).toLocaleString("fr-FR")} FCFA`;
+const fmtDate = (d) =>
+  new Date(d).toLocaleString("fr-FR", {
+    day: "2-digit", month: "2-digit", year: "2-digit",
+    hour: "2-digit", minute: "2-digit",
+  });
 
 function AdminOrdersContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const filter = searchParams.get("filter");
+  const stagnantOnly = searchParams.get("filter") === "stagnant";
 
   const [orders, setOrders] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
-  // P2-13 : pagination + filtre stagnant cote serveur
   const loadOrders = useCallback(async (p) => {
     setLoading(true);
     const params = new URLSearchParams({ page: String(p), limit: "25" });
-    if (filter) params.set("filter", filter);
+    if (stagnantOnly) params.set("filter", "stagnant");
     const res = await fetch("/api/admin/orders?" + params.toString());
-    if (res.status === 401 || res.status === 403) {
-      router.push("/login");
-      return;
-    }
+    if (res.status === 401 || res.status === 403) { router.push("/login"); return; }
     if (res.ok) {
       const data = await res.json();
       setOrders(data.orders || []);
       setPagination(data.pagination || null);
     }
     setLoading(false);
-  }, [router, filter]);
+  }, [router, stagnantOnly]);
 
   useEffect(() => { loadOrders(page); }, [page, loadOrders]);
-  useEffect(() => { setPage(1); }, [filter]);
+  useEffect(() => { setPage(1); }, [stagnantOnly]);
 
-  const title = filter === "stagnant" ? "Commandes stagnantes (> 3 jours)" : "Toutes les commandes";
-  const cell = { padding: "12px 16px", fontSize: "14px" };
-  const th = { ...cell, textAlign: "left", fontSize: "13px", fontWeight: 600 };
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return orders.filter((o) => {
+      if (statusFilter !== "all" && o.status !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        String(o.id).includes(q) ||
+        String(o.buyer_name || "").toLowerCase().includes(q) ||
+        String(o.buyer_email || "").toLowerCase().includes(q)
+      );
+    });
+  }, [orders, query, statusFilter]);
+
+  const total = pagination ? pagination.total : orders.length;
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1200px", margin: "0 auto" }}>
-      <div style={{ marginBottom: "24px" }}>
-        <Link href="/admin/dashboard" style={{ color: "#666", textDecoration: "none", fontSize: "14px" }}>
-          ← Retour au dashboard
-        </Link>
-        <h1 style={{ margin: "12px 0 0", fontSize: "24px", fontWeight: 700 }}>
-          {title} ({pagination ? pagination.total : orders.length})
-        </h1>
+    <div>
+      <div className="dash-topbar">
+        <div className="dash-topbar-brand">
+          <KimoxaLogo light size={20} />
+          <span className="dash-topbar-role">Admin</span>
+        </div>
+        <div className="dash-topbar-actions">
+          <Link href="/admin/dashboard" className="tb-link">Dashboard</Link>
+        </div>
+      </div>
+      <div className="woven-strip" />
+      <div className="dash-wrap">
+        <div className="dash-head">
+        <div>
+          <Link href="/admin/dashboard" style={{ color: "var(--text-muted)", textDecoration: "none", fontSize: "0.85rem" }}>
+            ← Retour au dashboard
+          </Link>
+          <h1 className="dash-title" style={{ marginTop: 8 }}>
+            {stagnantOnly ? "Commandes stagnantes (> 3 jours)" : "Commandes"} ({total.toLocaleString("fr-FR")})
+          </h1>
+          <p className="dash-sub">Toutes les boutiques · 25 par page · export CSV depuis le dashboard</p>
+        </div>
+      </div>
+
+      <div className="dash-toolbar">
+        <input
+          className="dash-search"
+          type="search"
+          placeholder="Rechercher par n° de commande, client, e-mail…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+        />
+        <select className="dash-select" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="all">Tous les statuts</option>
+          {Object.entries(ORDER_STATUS).map(([key, s]) => (
+            <option key={key} value={key}>{s.label}</option>
+          ))}
+        </select>
       </div>
 
       {loading ? (
-        <div style={{ padding: "40px", textAlign: "center", color: "#666" }}>Chargement…</div>
-      ) : orders.length === 0 ? (
-        <div style={{ padding: "40px", textAlign: "center", background: "#f9f9f9", borderRadius: "8px" }}>
-          <p style={{ color: "#666" }}>Aucune commande trouvée</p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {[0, 1, 2, 3, 4].map((i) => <div key={i} className="skeleton" />)}
+        </div>
+      ) : visible.length === 0 ? (
+        <div className="empty-block">
+          <ShoppingCartIcon size={48} />
+          <p>Aucune commande {query || statusFilter !== "all" ? "correspondant aux filtres" : "pour l'instant"}.</p>
         </div>
       ) : (
-        <div style={{ background: "#fff", borderRadius: "8px", overflow: "hidden", border: "1px solid #e5e5e5" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div className="pro-table-wrap">
+          <table className="pro-table">
             <thead>
-              <tr style={{ background: "#f5f5f5", borderBottom: "1px solid #e5e5e5" }}>
-                <th style={th}>ID</th>
-                <th style={th}>Client</th>
-                <th style={th}>Statut</th>
-                <th style={{ ...th, textAlign: "right" }}>Montant</th>
-                <th style={th}>Date</th>
+              <tr>
+                <th>N°</th>
+                <th>Client</th>
+                <th>Statut</th>
+                <th style={{ textAlign: "right" }}>Montant</th>
+                <th>Date</th>
               </tr>
             </thead>
             <tbody>
-              {orders.map((o) => (
-                <tr key={o.id} style={{ borderBottom: "1px solid #f0f0f0" }}>
-                  <td style={cell}>#{o.id}</td>
-                  <td style={cell}>{o.buyer_name || "—"}</td>
-                  <td style={cell}>
-                    <span style={{
-                      display: "inline-block", padding: "4px 8px", borderRadius: "4px",
-                      fontSize: "12px", fontWeight: 600,
-                      background: o.status === "paid" ? "#e8f5e9" : o.status === "cancelled" ? "#fdecea" : o.status === "delivered" ? "#e8f5e9" : "#fff3e0",
-                      color: o.status === "paid" || o.status === "delivered" ? "#2e7d32" : o.status === "cancelled" ? "#c62828" : "#f57c00",
-                    }}>
-                      {(ORDER_STATUS[o.status] || {}).label || o.status}
-                    </span>
-                  </td>
-                  <td style={{ ...cell, textAlign: "right", fontWeight: 600 }}>
-                    {Number(o.total_amount || 0).toLocaleString("fr-FR")} FCFA
-                  </td>
-                  <td style={{ ...cell, color: "#666", fontSize: "13px" }}>
-                    {new Date(o.created_at).toLocaleDateString("fr-FR")}
-                  </td>
-                </tr>
-              ))}
+              {visible.map((o) => {
+                const st = ORDER_STATUS[o.status] || { label: o.status, cls: "status-pending" };
+                return (
+                  <tr key={o.id}>
+                    <td className="cell-main">#{o.id}</td>
+                    <td>
+                      <span className="cell-main">{o.buyer_name || "—"}</span>
+                      {o.buyer_email && <span className="cell-muted" style={{ display: "block" }}>{o.buyer_email}</span>}
+                    </td>
+                    <td><span className={`status-pill ${st.cls}`}>{st.label}</span></td>
+                    <td className="amount">{fmtAmount(o.total_amount)}</td>
+                    <td className="cell-muted">{fmtDate(o.created_at)}</td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       )}
 
       {pagination && (pagination.totalPages || 0) > 1 && (
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, marginTop: 16 }}>
-          <button className="btn btn-ghost" disabled={!pagination.hasPrev || loading} onClick={() => setPage(page - 1)}>← Précédent</button>
-          <span style={{ fontSize: "0.85rem", color: "#666" }}>
-            Page {pagination.page} sur {pagination.totalPages} · {pagination.total} commandes
+        <div className="pager">
+          <button className="btn btn-ghost btn-sm" disabled={!pagination.hasPrev || loading} onClick={() => setPage(page - 1)}>
+            ← Précédent
+          </button>
+          <span className="pager-info">
+            Page {pagination.page} / {pagination.totalPages} · {total.toLocaleString("fr-FR")} commandes
           </span>
-          <button className="btn btn-ghost" disabled={!pagination.hasNext || loading} onClick={() => setPage(page + 1)}>Suivant →</button>
+          <button className="btn btn-ghost btn-sm" disabled={!pagination.hasNext || loading} onClick={() => setPage(page + 1)}>
+            Suivant <ArrowRightIcon size={14} style={{ marginLeft: 4 }} />
+          </button>
         </div>
       )}
+      </div>
     </div>
   );
 }
 
 export default function AdminOrdersPage() {
   return (
-    <Suspense fallback={<div style={{ padding: 24 }}>Chargement…</div>}>
+    <Suspense fallback={<div className="dash-wrap"><div className="skeleton" /></div>}>
       <AdminOrdersContent />
     </Suspense>
   );
