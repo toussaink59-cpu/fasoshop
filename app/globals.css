@@ -2428,12 +2428,11 @@ tbody tr:hover {
   display: none;
 }
 
-/* Grille EXACTE : 5 colonnes desktop */
-.shop-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 24px;
-}
+/* .shop-grid supprimée (Audit KIMOXA - R-2/R-3) : la page d'accueil utilise
+   désormais .temu-shop-grid, comme le catalogue (voir HomeFeed.js). Les
+   3 blocs de règles .shop-grid qui existaient dans ce fichier (base + 2
+   surcharges responsive) sont retirés pour ne garder qu'un seul système
+   de grille produits à maintenir. */
 
 /* Carte produit premium */
 .shop-card {
@@ -2576,12 +2575,8 @@ tbody tr:hover {
   display: none;
 }
 
-/* ===== Tablette : 768"€“1023px "€” 3 colonnes ===== */
+/* ===== Tablette : 768–1023px ===== */
 @media (min-width: 768px) and (max-width: 1023px) {
-  .shop-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
-  }
   .shop-layout {
     grid-template-columns: 240px 1fr;
     gap: 20px;
@@ -2615,11 +2610,6 @@ tbody tr:hover {
 
   .shop-mobile-cats::-webkit-scrollbar {
     display: none;
-  }
-
-  .shop-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
   }
 
   .shop-card-name {
@@ -4653,11 +4643,8 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 /* Catalogue : grille dense façon Temu */
 .product-grid { gap: 10px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 @media (max-width: 767px) {
-  .shop-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .product-grid { grid-template-columns: 1fr 1fr; }
 }
-@media (min-width: 768px) and (max-width: 1023px) { .shop-grid { gap: 12px; } }
-@media (min-width: 1024px) { .shop-grid { gap: 12px; } }
 /* ===== TEMU v2 : rails transformés en grilles (zéro scroll horizontal) ===== */
 
 .home-hscroll-track {

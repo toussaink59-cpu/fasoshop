@@ -39,7 +39,14 @@ export default function HomeFeed({ initialProducts = [], user, excludeIds = new 
 
   return (
     <div className="home-section">
-      <div className="shop-grid">
+      {/* Audit KIMOXA - correctif R-2/R-3 : la page d'accueil utilisait
+          .shop-grid (5 colonnes fixes dès 1024px) alors que le catalogue
+          utilise .temu-shop-grid (2→3→4→5→6 colonnes selon 5 paliers).
+          Deux systèmes de grille différents pour le même type de contenu
+          donnaient une densité de cartes incohérente entre les deux pages.
+          Unification sur .temu-shop-grid, déjà utilisé par ShopClient.js,
+          pour un rendu identique et un seul système à maintenir. */}
+      <div className="temu-shop-grid">
         {visible.map((p) => (
           <ProductCard key={p.id} p={p} user={user} />
         ))}
