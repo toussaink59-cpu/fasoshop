@@ -10,7 +10,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import Footer from "@/app/components/Footer";
 import SiteHeader from "@/app/components/SiteHeader";
 import BottomNav from "@/app/components/BottomNav";
-import ProductCard from "@/app/components/ProductCard";
+import ProductCard, { isPurchasable } from "@/app/components/ProductCard";
 
 const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
 const SORT_OPTIONS = [
@@ -429,7 +429,12 @@ function ShopContent({
     }, 350);
   }
 
-  const visibleProducts = products.slice(0, visibleCount);
+  // Audit KIMOXA - correctif UX-1 : "N produits" et la grille affichée doivent
+  // toujours correspondre. On dérive une liste "affichable" (hors rupture de
+  // stock, que ProductCard ne rend de toute façon pas) pour le comptage,
+  // sans modifier `products` qui pilote la pagination serveur.
+  const displayableProducts = useMemo(() => products.filter(isPurchasable), [products]);
+  const visibleProducts = displayableProducts.slice(0, visibleCount);
   const hasMore = visibleCount < products.length;
   const remaining = products.length - visibleCount;
   const hasActiveFilters = Object.values(appliedFilters).some((v) => v);
@@ -485,7 +490,7 @@ function ShopContent({
 
         <div className="temu-shop-toolbar">
           <span className="temu-result-count">
-            {loading ? "Chargement..." : `${products.length} produit${products.length > 1 ? "s" : ""}`}
+            {loading ? "Chargement..." : `${displayableProducts.length} produit${displayableProducts.length > 1 ? "s" : ""}`}
           </span>
           <div className="temu-toolbar-actions">
             <select
@@ -551,10 +556,10 @@ function ShopContent({
               </div>
             )}
 
-            {!hasMore && products.length > ITEMS_PER_PAGE && (
+            {!hasMore && displayableProducts.length > ITEMS_PER_PAGE && (
               <div className="load-more-wrap">
                 <p className="load-more-done">
-                   Vous avez vu tous les {products.length} produits
+                   Vous avez vu tous les {displayableProducts.length} produits
                 </p>
               </div>
             )}

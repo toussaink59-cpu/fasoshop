@@ -2,7 +2,7 @@
 
 import { CheckIcon } from "@/app/components/Icons";
 import { useState, useMemo } from "react";
-import ProductCard from "@/app/components/ProductCard";
+import ProductCard, { isPurchasable } from "@/app/components/ProductCard";
 
 const PAGE = 6;
 
@@ -11,9 +11,12 @@ const PAGE = 6;
 // Les produits déjà affichés dans les sections vitrine (Flash, Nouveautés)
 // sont automatiquement exclus pour éviter les doublons.
 export default function HomeFeed({ initialProducts = [], user, excludeIds = new Set() }) {
-  // Filtre les produits déjà vus dans les sections vitrine
+  // Filtre les produits déjà vus dans les sections vitrine ET ceux en rupture
+  // de stock (ProductCard ne les rend pas) pour que "N produits restants"
+  // corresponde toujours au nombre réel de cartes affichées.
+  // Audit KIMOXA - correctif UX-1.
   const filteredProducts = useMemo(
-    () => initialProducts.filter((p) => !excludeIds.has(p.id)),
+    () => initialProducts.filter((p) => !excludeIds.has(p.id) && isPurchasable(p)),
     [initialProducts, excludeIds]
   );
 
