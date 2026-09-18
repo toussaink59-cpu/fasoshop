@@ -17,10 +17,11 @@ export async function GET() {
     return NextResponse.json({ shop: rows[0] || null });
   } catch (err) {
     console.error("[vendor/shop] GET error:", err);
-    return NextResponse.json(
-      { error: "Erreur serveur", detail: String(err?.message || err) },
-      { status: 500 }
-    );
+    // Audit KIMOXA - correctif SEC-1 : le message d'erreur brut (err.message)
+    // ne doit jamais être renvoyé au client (fuite d'information interne :
+    // noms de colonnes SQL, chemins, etc.). Il reste dans les logs serveur
+    // via console.error ci-dessus, ce qui suffit pour le débogage.
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
 
@@ -132,9 +133,7 @@ export async function PATCH(request) {
     return NextResponse.json({ shop: updated[0] });
   } catch (err) {
     console.error("[vendor/shop] PATCH error:", err);
-    return NextResponse.json(
-      { error: "Erreur serveur", detail: String(err?.message || err) },
-      { status: 500 }
-    );
+    // Audit KIMOXA - correctif SEC-1 : voir la note équivalente dans GET().
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
