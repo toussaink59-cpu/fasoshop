@@ -7,7 +7,7 @@ import { getCart, cartCount } from "@/lib/cart";
 import SideMenu from "@/app/components/SideMenu";
 import SearchBar from "@/app/components/SearchBar";
 import KimoxaLogo from "@/app/components/KimoxaLogo";
-import { MenuIcon, UserIcon, ShoppingCartIcon } from "@/app/components/Icons";
+import { MenuIcon, UserIcon, ShoppingCartIcon, HeartIcon } from "@/app/components/Icons";
 
 export default function SiteHeader({ initialUser, categories = [], searchValue = "" }) {
   const router = useRouter();
@@ -56,6 +56,13 @@ export default function SiteHeader({ initialUser, categories = [], searchValue =
 
           <div className="site-header-desktop-actions">
             <Link href="/devenir-vendeur" className="btn-header-link">Devenir vendeur</Link>
+            {/* Audit KIMOXA - correctif UX-3 : la Wishlist n'était accessible
+                depuis aucun point du header desktop, alors que le bouton
+                favori existe sur chaque carte produit. */}
+            <Link href="/favoris" className="btn-header-link">
+              <HeartIcon size={16} style={{ marginRight: 6 }} />
+              Favoris
+            </Link>
             {user ? (
               <>
                 <Link href={accountLink()} className="btn-header-link">
@@ -86,6 +93,14 @@ export default function SiteHeader({ initialUser, categories = [], searchValue =
 
             <Link href={accountLink()} className="site-header-icon-btn site-header-account" aria-label="Compte">
               <UserIcon size={22} />
+            </Link>
+
+            {/* Audit KIMOXA - correctif UX-3 : icône Wishlist mobile,
+                à côté du compte et du panier (déjà présents ici). Masquée
+                dès 768px car le lien texte "Favoris" desktop la remplace
+                (voir .site-header-desktop-actions plus haut). */}
+            <Link href="/favoris" className="site-header-icon-btn site-header-favoris-mobile" aria-label="Favoris">
+              <HeartIcon size={22} />
             </Link>
 
             <Link href="/cart" className="site-header-icon-btn" aria-label="Panier">
