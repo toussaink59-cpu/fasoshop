@@ -11,6 +11,14 @@ import { HeartIcon, BadgeCheckIcon, StarIcon, PackageIcon, CheckCircleIcon } fro
 const CONDITION_LABELS = { neuf: "Neuf", quasi_neuf: "Quasi neuf", occasion: "Occasion" };
 const CONDITION_COLORS = { neuf: "var(--gold-600)", quasi_neuf: "#6b7280", occasion: "var(--bissap-600)" };
 
+// Un seul point de vérité pour savoir si un produit doit être affiché/achetable.
+// Utilisé aussi par HomeFeed / ShopClient pour que les compteurs "N produits"
+// correspondent exactement au nombre de cartes réellement rendues.
+// Audit KIMOXA - correctif PC-4 / UX-1.
+export function isPurchasable(p) {
+  return Number(p?.stock_quantity) > 0;
+}
+
 export function Stars({ rating }) {
   const rounded = Math.round(Number(rating) || 0);
   return (
@@ -29,7 +37,9 @@ export default function ProductCard({ p, user, compact = false }) {
   const [favBusy, setFavBusy] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
 
-  if (p.stock_quantity <= 0) return null;
+  // Garde-fou défensif : les listes parentes filtrent déjà via isPurchasable(),
+  // mais on ne rend jamais une carte "achetable" pour un produit en rupture.
+  if (!isPurchasable(p)) return null;
 
   async function handleFav(e) {
     e.preventDefault();
@@ -73,12 +83,14 @@ export default function ProductCard({ p, user, compact = false }) {
 
       <Link href={`/shop/${p.id}`} style={{ textDecoration: "none", color: "inherit" }}>
         <div className="shop-card-image-wrap">
-          {hasDiscount(p) && <span className="badge-discount">-{discountPercent(p)}%</span>}
-          {p.is_sponsored ? (
-            <span className="shop-card-badge-sponsored">Sponsorisé</span>
-          ) : p.isNew ? (
-            <span className="shop-card-badge-new">Nouveau</span>
-          ) : null}
+          <div className="shop-card-badges">
+            {hasDiscount(p) && <span className="badge-discount">-{discountPercent(p)}%</span>}
+            {p.is_sponsored ? (
+              <span className="shop-card-badge-sponsored">Sponsorisé</span>
+            ) : p.isNew ? (
+              <span className="shop-card-badge-new">Nouveau</span>
+            ) : null}
+          </div>
           {p.images && p.images.length > 0 ? (
             <Image
               src={p.images[0]}
@@ -106,7 +118,7 @@ export default function ProductCard({ p, user, compact = false }) {
       </span>
 
       <div className="shop-card-shop-row">
-        <span className="shop">Kimoxa</span>
+        <span className="shop">{p.shop_name || p.shopName || "Kimoxa"}</span>
         <span className="shop-card-verified" title="Vendeur vérifié" style={{ color: "var(--gold-600)", display: "inline-flex", alignItems: "center" }}>
           <BadgeCheckIcon size={16} />
         </span>
@@ -121,10 +133,10 @@ export default function ProductCard({ p, user, compact = false }) {
 
       <PriceDisplay product={p} />
 
-      <button className="btn btn-primary" onClick={handleAdd} disabled={p.stock_quantity <= 0}>
-        {p.stock_quantity <= 0 ? (
-          "Rupture de stock"
-        ) : justAdded ? (
+      {/* Ce bouton n'est jamais rendu en rupture de stock : isPurchasable() court-circuite
+          le composant avant ce point (voir plus haut). Audit KIMOXA - correctif PC-4. */}
+      <button className="btn btn-primary" onClick={handleAdd}>
+        {justAdded ? (
           <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
             <CheckCircleIcon size={16} /> Ajouté
           </span>
