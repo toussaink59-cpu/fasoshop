@@ -4672,14 +4672,13 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   scroll-snap-align: none !important;
 }
 
-/* Hauteurs uniformes : carte pleine hauteur, bouton collé en bas */
+/* Hauteurs uniformes : carte pleine hauteur (la mise en page interne est
+   désormais définie une seule fois dans le bloc canonique en fin de
+   fichier — Audit KIMOXA, correctif ALN-1). */
 .home-hscroll-item .shop-card {
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
 }
-.home-hscroll-item .shop-card > .btn { margin-top: auto; margin-bottom: 10px; }
 /* ===== FOOTER MARKETPLACE PANAFRICAINE ===== */
 
 /* Fond sombre professionnel */
@@ -7559,3 +7558,93 @@ h1, h2, h3, h4 { font-family: var(--font-inter), ui-sans-serif, system-ui, sans-
 .bottom-nav-item { color: rgba(255, 255, 255, 0.65) !important; }
 .bottom-nav-item.is-active { color: #d4af37 !important; }
 .bottom-nav-badge { background: #d4af37 !important; color: #0d1220 !important; }
+
+/* ============================================================
+   KIMOXA — Alignement canonique des cartes produit
+   Audit KIMOXA, correctifs ALN-1 à ALN-4.
+
+   Problème constaté en production : dans une même rangée, le prix et
+   le bouton « Ajouter au panier » ne tombaient pas à la même hauteur
+   d'une carte à l'autre. Trois causes cumulées :
+
+   1) .shop-card n'était en flex-column QUE dans les rails de la page
+      d'accueil. Dans la grille principale et le catalogue, le
+      `margin-top: auto` de .price-display n'avait donc aucun effet
+      (pas de conteneur flex) et rien n'était aligné en bas.
+   2) Dans les rails, DEUX `margin-top: auto` coexistaient
+      (.price-display et .shop-card > .btn). Deux marges automatiques
+      se partagent l'espace libre au lieu de l'absorber : le prix et le
+      bouton flottaient chacun à une hauteur différente selon la
+      quantité de contenu au-dessus.
+   3) Le bloc prix pouvait occuper 1 ou 2 lignes selon la présence d'un
+      prix barré, et « 51 900 FCFA » se coupait en deux lignes sur les
+      colonnes étroites.
+
+   Principe retenu (standard des marketplaces) : le bloc prix + bouton
+   forme un pied de carte ancré en bas, avec une hauteur de prix
+   réservée constante. Les éléments facultatifs au-dessus (note, avis,
+   prix barré) ne décalent donc plus jamais le pied de carte.
+   ============================================================ */
+
+/* 1. La carte est une colonne flex dans TOUS les contextes :
+      grille d'accueil, catalogue, favoris, rails, résultats de
+      recherche. Une seule règle, plus de comportement par contexte. */
+.shop-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Le lien enveloppe l'image et le nom : il ne doit pas absorber
+   l'espace libre, sans quoi le pied de carte remonterait. */
+.shop-card > a {
+  display: block;
+  flex: 0 0 auto;
+}
+
+/* 2. Pied de carte ancré en bas : UNE SEULE marge automatique, portée
+      par le bloc prix. Le bouton suit avec un écart fixe. */
+.shop-card .price-display {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  align-content: flex-end;
+  gap: 2px 8px;
+  /* Hauteur réservée = 2 lignes. Une carte en promotion (prix barré +
+     prix actuel) et une carte sans promotion occupent ainsi la même
+     hauteur, donc leurs boutons s'alignent. */
+  min-height: 2.9em;
+}
+
+.shop-card > .btn {
+  margin-top: 8px;
+  flex: 0 0 auto;
+}
+
+/* 3. Un montant ne se coupe jamais en deux lignes : « 51 900 » et
+      « FCFA » restent solidaires, quelle que soit la largeur de
+      colonne (2 colonnes mobile comme 6 colonnes grand écran). */
+.shop-card .price-current,
+.shop-card .price-old {
+  white-space: nowrap;
+}
+
+/* 4. Images produit strictement uniformes : cadre carré imposé et
+      recadrage `cover`, pour que deux photos de proportions
+      différentes (portrait, paysage, carrée) occupent exactement la
+      même surface et que les cartes restent alignées. */
+.shop-card-image-wrap {
+  aspect-ratio: 1 / 1;
+  height: auto;
+  width: 100%;
+  overflow: hidden;
+}
+
+.shop-card-image-wrap img,
+.shop-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
