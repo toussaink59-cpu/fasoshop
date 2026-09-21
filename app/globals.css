@@ -7648,3 +7648,70 @@ h1, h2, h3, h4 { font-family: var(--font-inter), ui-sans-serif, system-ui, sans-
   object-fit: cover;
   display: block;
 }
+
+/* KIMOXA - alignement canonique des badges produit */
+.shop-card-badges {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  max-width: calc(100% - 48px);
+}
+
+.shop-card-badges .badge-discount,
+.shop-card-badges .shop-card-badge-sponsored,
+.shop-card-badges .shop-card-badge-new {
+  position: static !important;
+  inset: auto !important;
+  margin: 0 !important;
+  transform: none !important;
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .shop-card-badges {
+    top: 7px;
+    left: 7px;
+    gap: 4px;
+  }
+
+  .shop-card-badges .badge-discount,
+  .shop-card-badges .shop-card-badge-sponsored,
+  .shop-card-badges .shop-card-badge-new {
+    font-size: 0.58rem;
+    line-height: 1.2;
+    padding: 3px 6px;
+  }
+}
+
+/* KIMOXA - finition visuelle des badges produit */
+.shop-card-badges {
+  top: 8px;
+  left: 8px;
+  gap: 6px;
+}
+
+.shop-card-badges .badge-discount {
+  min-height: 20px;
+  padding: 3px 7px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+}
+
+.shop-card-badges .shop-card-badge-sponsored,
+.shop-card-badges .shop-card-badge-new {
+  min-height: 20px;
+  padding: 3px 7px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+}
