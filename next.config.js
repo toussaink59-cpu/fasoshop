@@ -9,7 +9,12 @@ const nextConfig = {
 
   images: {
     remotePatterns: [
-      { protocol: "https", hostname: "images.unsplash.com" },
+      // Audit KIMOXA - CAR-1 : le domaine images.unsplash.com a été retiré.
+      // Il n'était utilisé que par les photos d'archive de l'ancien hero
+      // carrousel, remplacées par les vrais produits des vendeurs. Le
+      // laisser ouvert permettrait à des visuels génériques de revenir
+      // silencieusement dans l'interface ; Next/Image refuse désormais
+      // toute image hors du stockage produit de la plateforme.
       {
         protocol: "https",
         hostname: "*.public.blob.vercel-storage.com",

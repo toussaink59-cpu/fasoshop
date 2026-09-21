@@ -1,24 +1,268 @@
-﻿.hero{position:relative;overflow:hidden;border-radius:12px;background:linear-gradient(135deg,#fdf8ee,#f7ecd8);border:1px solid var(--border,#eadfce);margin:8px 0 14px}
-.track{display:flex;transition:transform .45s ease}
-.slide{min-width:100%;display:flex;align-items:center;gap:14px;padding:12px 14px 24px;min-height:132px}
-.copy{flex:1.15;min-width:0;display:flex;flex-direction:column;gap:6px}
-.eyebrow{font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#b98a1f}
-.title{font-family:"Work Sans",system-ui,-apple-system,sans-serif;font-weight:800;font-size:clamp(.98rem,4.4vw,1.3rem);line-height:1.12;color:var(--ink-900,#241712);margin:0}
-.subtitle{font-size:.8rem;color:var(--ink-700,#5c4a3a);margin:0}
-.cta{align-self:flex-start;background:#e8590c;color:#fff;font-size:.72rem;font-weight:700;padding:8px 14px;border-radius:999px;text-decoration:none}
-.visual{flex:0.9;position:relative;height:96px;border-radius:10px;overflow:hidden;background:#fff;border:1px solid var(--border,#eadfce)}
-.imgCover{object-fit:cover}
-.logoBox{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:linear-gradient(135deg,#fffdf7,#f6ead2)}
-.logoWord{font-weight:800;letter-spacing:.18em;color:#241712;font-size:.85rem}
-.dots{position:absolute;left:0;right:0;bottom:6px;display:flex;justify-content:center;gap:6px}
-.dot{width:6px;height:6px;border-radius:999px;border:0;background:#d8c9ae;padding:0;cursor:pointer}
-.active{background:#e8590c;width:16px}
-@media (min-width:768px){
-  .slide{min-height:180px;padding:20px 26px 30px;gap:22px}
-  .title{font-size:1.55rem}
-  .subtitle{font-size:.9rem}
-  .visual{height:130px}
+/* ============================================================
+   KIMOXA — Hero carrousel
+   Piloté par les vrais produits du catalogue (aucune photo
+   d'archive générique). Voir HeroCarousel.js.
+   ============================================================ */
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #fdf8ee, #f7ecd8);
+  border: 1px solid var(--border, #eadfce);
+  margin: 8px 0 14px;
 }
 
-.title{text-transform:uppercase;letter-spacing:.02em}
-@media (min-width:768px){.title{font-size:1.4rem}}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viewport { overflow: hidden; }
+
+.track {
+  display: flex;
+  transition: transform 0.45s ease;
+}
+
+/* Les slides masquées ne doivent plus capter ni le focus ni la souris. */
+.slide[inert] { pointer-events: none; }
+
+.slide {
+  min-width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 14px 30px;
+  min-height: 140px;
+  box-sizing: border-box;
+}
+
+.copy {
+  flex: 1.15;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.eyebrow {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #b98a1f;
+}
+
+/* Le nom d'un produit vendeur peut être très long : on borne à 2 lignes
+   pour que la hauteur du hero ne saute pas d'une slide à l'autre. */
+.title {
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  font-weight: 800;
+  font-size: clamp(0.95rem, 4.2vw, 1.25rem);
+  line-height: 1.18;
+  color: var(--ink-900, #241712);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.subtitle {
+  font-size: 0.78rem;
+  color: var(--ink-700, #5c4a3a);
+  margin: 0;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  font-size: 0.7rem;
+  color: var(--ink-700, #5c4a3a);
+  min-width: 0;
+}
+
+.shop {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 600;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.verified { color: var(--gold-600, #a1730f); flex-shrink: 0; }
+
+.rating { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; }
+.star { color: var(--gold-500, #d4af37); }
+.reviews { font-weight: 400; opacity: 0.75; }
+
+.priceRow {
+  margin: 2px 0 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.price {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-weight: 800;
+  font-size: 1rem;
+  color: #e8590c;
+}
+
+.priceOld {
+  font-size: 0.75rem;
+  color: #8a7c6d;
+  text-decoration: line-through;
+}
+
+.cta {
+  align-self: flex-start;
+  margin-top: 4px;
+  background: #0d1220;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 9px 16px;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.cta:hover { background: #d4af37; color: #0d1220; }
+
+.visual {
+  flex: 0.9;
+  position: relative;
+  aspect-ratio: 1 / 1;
+  max-height: 112px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--border, #eadfce);
+  flex-shrink: 0;
+}
+
+.img { object-fit: cover; }
+
+.logoBox {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #fffdf7, #f6ead2);
+}
+
+.logoWord {
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: #241712;
+  font-size: 0.8rem;
+}
+
+/* --- Flèches : masquées au tactile (le swipe suffit), visibles au pointeur
+   fin, avec une cible de 44px conforme aux recommandations tactiles. --- */
+.arrow {
+  display: none;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border, #eadfce);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #241712;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.15s ease;
+}
+
+.arrow:hover { background: #fff; }
+.arrowPrev { left: 10px; }
+.arrowNext { right: 10px; }
+
+@media (hover: hover) and (pointer: fine) {
+  .arrow { display: flex; }
+}
+
+.dots {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  z-index: 2;
+}
+
+/* Pastille visuelle de 6px, mais cible tactile de 24px via le padding :
+   l'ancienne version n'offrait que 6px de zone cliquable. */
+.dot {
+  width: 24px;
+  height: 24px;
+  padding: 9px 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #d8c9ae;
+  transition: width 0.2s ease, background 0.2s ease;
+}
+
+.dotActive::before { width: 18px; background: #e8590c; }
+
+/* Focus visible au clavier sur tous les contrôles interactifs. */
+.cta:focus-visible,
+.arrow:focus-visible,
+.dot:focus-visible {
+  outline: 2px solid #0d1220;
+  outline-offset: 2px;
+}
+
+@media (min-width: 768px) {
+  .slide { min-height: 190px; padding: 22px 30px 34px; gap: 24px; }
+  .title { font-size: 1.4rem; -webkit-line-clamp: 2; }
+  .subtitle { font-size: 0.88rem; }
+  .meta { font-size: 0.78rem; }
+  .price { font-size: 1.25rem; }
+  .priceOld { font-size: 0.85rem; }
+  .cta { font-size: 0.8rem; padding: 10px 20px; }
+  .visual { max-height: 150px; }
+}
+
+/* Réglage système "réduire les animations" : le défilement automatique est
+   déjà désactivé côté JS, on neutralise aussi la transition. */
+@media (prefers-reduced-motion: reduce) {
+  .track { transition: none; }
+  .dot::before { transition: none; }
+}
