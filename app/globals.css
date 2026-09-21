@@ -224,9 +224,21 @@ input:focus, select:focus, button:focus-visible {
 .btn:hover { opacity: 0.88; }
 .btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
+/* Définition canonique unique du CTA principal (carte produit, fiche produit,
+   panier, filtres...). Avant ce correctif, 3 définitions concurrentes de
+   .btn-primary (or -> orange -> navy scoppé aux cartes) coexistaient dans ce
+   fichier, ce qui donnait une couleur différente selon la page.
+   Audit KIMOXA - correctif PC-3. */
 .btn-primary {
-  background: var(--gold-500);
-  color: var(--ink-900);
+  background: #0d1220;
+  color: #fff;
+  border-radius: 8px;
+  font-weight: 700;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #d4af37;
+  color: #0d1220;
 }
 
 .btn-danger {
@@ -1231,10 +1243,22 @@ tbody tr:hover {
   position: relative;
 }
 
-.badge-discount {
+/* Conteneur des badges (promo / nouveauté / sponsorisé) : empilés en colonne
+   en haut à gauche pour ne jamais se chevaucher entre eux, ni chevaucher le
+   bouton favori (.shop-card-fav, en haut à droite).
+   Audit KIMOXA - correctif PC-1/B-2. */
+.shop-card-badges {
   position: absolute;
   top: 10px;
-  right: 10px;
+  left: 10px;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.badge-discount {
   background: var(--bissap-600);
   color: white;
   font-family: var(--font-mono);
@@ -1242,7 +1266,6 @@ tbody tr:hover {
   font-size: 0.75rem;
   padding: 3px 9px;
   border-radius: 20px;
-  z-index: 1;
 }
 
 .price-display {
@@ -1444,12 +1467,8 @@ tbody tr:hover {
   --orange-100: #fdead9;
 }
 
-/* CTA principal recoloré en orange vif "€” plus visible, façon Jumia/Amazon */
-.btn-primary {
-  background: var(--orange-500);
-  color: white;
-}
-
+/* .btn-primary : couleur désormais centralisée L.227 (Audit KIMOXA - PC-3).
+   .btn-hero reste un composant distinct (bannière hero), inchangé. */
 .btn-hero {
   background: var(--orange-500);
   color: white;
@@ -1472,9 +1491,8 @@ tbody tr:hover {
   transform: translateY(-1px);
 }
 
-.btn-primary:hover:not(:disabled) {
-  box-shadow: 0 6px 16px rgba(232, 114, 12, 0.35);
-}
+/* Ombre orange retirée (Audit KIMOXA - PC-3) : elle ne correspondait plus au
+   nouveau hover doré défini L.239 et créait un effet visuel incohérent. */
 
 .btn-hero:hover:not(:disabled) {
   transform: translateY(-2px);
@@ -2410,12 +2428,11 @@ tbody tr:hover {
   display: none;
 }
 
-/* Grille EXACTE : 5 colonnes desktop */
-.shop-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 24px;
-}
+/* .shop-grid supprimée (Audit KIMOXA - R-2/R-3) : la page d'accueil utilise
+   désormais .temu-shop-grid, comme le catalogue (voir HomeFeed.js). Les
+   3 blocs de règles .shop-grid qui existaient dans ce fichier (base + 2
+   surcharges responsive) sont retirés pour ne garder qu'un seul système
+   de grille produits à maintenir. */
 
 /* Carte produit premium */
 .shop-card {
@@ -2459,9 +2476,6 @@ tbody tr:hover {
 }
 
 .shop-card-badge-new {
-  position: absolute;
-  top: 10px;
-  left: 10px;
   background: var(--millet-600);
   color: white;
   font-family: var(--font-mono);
@@ -2469,7 +2483,6 @@ tbody tr:hover {
   font-size: 0.68rem;
   padding: 3px 9px;
   border-radius: 20px;
-  z-index: 1;
   text-transform: uppercase;
 }
 
@@ -2562,12 +2575,8 @@ tbody tr:hover {
   display: none;
 }
 
-/* ===== Tablette : 768"€“1023px "€” 3 colonnes ===== */
+/* ===== Tablette : 768–1023px ===== */
 @media (min-width: 768px) and (max-width: 1023px) {
-  .shop-grid {
-    grid-template-columns: repeat(3, 1fr);
-    gap: 18px;
-  }
   .shop-layout {
     grid-template-columns: 240px 1fr;
     gap: 20px;
@@ -2601,11 +2610,6 @@ tbody tr:hover {
 
   .shop-mobile-cats::-webkit-scrollbar {
     display: none;
-  }
-
-  .shop-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
   }
 
   .shop-card-name {
@@ -2678,9 +2682,6 @@ tbody tr:hover {
    ============================================ */
 
 .shop-card-badge-sponsored {
-  position: absolute;
-  top: 10px;
-  left: 10px;
   background: var(--gold-500);
   color: var(--ink-900);
   font-family: var(--font-mono);
@@ -2688,7 +2689,6 @@ tbody tr:hover {
   font-size: 0.65rem;
   padding: 3px 9px;
   border-radius: 20px;
-  z-index: 1;
   text-transform: uppercase;
 }
 
@@ -4453,6 +4453,9 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   font-size: 1rem; font-weight: 700; cursor: pointer;
 }
 .qty-stepper button:hover { background: var(--sand-200); }
+/* Audit KIMOXA - correctif UX-2 : état visuel manquant pour le bouton "-"
+   désactivé à quantité 1. */
+.qty-stepper button:disabled { opacity: 0.4; cursor: not-allowed; background: #fff; }
 .qty-stepper span { min-width: 28px; text-align: center; font-weight: 600; }
 
 /* Section checkout */
@@ -4640,11 +4643,8 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 /* Catalogue : grille dense façon Temu */
 .product-grid { gap: 10px; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
 @media (max-width: 767px) {
-  .shop-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
   .product-grid { grid-template-columns: 1fr 1fr; }
 }
-@media (min-width: 768px) and (max-width: 1023px) { .shop-grid { gap: 12px; } }
-@media (min-width: 1024px) { .shop-grid { gap: 12px; } }
 /* ===== TEMU v2 : rails transformés en grilles (zéro scroll horizontal) ===== */
 
 .home-hscroll-track {
@@ -4672,14 +4672,13 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
   scroll-snap-align: none !important;
 }
 
-/* Hauteurs uniformes : carte pleine hauteur, bouton collé en bas */
+/* Hauteurs uniformes : carte pleine hauteur (la mise en page interne est
+   désormais définie une seule fois dans le bloc canonique en fin de
+   fichier — Audit KIMOXA, correctif ALN-1). */
 .home-hscroll-item .shop-card {
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
 }
-.home-hscroll-item .shop-card > .btn { margin-top: auto; margin-bottom: 10px; }
 /* ===== FOOTER MARKETPLACE PANAFRICAINE ===== */
 
 /* Fond sombre professionnel */
@@ -5036,6 +5035,10 @@ footer, .site-footer { padding: 16px 14px; font-size: 0.8rem; }
 /* Icône compte : mobile uniquement (le PC a déjà « Bonjour / Compte ») */
 @media (min-width: 768px) {
   .site-header-account { display: none; }
+  /* Audit KIMOXA - correctif UX-3 : idem pour l'icône Wishlist mobile,
+     remplacée sur desktop par le lien texte "Favoris" dans
+     .site-header-desktop-actions. */
+  .site-header-favoris-mobile { display: none; }
 }
 /* ===== HEADER MOBILE : finition Temu ===== */
 @media (max-width: 767px) {
@@ -7436,8 +7439,18 @@ h1, h2, h3, h4 { font-family: var(--font-inter), ui-sans-serif, system-ui, sans-
 .trust-item-icon { background: #f7ecd2 !important; color: #a1730f !important; }
 .trust-item-title { color: #0d1220 !important; font-family: var(--font-inter), sans-serif !important; }
 
-/* --- Cartes produits pro : plus grandes, epurees --- */
-.home-hscroll-item { min-width: 210px; }
+/* --- Cartes produits pro : plus grandes, epurees ---
+   Audit KIMOXA - correctif R-1 : un `min-width: 210px` non scoppé était
+   appliqué à .home-hscroll-item alors que ce rail est une grille à 2 colonnes
+   sur mobile (voir "TEMU v2" plus haut, dont le but affiché est justement
+   "zéro scroll horizontal"). Avec 2 colonnes de 210px minimum, un écran de
+   moins de ~440px de large provoquait un débordement horizontal.
+   Le `fr` du grid-template-columns suffit à dimensionner les cartes ; on ne
+   fixe une largeur minimale que sur les breakpoints où la grille a déjà de
+   la place (≥1024px, grille à 6 colonnes). */
+@media (min-width: 1024px) {
+  .home-hscroll-item { min-width: 150px; }
+}
 .shop-card {
   background: #fff !important;
   border: 1px solid #e7e3da !important;
@@ -7447,7 +7460,14 @@ h1, h2, h3, h4 { font-family: var(--font-inter), ui-sans-serif, system-ui, sans-
 }
 .shop-card:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(13, 18, 32, 0.08); }
 .shop-card-image-wrap { background: #f4f1ea !important; border-radius: 10px !important; }
-.shop-card-image-wrap img, .shop-card-image { height: 200px !important; object-fit: cover !important; }
+/* Audit KIMOXA - correctif R-4 : une hauteur fixe de 200px !important
+   écrasait le ratio 1/1 défini plus haut (.shop-card-image-wrap), alors que
+   la largeur des cartes varie de ~150px (mobile, 2 colonnes) à plus de
+   250px (desktop, grille 6 colonnes) : le cadrage des images devenait donc
+   tantôt "carré", tantôt "en bandeau large" selon le nombre de colonnes.
+   `height: 100%` + object-fit: cover, combiné à aspect-ratio: 1/1 sur le
+   conteneur, garde un cadrage carré cohérent sur tous les breakpoints. */
+.shop-card-image-wrap img, .shop-card-image { height: 100%; object-fit: cover !important; }
 .shop-card-name, .shop-card .name {
   font-family: var(--font-inter), sans-serif !important;
   font-size: 13px !important;
@@ -7456,14 +7476,9 @@ h1, h2, h3, h4 { font-family: var(--font-inter), ui-sans-serif, system-ui, sans-
 }
 .shop-card-condition { background: #f0ece5 !important; color: #5a5148 !important; }
 .shop-card [class*="price"]:not([class*="old"]):not([class*="was"]) { color: #e8590c !important; font-weight: 800 !important; }
-.shop-card .btn.btn-primary, .shop-card button.btn {
-  background: #0d1220 !important;
-  color: #fff !important;
-  border: none !important;
-  border-radius: 8px !important;
-  font-weight: 700 !important;
-}
-.shop-card .btn.btn-primary:hover, .shop-card button.btn:hover { background: #d4af37 !important; color: #0d1220 !important; }
+/* Le style du bouton "Ajouter au panier" des cartes est désormais hérité de
+   la règle canonique .btn-primary (L.232) - correctif PC-3, plus de doublon
+   ici pour éviter toute nouvelle divergence future. */
 
 /* --- Hero CTA or pro --- */
 [class*="cta"] { background: #d4af37 !important; color: #241712 !important; font-weight: 800 !important; border-radius: 9px !important; }
@@ -7543,3 +7558,93 @@ h1, h2, h3, h4 { font-family: var(--font-inter), ui-sans-serif, system-ui, sans-
 .bottom-nav-item { color: rgba(255, 255, 255, 0.65) !important; }
 .bottom-nav-item.is-active { color: #d4af37 !important; }
 .bottom-nav-badge { background: #d4af37 !important; color: #0d1220 !important; }
+
+/* ============================================================
+   KIMOXA — Alignement canonique des cartes produit
+   Audit KIMOXA, correctifs ALN-1 à ALN-4.
+
+   Problème constaté en production : dans une même rangée, le prix et
+   le bouton « Ajouter au panier » ne tombaient pas à la même hauteur
+   d'une carte à l'autre. Trois causes cumulées :
+
+   1) .shop-card n'était en flex-column QUE dans les rails de la page
+      d'accueil. Dans la grille principale et le catalogue, le
+      `margin-top: auto` de .price-display n'avait donc aucun effet
+      (pas de conteneur flex) et rien n'était aligné en bas.
+   2) Dans les rails, DEUX `margin-top: auto` coexistaient
+      (.price-display et .shop-card > .btn). Deux marges automatiques
+      se partagent l'espace libre au lieu de l'absorber : le prix et le
+      bouton flottaient chacun à une hauteur différente selon la
+      quantité de contenu au-dessus.
+   3) Le bloc prix pouvait occuper 1 ou 2 lignes selon la présence d'un
+      prix barré, et « 51 900 FCFA » se coupait en deux lignes sur les
+      colonnes étroites.
+
+   Principe retenu (standard des marketplaces) : le bloc prix + bouton
+   forme un pied de carte ancré en bas, avec une hauteur de prix
+   réservée constante. Les éléments facultatifs au-dessus (note, avis,
+   prix barré) ne décalent donc plus jamais le pied de carte.
+   ============================================================ */
+
+/* 1. La carte est une colonne flex dans TOUS les contextes :
+      grille d'accueil, catalogue, favoris, rails, résultats de
+      recherche. Une seule règle, plus de comportement par contexte. */
+.shop-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Le lien enveloppe l'image et le nom : il ne doit pas absorber
+   l'espace libre, sans quoi le pied de carte remonterait. */
+.shop-card > a {
+  display: block;
+  flex: 0 0 auto;
+}
+
+/* 2. Pied de carte ancré en bas : UNE SEULE marge automatique, portée
+      par le bloc prix. Le bouton suit avec un écart fixe. */
+.shop-card .price-display {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  align-content: flex-end;
+  gap: 2px 8px;
+  /* Hauteur réservée = 2 lignes. Une carte en promotion (prix barré +
+     prix actuel) et une carte sans promotion occupent ainsi la même
+     hauteur, donc leurs boutons s'alignent. */
+  min-height: 2.9em;
+}
+
+.shop-card > .btn {
+  margin-top: 8px;
+  flex: 0 0 auto;
+}
+
+/* 3. Un montant ne se coupe jamais en deux lignes : « 51 900 » et
+      « FCFA » restent solidaires, quelle que soit la largeur de
+      colonne (2 colonnes mobile comme 6 colonnes grand écran). */
+.shop-card .price-current,
+.shop-card .price-old {
+  white-space: nowrap;
+}
+
+/* 4. Images produit strictement uniformes : cadre carré imposé et
+      recadrage `cover`, pour que deux photos de proportions
+      différentes (portrait, paysage, carrée) occupent exactement la
+      même surface et que les cartes restent alignées. */
+.shop-card-image-wrap {
+  aspect-ratio: 1 / 1;
+  height: auto;
+  width: 100%;
+  overflow: hidden;
+}
+
+.shop-card-image-wrap img,
+.shop-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}

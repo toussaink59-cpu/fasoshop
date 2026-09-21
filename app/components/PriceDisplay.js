@@ -17,7 +17,11 @@ export function discountPercent(product) {
 
 export default function PriceDisplay({ product }) {
   const discounted = hasDiscount(product);
+  const price = Number(product.price);
+  const priceIsValid = Number.isFinite(price);
 
+  // Audit KIMOXA - correctif PC-5 : sans garde, un prix null/undefined
+  // s'affichait "NaN FCFA". On affiche désormais un texte de repli.
   return (
     <div className="price-display">
       {discounted && (
@@ -26,7 +30,7 @@ export default function PriceDisplay({ product }) {
         </span>
       )}
       <span className="price-current">
-        {Number(product.price).toLocaleString("fr-FR")} FCFA
+        {priceIsValid ? `${price.toLocaleString("fr-FR")} FCFA` : "Prix indisponible"}
       </span>
     </div>
   );

@@ -399,9 +399,15 @@ export default function CartClient({ initialUser, categories }) {
                         <div className="cart-item-price">{item.price.toLocaleString("fr-FR")} FCFA</div>
                         <div className="cart-item-actions">
                           <div className="qty-stepper" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
+                            {/* Audit KIMOXA - correctif UX-2 : à quantité 1, ce bouton
+                                appelait updateQuantity(id, 0), c'est-à-dire une suppression
+                                silencieuse de l'article. On désactive désormais le bouton
+                                "-" à 1 ; la suppression volontaire reste possible via le
+                                bouton "Supprimer" dédié, déjà présent plus bas. */}
                             <button
                               onClick={() => changeQty(item.productId, item.quantity - 1)}
                               style={{ padding: "4px 8px" }}
+                              disabled={item.quantity <= 1}
                               aria-label={`Diminuer la quantité de ${item.name}`}
                             >
                               <MinusIcon size={14} />

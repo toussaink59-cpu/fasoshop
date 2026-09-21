@@ -20,6 +20,15 @@ export async function GET(request) {
     whereClause = "WHERE o.status IN ('pending', 'paid') AND o.created_at < NOW() - INTERVAL '3 days'";
   }
 
+  // Audit KIMOXA - correctif SEC-3 (défense en profondeur) : limit/offset
+  // sont liés via des placeholders paramétrés ($1/$2), et non plus
+  // interpolés directement dans la chaîne SQL. Avant ce correctif, la
+  // sécurité de cette requête dépendait entièrement du fait que
+  // lib/pagination.js force bien limit/offset en Number() — correct
+  // aujourd'hui, mais fragile si ce fichier est modifié plus tard sans
+  // que quelqu'un pense à revérifier ce point précis. Avec un paramètre
+  // lié, la requête reste sûre même si une valeur non numérique passait
+  // un jour au travers de parsePagination().
   const orders = await sql.unsafe(`
     SELECT o.id, o.status, o.created_at, u.full_name AS buyer_name, u.email AS buyer_email,
            COALESCE(SUM(l.gross_amount), 0) AS total_amount,
@@ -30,8 +39,8 @@ export async function GET(request) {
     ${whereClause}
     GROUP BY o.id, o.status, o.created_at, u.full_name, u.email
     ORDER BY o.created_at DESC
-    LIMIT ${limit} OFFSET ${offset}
-  `, []);
+    LIMIT $1 OFFSET $2
+  `, [limit, offset]);
 
   const [{ count }] = await sql.unsafe(`
     SELECT COUNT(DISTINCT o.id) AS count
