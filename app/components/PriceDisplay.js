@@ -1,27 +1,38 @@
-// Affiche le prix d'un produit, avec prix barré et badge de réduction
-// si compare_at_price est défini et supérieur au prix actuel.
+function isValidPrice(value) {
+  return (
+    value !== null &&
+    value !== undefined &&
+    value !== "" &&
+    Number.isFinite(Number(value))
+  );
+}
 
 export function hasDiscount(product) {
+  const price = product?.price;
+  const compareAt = product?.compare_at_price;
+
   return (
-    product.compare_at_price &&
-    Number(product.compare_at_price) > Number(product.price)
+    isValidPrice(price) &&
+    isValidPrice(compareAt) &&
+    Number(compareAt) > Number(price)
   );
 }
 
 export function discountPercent(product) {
   if (!hasDiscount(product)) return 0;
+
   const price = Number(product.price);
   const compareAt = Number(product.compare_at_price);
+
   return Math.round((1 - price / compareAt) * 100);
 }
 
 export default function PriceDisplay({ product }) {
   const discounted = hasDiscount(product);
-  const price = Number(product.price);
-  const priceIsValid = Number.isFinite(price);
+  const rawPrice = product?.price;
+  const price = Number(rawPrice);
+  const priceIsValid = isValidPrice(rawPrice);
 
-  // Audit KIMOXA - correctif PC-5 : sans garde, un prix null/undefined
-  // s'affichait "NaN FCFA". On affiche désormais un texte de repli.
   return (
     <div className="price-display">
       {discounted && (
@@ -29,8 +40,11 @@ export default function PriceDisplay({ product }) {
           {Number(product.compare_at_price).toLocaleString("fr-FR")} FCFA
         </span>
       )}
+
       <span className="price-current">
-        {priceIsValid ? `${price.toLocaleString("fr-FR")} FCFA` : "Prix indisponible"}
+        {priceIsValid
+          ? `${price.toLocaleString("fr-FR")} FCFA`
+          : "Prix indisponible"}
       </span>
     </div>
   );
