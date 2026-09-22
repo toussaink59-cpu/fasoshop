@@ -1,8 +1,8 @@
 -- =====================================================
 -- KIMOXA — schema.sql : SOURCE DE VÉRITÉ
--- Généré le 2026-08-11 depuis la base Neon de production
+-- Consolidé le 2026-09-22 à partir de Neon + migrations 001 à 038
 -- + migration 001 intégrée (marquée [M001])
--- + migration 002 intégrée (marquée [M002])
+-- + migrations 002 à 038 intégrées selon l'état canonique du projet
 -- Règle : tout changement futur = fichier dans migrations/
 -- =====================================================
 
@@ -21,6 +21,7 @@ CREATE TABLE users (
   nationality VARCHAR,
   country_of_residence VARCHAR,
   status TEXT NOT NULL DEFAULT 'active',
+  token_version INTEGER NOT NULL DEFAULT 0,
   CONSTRAINT users_email_key UNIQUE (email),
   CONSTRAINT users_role_check CHECK (role IN ('buyer','vendor','admin'))
 );
@@ -79,7 +80,7 @@ CREATE TABLE shops (
 );
 CREATE INDEX idx_shops_offers_delivery ON shops(offers_delivery) WHERE offers_delivery = true;
 CREATE INDEX idx_shops_offers_pickup ON shops(offers_pickup) WHERE offers_pickup = true;
-CREATE INDEX idx_shops_vendor_id ON shops(vendor_id);
+CREATE UNIQUE INDEX idx_shops_vendor_unique ON shops(vendor_id);
 
 -- ---------- PRODUCTS ----------
 CREATE TABLE products (
@@ -101,6 +102,7 @@ CREATE TABLE products (
   images JSONB NOT NULL DEFAULT '[]',
   condition VARCHAR NOT NULL DEFAULT 'neuf',
   brand VARCHAR,
+  search_vector tsvector,
   is_sponsored BOOLEAN NOT NULL DEFAULT false,
   sponsored_until TIMESTAMP,
   CONSTRAINT products_status_check CHECK (status IN ('active','draft','archived')),
@@ -110,6 +112,24 @@ CREATE INDEX idx_products_shop_id ON products(shop_id);
 CREATE INDEX idx_products_category ON products(category_id);
 CREATE INDEX idx_products_flash_sale ON products(flash_sale_ends_at);
 CREATE INDEX idx_products_status ON products(status); -- [M001]
+-- ---------- FULLTEXT SEARCH ----------
+CREATE OR REPLACE FUNCTION products_search_vector_update() RETURNS trigger AS $$
+BEGIN
+  NEW.search_vector :=
+    setweight(to_tsvector('french', COALESCE(NEW.name, '')), 'A') ||
+    setweight(to_tsvector('french', COALESCE(NEW.brand, '')), 'B') ||
+    setweight(to_tsvector('french', COALESCE(NEW.description, '')), 'C');
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_products_search_vector ON products;
+CREATE TRIGGER trg_products_search_vector
+  BEFORE INSERT OR UPDATE OF name, brand, description ON products
+  FOR EACH ROW EXECUTE FUNCTION products_search_vector_update();
+
+CREATE INDEX idx_products_search_vector
+  ON products USING GIN (search_vector);
 
 -- ---------- ORDERS ----------
 CREATE TABLE orders (
@@ -124,13 +144,22 @@ CREATE TABLE orders (
   delivery_fee NUMERIC NOT NULL DEFAULT 0,
   delivery_method TEXT NOT NULL DEFAULT 'delivery',
   fulfilled_by TEXT NOT NULL DEFAULT 'kimoxa',
-  expires_at TIMESTAMPTZ, -- [M002] expiration des commandes pending (24 h)
+  expires_at TIMESTAMPTZ,
+  promo_code VARCHAR(50),
+  discount_amount NUMERIC(10,2) NOT NULL DEFAULT 0,
+  subtotal INTEGER,
+  promo_discount INTEGER DEFAULT 0,
+  payment_status TEXT NOT NULL DEFAULT 'pending',
+  sequestre_at TIMESTAMPTZ,
+  released_at TIMESTAMPTZ,
+  auto_release_at TIMESTAMPTZ,
+  dispute_open BOOLEAN DEFAULT false,
   CONSTRAINT orders_status_check CHECK (status IN ('pending','paid','shipped','delivered','cancelled'))
 );
-CREATE INDEX idx_orders_buyer_id ON orders(buyer_id);      -- [M001]
-CREATE INDEX idx_orders_status ON orders(status);          -- [M001]
-CREATE INDEX idx_orders_created_at ON orders(created_at DESC); -- [M001]
-CREATE INDEX idx_orders_expires_at ON orders(expires_at) WHERE status = 'pending'; -- [M002]
+CREATE INDEX idx_orders_buyer_id ON orders(buyer_id);
+CREATE INDEX idx_orders_status ON orders(status);
+CREATE INDEX idx_orders_created_at ON orders(created_at DESC);
+CREATE INDEX idx_orders_expires_at ON orders(expires_at) WHERE status = 'pending';
 
 -- ---------- ORDER ITEMS ----------
 CREATE TABLE order_items (
@@ -188,15 +217,15 @@ CREATE TABLE shop_commission_ledger (
   created_at TIMESTAMP NOT NULL DEFAULT now(),
   gross_amount NUMERIC NOT NULL DEFAULT 0,
   delivery_status VARCHAR NOT NULL DEFAULT 'preparation',
-  commission_rate NUMERIC DEFAULT 5.5,
+  commission_rate NUMERIC DEFAULT 8,
   payout_amount NUMERIC DEFAULT 0,
   payout_status TEXT DEFAULT 'held',
   payout_released_at TIMESTAMPTZ,
   payout_paid_at TIMESTAMPTZ,
   delivery_fee_amount NUMERIC NOT NULL DEFAULT 0,
-  CONSTRAINT shop_commission_ledger_status_check CHECK (status IN ('due','settled')),
+  CONSTRAINT shop_commission_ledger_status_check CHECK (status IN ('due','settled','voided')),
   CONSTRAINT shop_commission_ledger_delivery_status_check CHECK (delivery_status IN ('preparation','shipped','delivered','cancelled')),
-  CONSTRAINT ledger_payout_status_check CHECK (payout_status IN ('held','released','paid')) -- [M001]
+  CONSTRAINT ledger_payout_status_check CHECK (payout_status IN ('held','released','paid','cod_pending'))
 );
 CREATE INDEX idx_ledger_shop_id ON shop_commission_ledger(shop_id);
 CREATE INDEX idx_ledger_order_id ON shop_commission_ledger(order_id);       -- [M001]
@@ -256,15 +285,19 @@ CREATE INDEX idx_payout_attempts_status ON payout_attempts(status, updated_at);
 -- ---------- CONVERSATIONS / MESSAGES ----------
 CREATE TABLE conversations (
   id SERIAL PRIMARY KEY,
-  order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  order_id INTEGER REFERENCES orders(id) ON DELETE CASCADE,
   shop_id INTEGER NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
   buyer_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   last_message_at TIMESTAMP NOT NULL DEFAULT now(),
   created_at TIMESTAMP NOT NULL DEFAULT now(),
+  product_id INTEGER REFERENCES products(id) ON DELETE SET NULL,
   CONSTRAINT conversations_order_id_shop_id_key UNIQUE (order_id, shop_id)
 );
-CREATE INDEX idx_conversations_shop_id ON conversations(shop_id);   -- [M001]
-CREATE INDEX idx_conversations_buyer_id ON conversations(buyer_id); -- [M001]
+CREATE INDEX idx_conversations_shop_id ON conversations(shop_id);
+CREATE INDEX idx_conversations_buyer_id ON conversations(buyer_id);
+CREATE UNIQUE INDEX conversations_presale_unique
+  ON conversations (buyer_id, shop_id, product_id)
+  WHERE order_id IS NULL AND product_id IS NOT NULL;
 
 CREATE TABLE messages (
   id SERIAL PRIMARY KEY,
@@ -278,6 +311,7 @@ CREATE TABLE messages (
   CONSTRAINT messages_sender_role_check CHECK (sender_role IN ('buyer','vendor'))
 );
 CREATE INDEX idx_messages_conversation ON messages(conversation_id);
+CREATE INDEX idx_messages_conv_created ON messages(conversation_id, created_at DESC);
 
 -- ---------- FAVORITES / REVIEWS ----------
 CREATE TABLE favorites (
@@ -341,3 +375,133 @@ CREATE TABLE stock_movements (
   CONSTRAINT stock_movements_type_check CHECK (type IN ('restock','sale','adjustment'))
 );
 CREATE INDEX idx_stock_movements_product_id ON stock_movements(product_id);
+
+-- ---------- ABANDONED CARTS ----------
+CREATE TABLE abandoned_carts (
+  user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+  email VARCHAR NOT NULL,
+  items JSONB NOT NULL DEFAULT '[]'::jsonb,
+  total_cents INTEGER NOT NULL DEFAULT 0,
+  last_seen TIMESTAMP NOT NULL DEFAULT now(),
+  reminded_at TIMESTAMP,
+  converted_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_abandoned_carts_last_seen
+  ON abandoned_carts(last_seen)
+  WHERE reminded_at IS NULL AND converted_at IS NULL;
+
+-- ---------- PASSWORD RESET TOKENS ----------
+CREATE TABLE password_reset_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash VARCHAR(128) NOT NULL,
+  expires_at TIMESTAMP NOT NULL,
+  used_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT now()
+);
+CREATE INDEX idx_password_reset_tokens_user
+  ON password_reset_tokens(user_id);
+CREATE INDEX idx_password_reset_tokens_expires
+  ON password_reset_tokens(expires_at);
+CREATE INDEX idx_password_reset_tokens_hash
+  ON password_reset_tokens(token_hash);
+
+-- ---------- NOTIFICATIONS ----------
+CREATE TABLE notifications (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type TEXT NOT NULL,
+  title TEXT NOT NULL,
+  body TEXT,
+  link TEXT,
+  data JSONB,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  read_at TIMESTAMPTZ
+);
+CREATE INDEX idx_notif_user_created
+  ON notifications(user_id, created_at DESC);
+CREATE INDEX idx_notif_user_unread
+  ON notifications(user_id)
+  WHERE read_at IS NULL;
+CREATE INDEX idx_notifications_user_read
+  ON notifications(user_id, read_at, created_at DESC);
+
+-- ---------- PUSH SUBSCRIPTIONS ----------
+CREATE TABLE push_subscriptions (
+  id SERIAL PRIMARY KEY,
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  endpoint TEXT NOT NULL UNIQUE,
+  p256dh TEXT NOT NULL,
+  auth TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX idx_push_user
+  ON push_subscriptions(user_id);
+
+-- ---------- ORDER STATUS HISTORY ----------
+CREATE TABLE order_status_history (
+  id SERIAL PRIMARY KEY,
+  order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+  shop_id INTEGER REFERENCES shops(id) ON DELETE CASCADE,
+  from_status TEXT,
+  to_status TEXT NOT NULL,
+  actor_id INTEGER NOT NULL,
+  actor_role TEXT NOT NULL,
+  reason TEXT,
+  metadata JSONB,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE INDEX idx_order_status_history_order
+  ON order_status_history(order_id);
+CREATE INDEX idx_osh_order
+  ON order_status_history(order_id, created_at DESC);
+CREATE INDEX idx_osh_shop
+  ON order_status_history(shop_id, created_at DESC);
+
+-- ---------- PAYOUT REQUESTS ----------
+CREATE TABLE payout_requests (
+  id SERIAL PRIMARY KEY,
+  shop_id INTEGER NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+  amount INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  admin_notes TEXT,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  processed_at TIMESTAMPTZ,
+  processed_by INTEGER REFERENCES users(id)
+);
+CREATE INDEX idx_payout_requests_shop
+  ON payout_requests(shop_id);
+CREATE INDEX idx_payout_requests_shop_created
+  ON payout_requests(shop_id, created_at DESC);
+CREATE INDEX idx_payout_requests_status
+  ON payout_requests(status);
+CREATE UNIQUE INDEX idx_payout_requests_one_pending_per_shop
+  ON payout_requests(shop_id)
+  WHERE status = 'pending';
+CREATE INDEX idx_payout_requests_shop_status
+  ON payout_requests(shop_id, status, created_at DESC);
+
+-- ---------- PROMO CODES ----------
+CREATE TABLE promo_codes (
+  id SERIAL PRIMARY KEY,
+  shop_id INTEGER NOT NULL REFERENCES shops(id) ON DELETE CASCADE,
+  code TEXT NOT NULL,
+  discount_type TEXT NOT NULL
+    CHECK (discount_type IN ('percent', 'fixed')),
+  discount_value INTEGER NOT NULL,
+  min_amount INTEGER DEFAULT 0,
+  max_uses INTEGER,
+  used_count INTEGER DEFAULT 0,
+  expires_at TIMESTAMPTZ,
+  active BOOLEAN DEFAULT TRUE,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  CONSTRAINT promo_codes_shop_id_code_key UNIQUE (shop_id, code)
+);
+CREATE INDEX idx_promo_codes_code
+  ON promo_codes(code);
+CREATE INDEX idx_promo_codes_code_active
+  ON promo_codes(code, active)
+  WHERE active = TRUE;
+CREATE INDEX idx_promo_codes_shop
+  ON promo_codes(shop_id);
